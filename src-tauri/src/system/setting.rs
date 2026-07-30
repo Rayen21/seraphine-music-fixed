@@ -1,4 +1,10 @@
-use tauri::{LogicalSize, Runtime, Size, Window};
+use tauri::{AppHandle, LogicalSize, Runtime, Size, Window};
+
+/// 获取 tauri.conf.json 中的应用版本
+#[tauri::command]
+pub async fn get_app_version(app: AppHandle) -> Result<String, String> {
+  Ok(app.package_info().version.to_string())
+}
 
 #[tauri::command]
 pub async fn system_setting_restore_window<R: Runtime>(window: Window<R>) -> Result<(), String> {

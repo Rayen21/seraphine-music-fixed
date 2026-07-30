@@ -91,3 +91,157 @@ DesktopMiniLyric
 DesktopMiniPlaylist
 DesktopLyricPushPayload
 ```
+
+---
+
+## 前后端通信
+
+### 前端 → Rust: invoke 封装
+
+项目使用 `src/utils/tools.ts` 中的 `invoke` 封装调用 Tauri command，**禁止直接使用 `@tauri-apps/api/core` 的 `invoke`**（除非静默场景需要绕过错误通知）。
+
+```typescript
+import { invoke } from '@/utils/tools'
+
+// ✅ 正确 — 使用项目封装的 invoke
+const result = await invoke('check_update', { currentVersion: '0.1.2' })
+
+// ❌ 避免 — 直接使用裸 tauriInvoke（除非静默场景）
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
+const result = await tauriInvoke('check_update', { currentVersion: '0.1.2' })
+```
+
+**行为说明：**
+- 调用成功 → 返回类型化结果
+- 调用失败 → 自动显示 `notify.error(msg)`，返回 `undefined`
+- 不向上抛出异常，调用方通过 `undefined` 判断失败
+
+**类型定义：**
+
+所有 Tauri command 的类型需在 `src/types/global.d.ts` 的 `Invoke` 接口中声明：
+
+```typescript
+interface Invoke {
+  my_command_name: {
+    params: { key: string }        // 参数类型
+    return: { result: string }     // 返回值类型
+  }
+}
+```
+
+**静默调用场景：**
+
+当不希望自动弹出错误通知时（如启动时静默检查），直接使用 `tauriInvoke`：
+
+```typescript
+import { invoke as tauriInvoke } from '@tauri-apps/api/core'
+
+try {
+  const info = await tauriInvoke<UpdateInfo>('check_update', { ... })
+} catch (e) {
+  console.error('静默失败:', e)
+}
+```
+
+### Rust → 前端: Event 事件
+
+进度或状态推送使用 Tauri Event 系统：
+
+**Rust 端：**
+
+```rust
+use tauri::{AppHandle, Emitter, Manager};
+
+#[derive(Clone, Serialize)]
+struct DownloadProgress {
+    downloaded: u64,
+    total: u64,
+    speed: f64,
+}
+
+// 在 command 中发送事件
+let _ = app.emit("update:download-progress", DownloadProgress { ... });
+```
+
+**前端监听：**
+
+```typescript
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+
+let unlisten: UnlistenFn | null = null
+
+unlisten = await listen<DownloadProgress>('update:download-progress', (event) => {
+  progress.value = event.payload
+})
+
+// 组件卸载时取消监听
+onUnmounted(() => unlisten?.())
+```
+
+### Rust HTTP 客户端
+
+Rust 端 HTTP 请求使用 `src-tauri/src/http/client.rs` 封装的 `HttpRequest`，直接使用 `tauri_plugin_http::reqwest`。
+
+**简单 GET 请求：**
+
+```rust
+use crate::http::client::HttpRequest;
+
+// 直接获取 JSON 响应
+let data: MyType = HttpRequest::get_json::<MyType>(url.to_string())
+    .await
+    .map_err(|e| e.to_string())?;
+```
+
+**带 Header 的请求：**
+
+```rust
+use crate::http::client::{HttpRequest, HttpRequestOptions};
+use tauri_plugin_http::reqwest::Method;
+
+let opts = HttpRequestOptions::new()
+    .url("https://api.example.com/data")
+    .method(Method::GET)
+    .add_header("User-Agent", "my-app")
+    .add_header("Accept", "application/json");
+
+let resp = HttpRequest::request(opts)
+    .await
+    .map_err(|e| format!("请求失败: {}", e))?;
+
+let data: MyType = resp.json().await.map_err(|e| e.to_string())?;
+```
+
+**流式下载（需进度上报）：**
+
+```rust
+use crate::http::client::HttpRequest;
+use tokio_stream::StreamExt;
+
+let client = HttpRequest::get_client();
+let resp = client.get(&url)
+    .header("User-Agent", "my-app")
+    .send()
+    .await?;
+
+let mut stream = resp.bytes_stream();
+while let Some(chunk) = stream.next().await {
+    let chunk = chunk?;
+    // 处理 chunk bytes，发送进度事件
+}
+```
+
+**Cookie 管理：**
+
+```rust
+use crate::http::client::HttpRequest;
+
+// 获取指定 URL 的 cookies
+let cookies = HttpRequest::get_cookies("https://example.com");
+
+// 设置指定 URL 的 cookies
+HttpRequest::set_cookies("https://example.com", cookie_map);
+
+// 清除 cookies（恢复默认）
+HttpRequest::clear_cookies("https://example.com");
+```

@@ -741,6 +741,24 @@ declare global {
       params: undefined
       return: ApiResponse
     }
+    check_update: {
+      params: undefined
+      return: {
+        has_update: boolean
+        current_version: string
+        latest_version: string
+        download_url: string | null
+        file_size: number | null
+      }
+    }
+    download_update: {
+      params: { downloadUrl: string }
+      return: string
+    }
+    install_update: {
+      params: { savePath: string }
+      return: undefined
+    }
   }
 
   interface LyricGetResponse {

@@ -36,7 +36,7 @@ export const useSettingStore = defineStore(
     const mediaShortcutState = ref(true) // 媒体快捷键状态
     const shortcutMap = ref({ ...Default_Shortcut }) // 快捷键映射
     const device = ref('') // 设备ID
-    const version = ref('0.1.2') // 应用版本
+    const version = ref('') // 应用版本
     const desktopMiniPosition = ref({ x: 0, y: 0 }) // mini播放器坐标
     const desktopLyricPosition = ref({ x: 0, y: 0 }) //桌面歌词坐标
 
@@ -245,6 +245,10 @@ export const useSettingStore = defineStore(
       unregister('MediaTrackPrevious')
     }
 
+    const setVersion = (ver: string) => {
+      version.value = ver
+    }
+
     const setDesktopMiniPosition = (pos: { x: number; y: number }) => {
       desktopMiniPosition.value = pos
     }
@@ -288,6 +292,7 @@ export const useSettingStore = defineStore(
       unregisterGlobalShortcut,
       registerAllGlobalShortcut,
       unregisterAllGlobalShortcut,
+      setVersion,
       setDesktopMiniPosition,
       setdesktopLyricPosition
     }
@@ -305,7 +310,6 @@ export const useSettingStore = defineStore(
         'mediaShortcutState',
         'shortcutMap',
         'device',
-        'version',
         'desktopMiniPosition',
         'desktopLyricPosition'
       ],

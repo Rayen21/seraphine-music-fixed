@@ -11,7 +11,7 @@ use crate::{
   },
   http::{config, mode},
   music::{file, lyric as music_lyric, player, scan},
-  system::{path, setting},
+  system::{path, setting, update},
 };
 
 mod api;
@@ -44,6 +44,7 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+      setting::get_app_version,
       setting::system_setting_restore_window,
       path::system_path_all,
       scan::music_scan_dir,
@@ -114,7 +115,10 @@ pub fn run() {
       user::api_user_detail,
       youth::api_youth_union_vip,
       youth::api_youth_day_vip,
-      youth::api_youth_day_upgrade
+      youth::api_youth_day_upgrade,
+      update::check_update,
+      update::download_update,
+      update::install_update
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

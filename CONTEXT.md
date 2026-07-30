@@ -37,13 +37,13 @@
 
 ### 领域事件
 
-| 事件            | 含义                                    | 消费者                             |
-| --------------- | --------------------------------------- | ---------------------------------- |
-| `reload_device` | 音频输出设备变更，触发播放器重载        | `musicStore` → 重新加载当前音频    |
-| 播放进度事件    | 通过 Channel 推送当前播放位置 (s)       | `musicStore` → 更新进度条          |
-| 下载进度事件    | 通过 Channel 推送在线音频下载进度 (0-1) | `musicStore` → 更新缓冲指示        |
+| 事件            | 含义                                                | 消费者                           |
+| --------------- | --------------------------------------------------- | -------------------------------- |
+| `reload_device` | 音频输出设备变更，触发播放器重载                    | `musicStore` → 重新加载当前音频  |
+| 播放进度事件    | 通过 Channel 推送当前播放位置 (s)                   | `musicStore` → 更新进度条        |
+| 下载进度事件    | 通过 Channel 推送在线音频下载进度 (0-1)             | `musicStore` → 更新缓冲指示      |
 | 歌词双向通信    | 桌面歌词窗口与主窗口间的 IPC 事件（Bridge Pattern） | Bridge composable ↔ `musicStore` |
-| 歌曲结束        | 播放位置达到歌曲时长                    | `musicStore` → 自动播放下一首      |
+| 歌曲结束        | 播放位置达到歌曲时长                                | `musicStore` → 自动播放下一首    |
 
 ---
 
@@ -142,16 +142,16 @@
 
 ### 5. 前端状态管理 — `stores/`
 
-| Store          | 管理状态                                          | 持久化字段                                           |
-| -------------- | ------------------------------------------------- | ---------------------------------------------------- |
-| `music`        | 播放状态、进度、音量、模式、音质                  | music, origin, volume, mode, quality, playProgress   |
-| `list`         | 四个列表（本地/展示/播放/喜欢）、排序、框选、搜索 | local, play, sortMap                                 |
-| `lyric`        | 歌词页显示、歌词设置、匹配记录、偏移量            | pageMode, setting, matchedMap, offsetMap             |
-| `user`         | 用户信息、VIP 状态、用户歌单                      | userinfo                                             |
-| `setting`      | 窗口状态、字体、自启、关闭行为、快捷键、设备      | autoLiteVipState, fontFamily, ...                    |
+| Store          | 管理状态                                          | 持久化字段                                                       |
+| -------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| `music`        | 播放状态、进度、音量、模式、音质                  | music, origin, volume, mode, quality, playProgress               |
+| `list`         | 四个列表（本地/展示/播放/喜欢）、排序、框选、搜索 | local, play, sortMap                                             |
+| `lyric`        | 歌词页显示、歌词设置、匹配记录、偏移量            | pageMode, setting, matchedMap, offsetMap                         |
+| `user`         | 用户信息、VIP 状态、用户歌单                      | userinfo                                                         |
+| `setting`      | 窗口状态、字体、自启、关闭行为、快捷键、设备      | autoLiteVipState, fontFamily, ...                                |
 | `desktopLyric` | 桌面歌词窗口样式设置                              | isLocked, fontSize, fontFamily, textColors, transMode, offsetMap |
-| `contextMenu`  | 右键菜单状态                                      | —                                                    |
-| `refresh`      | 页面刷新触发信号                                  | —                                                    |
+| `contextMenu`  | 右键菜单状态                                      | —                                                                |
+| `refresh`      | 页面刷新触发信号                                  | —                                                                |
 
 ### 6. 多窗口架构
 
@@ -166,6 +166,7 @@
 **数据规范**：非主窗口只能使用各自的专用 store（如 `desktop-mini` 只用 `desktop-mini`），其余所有数据由主窗口通过事件传递。禁止在非主窗口中直接引用 `music`、`list`、`lyric-main`、`user`、`setting` 等主窗口 store。
 
 **Bridge Pattern**：主窗口到子窗口的数据传递通过 Bridge Composable 封装（参见 ADR-0002）。现有实现：
+
 - `useDesktopMiniBridge(miniWindow, mainWindow)` — 迷你播放器，位于 `composables/useDesktopMiniBridge.ts`
 - `useDesktopLyricBridge(lyricWindow)` — 桌面歌词，位于 `composables/useDesktopLyricBridge.ts`
 
@@ -218,9 +219,9 @@ music_player_load_url
 
 ## 设计决策 (ADR 索引)
 
-| ADR                                                  | 主题                                                     |
-| ---------------------------------------------------- | -------------------------------------------------------- |
-| [0001](docs/adr/0001-multi-window-data-isolation.md) | 非主窗口数据隔离——仅使用专用 store，其余由主窗口事件传递 |
+| ADR                                                  | 主题                                                           |
+| ---------------------------------------------------- | -------------------------------------------------------------- |
+| [0001](docs/adr/0001-multi-window-data-isolation.md) | 非主窗口数据隔离——仅使用专用 store，其余由主窗口事件传递       |
 | [0002](docs/adr/0002-multi-window-bridge-pattern.md) | 多窗口桥接模式 (Bridge Pattern) 标准化——Bridge Composable 封装 |
 
 ---
