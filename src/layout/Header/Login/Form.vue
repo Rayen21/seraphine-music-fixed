@@ -1,8 +1,9 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { notify } from '@/components/Notification'
 import SlideBar from '@/components/SlideBar.vue'
 import { useUserStore } from '@/stores/user'
+import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { useCountdown } from '@vueuse/core'
 
@@ -33,33 +34,55 @@ const { remaining, start, reset } = useCountdown(60, {
 
 const getCode = async () => {
   if (codeLoading.value) return
-  if (!phoneForm.value.mobile) return notify.error('请填写手机号')
-  if (!/^1[3-9]\d{9}$/.test(phoneForm.value.mobile)) return notify.error('请输入正确的手机号')
-
+  if (!phoneForm.value.mobile) {
+    notify.error('请填写手机号')
+    return
+  }
+  if (!/^1[3-9]\d{9}$/.test(phoneForm.value.mobile)) {
+    notify.error('请输入正确的手机号')
+    return
+  }
   codeLoading.value = true
 
-  const api_login_captcha = await invoke('api_login_captcha', { mobile: phoneForm.value.mobile })
-  if (api_login_captcha?.status !== 1) {
+  try {
+    const api_login_captcha = await invoke('api_login_captcha', { mobile: phoneForm.value.mobile })
+    if (api_login_captcha.status !== ApiInvokeStatus.Success) {
+      notify.error('获取验证码失败')
+    } else {
+      start()
+      notify.success('验证码已发送')
+    }
+  } catch (error) {
+    console.error(error)
     notify.error('获取验证码失败')
+  } finally {
     codeLoading.value = false
-  } else {
-    start()
-    notify.success('验证码已发送')
   }
 }
 
 const handleConfirm = async () => {
-  if (!phoneForm.value.mobile || !phoneForm.value.code) return notify.error('请填写完整信息')
-  if (!/^1[3-9]\d{9}$/.test(phoneForm.value.mobile)) return notify.error('请输入正确的手机号')
-
-  const api_login_cellphone = await invoke('api_login_cellphone', phoneForm.value)
-  if (api_login_cellphone?.status !== 1) {
-    notify.error('登录失败')
+  if (!phoneForm.value.mobile || !phoneForm.value.code) {
+    notify.error('请填写完整信息')
+    return
+  }
+  if (!/^1[3-9]\d{9}$/.test(phoneForm.value.mobile)) {
+    notify.error('请输入正确的手机号')
     return
   }
 
-  userStore.login(api_login_cellphone.data)
-  emits('close')
+  try {
+    const api_login_cellphone = await invoke('api_login_cellphone', phoneForm.value)
+    if (api_login_cellphone.status !== ApiInvokeStatus.Success) {
+      notify.error('登录失败')
+      return
+    }
+
+    userStore.login(api_login_cellphone.data)
+    emits('close')
+  } catch (error) {
+    console.error(error)
+    notify.error('登录失败')
+  }
 }
 </script>
 

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import AlignBtn from './Actions/AlignBtn.vue'
 import ColorBtn from './Actions/ColorBtn.vue'
 import FontFamilyBtn from './Actions/FontFamilyBtn.vue'
@@ -13,14 +13,14 @@ import SquareCover from './SquareCover.vue'
 import VinylRecord from './VinylRecord.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import SystemActions from '@/components/SystemActions.vue'
-import { useContextMenuStore } from '@/stores/context-menu.ts'
-import { useMainLyricStore } from '@/stores/lyric.ts'
-import { useMusicStore } from '@/stores/music.ts'
-import { useSettingStore } from '@/stores/setting.ts'
+import { useContextMenuStore } from '@/stores/context-menu'
+import { useLyricStore } from '@/stores/lyric'
+import { useMusicStore } from '@/stores/music'
+import { useSettingStore } from '@/stores/setting'
 import { LyricPageMode } from '@/utils/params'
 
 const settingStore = useSettingStore()
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 const musicStore = useMusicStore()
 const contextMenuStore = useContextMenuStore()
 

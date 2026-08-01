@@ -1,23 +1,25 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import {
-  DesktopMiniEmit,
   Interval,
+  MiniPlayerEmit,
   PlayingOrigin,
   WindowEvent,
-  WindowName,
-  desktopMiniSize
+  WindowTarget,
+  miniPlayerSize
 } from '@/utils/params'
 import { getFullName, getPic } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { LogicalSize, PhysicalPosition } from '@tauri-apps/api/dpi'
+import { LogicalSize } from '@tauri-apps/api/dpi'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useColorMode, useThrottleFn } from '@vueuse/core'
 
+// 同步主题
 useColorMode()
+
 const miniWindow = getCurrentWindow()
 
 const tableColumns: TableColumn[] = [
@@ -25,7 +27,7 @@ const tableColumns: TableColumn[] = [
   { key: 'info', slot: true, width: 'auto' }
 ]
 
-const audio = ref<DesktopMiniAudio>({
+const audio = ref<MiniPlayerAudio>({
   isPlaying: false,
   isLoading: false,
   music: null,
@@ -43,54 +45,39 @@ const cover = computed(() => {
     : getPic(audio.value.music?.cover)
 })
 
-/** 显示文本：优先歌词，否则歌名 */
-const showContent = computed(() => {
-  if (!audio.value.music) return 'Seraphine'
-  return lyric.value || getFullName(audio.value.music)
-})
+const showContent = computed(
+  () => lyric.value || (audio.value.music ? getFullName(audio.value.music) : 'Seraphine')
+)
 
-const isPlaying = (row: ListMusic) => row.id === audio.value.music?.id
+const isPlaying = (id: ID) => id === audio.value.music?.id
 
-const handleSend = (type: DesktopMiniEmit, data?: any) => {
-  emitTo(WindowName.Main, WindowEvent.DesktopMini, { type, data })
+const handleSend = (type: MiniPlayerEmit, data?: any) => {
+  emitTo(WindowTarget.Main, WindowEvent.MiniPlayer, { type, data })
 }
 
-const handlePlay = (music: ListMusic) => {
-  handleSend(DesktopMiniEmit.Set, music)
-}
-
-const showPlaylist = async () => {
+const showPlaylist = () => {
   playlistVisible.value = !playlistVisible.value
 
-  await miniWindow.setSize(
-    new LogicalSize(
-      desktopMiniSize.width,
-      playlistVisible.value ? desktopMiniSize.width : desktopMiniSize.height
-    )
-  )
+  const height = playlistVisible.value ? miniPlayerSize.width : miniPlayerSize.height
+  miniWindow.setSize(new LogicalSize(miniPlayerSize.width, height))
 }
 
-const throttledSendPos = useThrottleFn((e: { payload: PhysicalPosition }) => {
-  handleSend(DesktopMiniEmit.Pos, e.payload)
-}, Interval.Long)
-
-onMounted(() => {
-  miniWindow.onMoved(throttledSendPos)
-
-  emitTo(WindowName.Main, WindowEvent.DesktopMini, { type: DesktopMiniEmit.Init })
-  listen<{ type: DesktopMiniEmit; data: unknown }>(WindowEvent.DesktopMini, (e) => {
-    switch (e.payload.type) {
-      case DesktopMiniEmit.Audio:
-        audio.value = e.payload.data as DesktopMiniAudio
-        break
-      case DesktopMiniEmit.Lyric:
-        lyric.value = e.payload.data as string
-        break
-      case DesktopMiniEmit.Playlist:
-        playlist.value = e.payload.data as ListMusic[]
-        break
-    }
-  })
+// 向主窗口发送位置信息并缓存
+miniWindow.onMoved(useThrottleFn((e) => handleSend(MiniPlayerEmit.Pos, e.payload), Interval.Long))
+// 向主窗口发送初始化请求
+emitTo(WindowTarget.Main, WindowEvent.MiniPlayer, { type: MiniPlayerEmit.Init })
+listen<{ type: MiniPlayerEmit; data: unknown }>(WindowEvent.MiniPlayer, (e) => {
+  switch (e.payload.type) {
+    case MiniPlayerEmit.Audio:
+      audio.value = e.payload.data as MiniPlayerAudio
+      break
+    case MiniPlayerEmit.Lyric:
+      lyric.value = e.payload.data as string
+      break
+    case MiniPlayerEmit.Playlist:
+      playlist.value = e.payload.data as ListMusic[]
+      break
+  }
 })
 </script>
 
@@ -113,19 +100,19 @@ onMounted(() => {
               class="action-icon"
               name="PreviousBold"
               size="20"
-              @click="handleSend(DesktopMiniEmit.Prev)" />
+              @click="handleSend(MiniPlayerEmit.Prev)" />
             <SvgIcon
               v-if="!audio.isLoading"
               class="action-icon"
               :name="audio.isPlaying ? 'PauseBold' : 'PlayBold'"
               size="24"
-              @click="handleSend(audio.isPlaying ? DesktopMiniEmit.Pause : DesktopMiniEmit.Play)" />
+              @click="handleSend(audio.isPlaying ? MiniPlayerEmit.Pause : MiniPlayerEmit.Play)" />
             <SvgIcon v-else class="action-icon pointer-events-none" name="Ring" size="28" />
             <SvgIcon
               class="action-icon"
               name="NextBold"
               size="20"
-              @click="handleSend(DesktopMiniEmit.Next)" />
+              @click="handleSend(MiniPlayerEmit.Next)" />
           </div>
 
           <div class="flex items-center">
@@ -140,7 +127,7 @@ onMounted(() => {
               name="Close"
               size="14"
               title="关闭迷你播放器"
-              @click="handleSend(DesktopMiniEmit.Close)" />
+              @click="handleSend(MiniPlayerEmit.Close)" />
           </div>
         </div>
       </div>
@@ -148,16 +135,13 @@ onMounted(() => {
 
     <VirtualList
       v-if="playlistVisible"
-      ref="musicTableRef"
       class="mt-2 h-0 flex-1 px-2"
       :line-height="40"
       :columns="tableColumns"
       :list="playlist"
-      :checked-list="[]"
-      :isChecking="false"
-      @lineDblClick="handlePlay">
+      @lineDblClick="handleSend(MiniPlayerEmit.Set, $event)">
       <template #index="row">
-        <SvgIcon v-if="isPlaying(row)" class="text-info" name="Music" />
+        <SvgIcon v-if="isPlaying(row.id)" class="text-info" name="Music" />
         <div v-else class="truncate text-center text-minor">{{ row.index + 1 }}</div>
       </template>
 
@@ -165,12 +149,12 @@ onMounted(() => {
         <div class="flex">
           <div
             class="w-0 flex-1 truncate font-bold leading-10"
-            :class="isPlaying(row) ? 'text-info' : ''">
+            :class="isPlaying(row.id) ? 'text-info' : ''">
             {{ getFullName(row) }}
           </div>
 
           <div class="hidden items-center pl-2 group-hover/line:flex" @dblclick.stop>
-            <SvgIcon class="action-icon" name="Play" @click="handlePlay(row)" />
+            <SvgIcon class="action-icon" name="Play" @click="handleSend(MiniPlayerEmit.Set, row)" />
           </div>
         </div>
       </template>

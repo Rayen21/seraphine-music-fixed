@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import SvgIcon from '../SvgIcon.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
 
 interface Emits {
   click: []

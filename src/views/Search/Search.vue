@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'
@@ -6,8 +6,8 @@ import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useListStore } from '@/stores/list'
-import { ListType, PageSize, SearchType } from '@/utils/params'
-import { getPic, invoke } from '@/utils/tools'
+import { ApiInvokeStatus, ListType, PageSize, SearchType } from '@/utils/params'
+import { getPic, getPrivilegeTags, invoke } from '@/utils/tools'
 
 provide('listType', ListType.Show)
 
@@ -45,136 +45,135 @@ const handleLoad = async (query: string, type: SearchType) => {
   if (!query) return
   isLoading.value = true
 
-  const api_search = await invoke('api_search', {
-    keywords: query,
-    searchType: type,
-    page: page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_search?.status !== 1) {
-    isLoading.value = false
-    return
-  }
+  try {
+    const api_search = await invoke('api_search', {
+      keywords: query,
+      searchType: type,
+      page: page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_search.status === ApiInvokeStatus.Success) {
+      switch (type) {
+        case SearchType.Song:
+          listStore.isLoading = true
 
-  switch (type) {
-    case SearchType.Song:
-      listStore.isLoading = true
+          const info: ListInfo = {
+            id: 'search',
+            cover: '',
+            title: '搜索',
+            artist: '',
+            count: api_search.data.total,
+            tags: []
+          }
+          const list: ListMusic[] = api_search.data.lists.map((song, index) => {
+            return {
+              id: song.Audioid,
+              hash: song.FileHash,
+              path: null,
+              cover: song.trans_param.union_cover,
+              title: song.OriSongName,
+              artist: song.SingerName,
+              album: song.AlbumName,
+              duration: song.Duration,
+              sort: index,
+              privilegeTags: getPrivilegeTags(song.AlbumPrivilege, song.PayType)
+            }
+          })
 
-      const info: ListInfo = {
-        id: 'search',
-        cover: '',
-        title: '搜索',
-        artist: '',
-        count: api_search.data.total,
-        tags: []
+          listStore.setList(ListType.Show, { info, list })
+          listStore.isLoading = false
+          break
+        case SearchType.Author:
+          artistList.value = api_search.data.lists.map((artist) => ({
+            id: artist.AuthorId,
+            cover: artist.Avatar,
+            name: artist.AuthorName,
+            fanscount: artist.FansNum,
+            descibe: '',
+            url: ''
+          }))
+          break
+        case SearchType.Special:
+          playlistList.value = api_search.data.lists.map((playlist) => ({
+            id: playlist.gid,
+            cover: playlist.img,
+            title: playlist.specialname,
+            artist: playlist.nickname,
+            play_count: playlist.play_count
+          }))
+          break
       }
-      const list: ListMusic[] = api_search.data.lists.map((song, index) => {
-        const privilegeTags: string[] = []
-        if (song.PayType === 2) privilegeTags.push('付费')
-        else if (song.PayType === 3) privilegeTags.push('VIP')
-
-        return {
-          id: song.Audioid,
-          hash: song.FileHash,
-          path: null,
-          cover: song.trans_param.union_cover,
-          title: song.OriSongName,
-          artist: song.SingerName,
-          album: song.AlbumName,
-          duration: song.Duration,
-          sort: index,
-          privilegeTags
-        }
-      })
-
-      listStore.setList(ListType.Show, { info, list })
-      listStore.isLoading = false
-      break
-    case SearchType.Author:
-      artistList.value = api_search.data.lists.map((artist) => ({
-        id: artist.AuthorId,
-        cover: artist.Avatar,
-        name: artist.AuthorName,
-        fanscount: artist.FansNum,
-        descibe: '',
-        url: ''
-      }))
-      break
-    case SearchType.Special:
-      playlistList.value = api_search.data.lists.map((playlist) => ({
-        id: playlist.gid,
-        cover: playlist.img,
-        title: playlist.specialname,
-        artist: playlist.nickname,
-        play_count: playlist.play_count
-      }))
-      break
+    }
+  } catch (error) {
+    console.error(error)
+  } finally {
+    isLoading.value = false
   }
-
-  isLoading.value = false
 }
 
 const handleInfinite = async () => {
   if (isFinished.value) return
 
-  const query = route.query.query as string
+  const query = String(route.query.query)
   const type = slideSelection.value.value
   if (!query) return
 
-  const api_search = await invoke('api_search', {
-    keywords: query,
-    searchType: type,
-    page: ++page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_search?.status !== 1) return
+  try {
+    const api_search = await invoke('api_search', {
+      keywords: query,
+      searchType: type,
+      page: ++page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_search.status !== ApiInvokeStatus.Success) return
 
-  switch (type) {
-    case SearchType.Song:
-      const list: ListMusic[] = api_search.data.lists.map((song, index) => {
-        const privilegeTags: string[] = []
-        if (song.PayType === 2) privilegeTags.push('付费')
-        else if (song.PayType === 3) privilegeTags.push('VIP')
+    switch (type) {
+      case SearchType.Song:
+        const list: ListMusic[] = api_search.data.lists.map((song, index) => {
+          return {
+            id: song.Audioid,
+            hash: song.FileHash,
+            path: null,
+            cover: song.trans_param.union_cover,
+            title: song.OriSongName,
+            artist: song.SingerName,
+            album: song.AlbumName,
+            duration: song.Duration,
+            sort: index,
+            privilegeTags: getPrivilegeTags(song.AlbumPrivilege, song.PayType)
+          }
+        })
 
-        return {
-          id: song.Audioid,
-          hash: song.FileHash,
-          path: null,
-          cover: song.trans_param.union_cover,
-          title: song.OriSongName,
-          artist: song.SingerName,
-          album: song.AlbumName,
-          duration: song.Duration,
-          sort: index,
-          privilegeTags
-        }
-      })
+        listStore.addList(ListType.Show, list, false)
+        break
+      case SearchType.Author:
+        artistList.value.push(
+          ...api_search.data.lists.map((artist) => ({
+            id: artist.AuthorId,
+            cover: artist.Avatar,
+            name: artist.AuthorName,
+            fanscount: artist.FansNum,
+            descibe: '',
+            url: ''
+          }))
+        )
+        break
+      case SearchType.Special:
+        playlistList.value.push(
+          ...api_search.data.lists.map((playlist) => ({
+            id: playlist.gid,
+            cover: playlist.img,
+            title: playlist.specialname,
+            artist: playlist.nickname,
+            play_count: playlist.play_count
+          }))
+        )
+        break
+    }
 
-      listStore.addList(ListType.Show, list, false)
-      break
-    case SearchType.Author:
-      artistList.value = artistList.value.concat(
-        api_search.data.lists.map((artist) => ({
-          id: artist.AuthorId,
-          cover: artist.Avatar,
-          name: artist.AuthorName,
-          fanscount: artist.FansNum,
-          descibe: '',
-          url: ''
-        }))
-      )
-      break
-    case SearchType.Special:
-      playlistList.value = playlistList.value.concat(
-        api_search.data.lists.map((playlist) => ({
-          id: playlist.gid,
-          cover: playlist.img,
-          title: playlist.specialname,
-          artist: playlist.nickname,
-          play_count: playlist.play_count
-        }))
-      )
-      break
+    if (api_search.data.lists.length < PageSize.Default) isFinished.value = true
+  } catch (error) {
+    console.error(error)
   }
 }
 

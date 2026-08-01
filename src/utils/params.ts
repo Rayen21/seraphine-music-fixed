@@ -1,3 +1,8 @@
+/** api invoke 状态 */
+export const enum ApiInvokeStatus {
+  Success = 1
+}
+
 /** 列表类型 */
 export const enum ListType {
   Local = 'local',
@@ -206,19 +211,19 @@ export const enum MenuAction {
   Exit
 }
 
-export const enum WindowName {
+export const enum WindowTarget {
   Main = 'main',
-  DesktopMini = 'desktop-mini',
+  MiniPlayer = 'mini-player',
   DesktopLyric = 'desktop-lyric'
 }
 
 export const enum WindowEvent {
-  DesktopMini = 'desktop-mini:handler',
+  MiniPlayer = 'mini-player:handler',
   DesktopLyric = 'desktop-lyric:handler'
 }
 
 /** 迷你播放器窗口通信类型 */
-export const enum DesktopMiniEmit {
+export const enum MiniPlayerEmit {
   /** 初始化数据 */
   Init,
   /** 发送坐标 */
@@ -275,7 +280,7 @@ export const enum DesktopLyricEmit {
 export const enum ScanStatus {
   Ready,
   Loading,
-  Error,
+  Fail,
   Success
 }
 
@@ -429,6 +434,8 @@ export const DefaultSystemFonts = [
 ] as const
 
 // mini播放器默认尺寸(border:1px)
-export const desktopMiniSize = { width: 298, height: 66 } as const
+export const miniPlayerSize = { width: 298, height: 66 } as const
 // 桌面歌词默认尺寸
 export const desktopLyricSize = { width: 608, height: 112 } as const
+// 歌词提前间隔
+export const FORWARD_DURATION = 150

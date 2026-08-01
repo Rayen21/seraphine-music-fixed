@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
 import { useMusicStore } from '@/stores/music'
 import { PlayingOrigin, PlayingQuality } from '@/utils/params'

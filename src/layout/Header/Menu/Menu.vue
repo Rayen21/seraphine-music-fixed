@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Modal from '@/components/Modal.vue'
 import { notify } from '@/components/Notification'
 import SelectModal from '@/components/SelectModal.vue'
@@ -31,10 +31,15 @@ const menuOptions = computed<Array<SelectOption<MenuAction>>>(() => [
 const menuVisible = ref(false)
 const updateModalVisible = ref(false)
 
-const handleSelect = (action: MenuAction) => {
+const handleSelect = async (action: MenuAction) => {
   switch (action) {
     case MenuAction.Restore:
-      invoke('system_setting_restore_window')
+      try {
+        await invoke('system_setting_restore_window')
+      } catch (error) {
+        console.error(error)
+        notify.error('恢复默认窗口失败')
+      }
       break
     case MenuAction.Update:
       handleCheckUpdate()
@@ -55,16 +60,12 @@ const handleSelect = (action: MenuAction) => {
 
 /** 从菜单触发的更新检查 */
 const handleCheckUpdate = async () => {
-  notify.info('检查更新中...')
-
   await updaterStore.checkUpdate() // 静默检查，我们自己处理 UI
 
   if (!updaterStore.updateInfo) return
 
   if (updaterStore.updateInfo.has_update) {
     updateModalVisible.value = true
-  } else {
-    notify.success('已是最新版本')
   }
 }
 

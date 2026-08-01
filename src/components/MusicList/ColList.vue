@@ -1,12 +1,12 @@
-<script lang="ts" setup>
-import ActionButton from '../ActionButton.vue'
-import SvgIcon from '../SvgIcon.vue'
+﻿<script lang="ts" setup>
 import Card from './Card.vue'
-import { useListStore } from '@/stores/list.ts'
-import { useMusicStore } from '@/stores/music.ts'
-import { useObserver } from '@/utils/hooks.ts'
+import ActionButton from '@/components/ActionButton.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
+import { useListStore } from '@/stores/list'
+import { useMusicStore } from '@/stores/music'
+import { useObserver } from '@/utils/hooks'
 import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools.ts'
+import { getPlayingOrigin } from '@/utils/tools'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
 
 interface Props {
@@ -98,7 +98,7 @@ const { unobserve } = useObserver(
     </div>
 
     <div class="mt-3 flex gap-3">
-      <div v-for="col in cols" :key="col" class="card flex-1 p-2">
+      <div v-for="col in cols" :key="col" class="card border-none flex-1 p-2">
         <div class="flex justify-center">
           <div class="h-6 w-24 rounded-lg bg-card"></div>
         </div>

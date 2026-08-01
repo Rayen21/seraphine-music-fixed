@@ -1,9 +1,5 @@
-import Layout from '@/layout/Layout.vue'
+﻿import Layout from '@/layout/Layout.vue'
 import { useUserStore } from '@/stores/user'
-import Home from '@/views/Home/Home.vue'
-import LocalListTable from '@/views/LocalList/Table.vue'
-import Setting from '@/views/Setting/Setting.vue'
-import UserPlaylistTable from '@/views/UserPlaylist/Table.vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
@@ -14,10 +10,26 @@ const router = createRouter({
       redirect: '/home',
       component: Layout,
       children: [
-        { path: '/home', name: 'Home', component: Home },
-        { path: '/setting', name: 'Setting', component: Setting },
-        { path: '/local-list-table', name: 'LocalListTable', component: LocalListTable },
-        { path: '/user-playlist-table', name: 'UserPlaylistTable', component: UserPlaylistTable },
+        {
+          path: '/home',
+          name: 'Home',
+          component: () => import('@/views/Home/Home.vue')
+        },
+        {
+          path: '/setting',
+          name: 'Setting',
+          component: () => import('@/views/Setting/Setting.vue')
+        },
+        {
+          path: '/local-list-table',
+          name: 'LocalListTable',
+          component: () => import('@/views/LocalList/Table.vue')
+        },
+        {
+          path: '/user-playlist-table',
+          name: 'UserPlaylistTable',
+          component: () => import('@/views/UserPlaylist/Table.vue')
+        },
         {
           path: '/search',
           name: 'Search',
@@ -53,15 +65,17 @@ const router = createRouter({
     {
       path: '/desktop-lyric',
       name: 'DesktopLyric',
-      component: () => import('@/views/DesktopLyric.vue')
+      component: () => import('@/windows/desktop-lyric/DesktopLyric.vue')
     },
     {
-      path: '/desktop-mini',
-      name: 'DesktopMini',
-      component: () => import('@/views/DesktopMini.vue')
+      path: '/mini-player',
+      name: 'MiniPlayer',
+      component: () => import('@/windows/mini-player/MiniPlayer.vue')
     }
   ]
 })
+
+let lastPos = window.history.state?.position ?? 0
 
 router.beforeEach((to) => {
   if (to.path === '/user-playlist-table') {
@@ -69,8 +83,6 @@ router.beforeEach((to) => {
     if (!userStore.userinfo) return { path: '/' }
   }
 })
-
-let lastPos = window.history.state?.position ?? 0
 
 router.afterEach((to) => {
   const pos = window.history.state?.position ?? 0

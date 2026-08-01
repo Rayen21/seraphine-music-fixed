@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Banner from './Banner.vue'
 import ArtistList from '@/views/ArtistList/Card.vue'
 import RankTop from '@/views/RankTop/Card.vue'

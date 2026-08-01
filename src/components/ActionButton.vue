@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import { IconMap, IconName } from '@/utils/icons'
 import { cn } from '@/utils/tools'
 
@@ -32,11 +32,11 @@ const {
 const emits = defineEmits<Emits>()
 
 const themes: Record<BtnTheme, string> = {
-  default: 'border-border bg-card hover:bg-hover',
-  info: ' border-info bg-info-bg text-info hover:bg-info hover:text-neutral-50',
-  success: 'border-success bg-success-bg text-success hover:bg-success hover:text-neutral-50',
-  warning: 'border-warning bg-warning-bg text-warning hover:bg-warning hover:text-neutral-50',
-  error: 'border-error bg-error-bg text-error hover:bg-error hover:text-neutral-50'
+  default: 'action-default',
+  info: 'action-info',
+  success: 'action-success',
+  warning: 'action-warning',
+  error: 'action-error'
 }
 </script>
 

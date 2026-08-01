@@ -1,8 +1,8 @@
-<script lang="ts" setup>
-import ActionButton from '../ActionButton.vue'
-import Image from '../Image.vue'
-import Modal from '../Modal.vue'
-import { notify } from '../Notification.tsx'
+﻿<script lang="ts" setup>
+import ActionButton from '@/components/ActionButton.vue'
+import Image from '@/components/Image.vue'
+import Modal from '@/components/Modal.vue'
+import { notify } from '@/components/Notification.tsx'
 import { formatFileSize, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
@@ -32,10 +32,16 @@ const handleCopy = async (txt: string | number | null) => {
   }
 }
 
-const handleView = () => {
-  if (!musicDetail.value?.path) return
+const handleView = async () => {
+  if (!musicDetail.value) return
 
-  invoke('music_file_open', { path: musicDetail.value.path })
+  try {
+    await invoke('system_path_file_open', { path: musicDetail.value.path })
+  } catch (error) {
+    console.error(error)
+
+    notify.error('打开文件失败')
+  }
 }
 
 watch(visible, async (visible) => {

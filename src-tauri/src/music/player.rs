@@ -34,7 +34,7 @@ const DEVICE_INTERVAL: Duration = Duration::from_millis(1000);
 const PLAY_INTERVAL: Duration = Duration::from_millis(16);
 // 下载进度的获取间隔
 const DOWNLOAD_INTERVAL: Duration = Duration::from_millis(100);
-// 最小读取文件大小 128 kb
+// 最小读取文件大小
 const MIN_READ_SIZE: u64 = 1024 * 128;
 
 #[derive(Debug, Clone, Serialize)]
@@ -119,7 +119,7 @@ impl Player {
               if let Ok(mut audio_writer) = audio.write() {
                 match audio_writer.reload_device(device) {
                   Ok(_) => {
-                    if let Err(e) = app.emit("reload_device", true) {
+                    if let Err(e) = app.emit("music:reload_device", true) {
                       eprintln!("{e}");
                     };
                   }
@@ -306,16 +306,16 @@ pub async fn music_player_load_url(
 ) -> Result<(), String> {
   // 验证 hash 参数的合法性
   if !is_valid_hash(&hash) {
-    return Err("无效的哈希值".to_string());
+    return Err(String::from("无效的哈希值"));
   }
 
   let response = HttpRequest::get(path).await.map_err(|e| e.to_string())?;
   let file_size = response
     .content_length()
-    .ok_or_else(|| "无法获取文件大小".to_string())?;
+    .ok_or_else(|| String::from("无法获取文件大小"))?;
 
   if file_size == 0 {
-    return Err("文件大小为0".to_string());
+    return Err(String::from("文件大小为0"));
   }
 
   // 保存id快照
@@ -354,7 +354,7 @@ pub fn music_player_monitor_download(state: State<Player>, channel: Channel<f32>
   let current_channel_id = download_channel_id.fetch_add(1, Ordering::AcqRel) + 1;
 
   async_runtime::spawn(async move {
-    let mut interval = time::interval(PLAY_INTERVAL);
+    let mut interval = time::interval(DOWNLOAD_INTERVAL);
 
     loop {
       if current_channel_id != download_channel_id.load(Ordering::Acquire) {
@@ -375,8 +375,6 @@ pub fn music_player_monitor_download(state: State<Player>, channel: Channel<f32>
         eprintln!("发送进度事件失败: {}", e);
         break;
       }
-
-      time::sleep(DOWNLOAD_INTERVAL).await;
     }
   });
 }

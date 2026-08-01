@@ -1,6 +1,6 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ColList from '@/components/MusicList/ColList.vue'
-import { AreaTypes } from '@/utils/params'
+import { ApiInvokeStatus, AreaTypes } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 
 const router = useRouter()
@@ -24,28 +24,33 @@ const handleLoad = async () => {
         tags: [],
         count: 0
       }
+      let list: CardInfo[] = []
 
-      const api_artist_list = await invoke('api_artist_list', {
-        areaType: item.type,
-        musician: item.musician,
-        pageSize: 3
-      })
-      if (api_artist_list?.status !== 1) return { info, list: [] }
-
-      const list: CardInfo[] = api_artist_list.data.info.map((singer) => ({
-        id: singer.singerid,
-        cover: singer.imgurl,
-        title: singer.singername,
-        artist: '',
-        artistInfo: {
-          id: singer.singerid,
-          cover: singer.imgurl,
-          name: singer.singername,
-          fanscount: singer.fanscount,
-          descibe: singer.descibe,
-          url: singer.url
+      try {
+        const api_artist_list = await invoke('api_artist_list', {
+          areaType: item.type,
+          musician: item.musician,
+          pageSize: 3
+        })
+        if (api_artist_list.status === ApiInvokeStatus.Success) {
+          list = api_artist_list.data.info.map((singer) => ({
+            id: singer.singerid,
+            cover: singer.imgurl,
+            title: singer.singername,
+            artist: '',
+            artistInfo: {
+              id: singer.singerid,
+              cover: singer.imgurl,
+              name: singer.singername,
+              fanscount: singer.fanscount,
+              descibe: singer.descibe,
+              url: singer.url
+            }
+          }))
         }
-      }))
+      } catch (error) {
+        console.log(error)
+      }
 
       return { info, list }
     })

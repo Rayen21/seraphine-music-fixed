@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
 import { notify } from '@/components/Notification'
@@ -35,7 +35,7 @@ const scanStatusText = computed(() => {
       return '准备扫描'
     case ScanStatus.Loading:
       return '正在扫描...'
-    case ScanStatus.Error:
+    case ScanStatus.Fail:
       return '扫描失败'
     case ScanStatus.Success:
       return `扫描完成, 找到 ${scanList.value.length} 首`
@@ -85,23 +85,29 @@ const scanMusic = async () => {
 
   scanStatus.value = ScanStatus.Loading
 
-  const music_scan_dir = await invoke('music_scan_dir', {
-    dirPaths: scanPaths.value,
-    scanTypes: scanTypes.value.filter((type) => type !== 'all'),
-    startIndex: list.value.list.length
-  })
-  // 中断返回null
-  if (music_scan_dir === null) {
-    scanStatus.value = ScanStatus.Ready
-    return
-  }
-  if (music_scan_dir === undefined) {
-    scanStatus.value = ScanStatus.Error
-    return
-  }
+  try {
+    const music_scan_dir = await invoke('music_scan_dir', {
+      dirPaths: scanPaths.value,
+      scanTypes: scanTypes.value.filter((type) => type !== 'all'),
+      startIndex: list.value.list.length
+    })
+    // 中断返回null
+    if (music_scan_dir === null) {
+      scanStatus.value = ScanStatus.Ready
+      return
+    }
+    if (music_scan_dir === undefined) {
+      scanStatus.value = ScanStatus.Fail
+      return
+    }
+    scanList.value = music_scan_dir
+    scanStatus.value = ScanStatus.Success
+  } catch (error) {
+    console.error(error)
+    notify.error('扫描歌曲失败')
 
-  scanList.value = music_scan_dir
-  scanStatus.value = ScanStatus.Success
+    scanStatus.value = ScanStatus.Fail
+  }
 }
 
 const addMusic = () => {
@@ -128,7 +134,14 @@ const handleReset = () => {
 
 const handleCancel = async () => {
   // 如果正在扫描中,取消扫描
-  if (scanStatus.value === ScanStatus.Loading) await invoke('music_scan_cancel')
+  if (scanStatus.value === ScanStatus.Loading) {
+    try {
+      await invoke('music_scan_cancel')
+    } catch (error) {
+      console.error(error)
+      notify.error('取消扫描失败')
+    }
+  }
 
   handleReset()
   emits('close')

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { notify } from '@/components/Notification'
 import SvgIcon from '@/components/SvgIcon.vue'
@@ -7,7 +7,7 @@ import { useContextMenuStore } from '@/stores/context-menu'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
-import { ListType } from '@/utils/params'
+import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { getFullName, getPlayingOrigin, invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 
@@ -52,19 +52,22 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
         children: userStore.userPlaylist.map((list) => ({
           label: list.name,
           onClick: async () => {
-            const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-              listId: list.list_create_listid,
-              musicList: [{ name: music.title, hash: music.hash }]
-            })
-            if (playlist_tracks_add?.status !== 1) {
-              notify.error('添加失败')
-            } else {
-              notify.success('添加成功')
-
-              // 如果是添加到我喜欢,同步列表
-              if (list.is_def === 2) {
-                listStore.addLikeList(music.id)
+            try {
+              const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+                listId: list.list_create_listid,
+                musicList: [{ name: music.title, hash: music.hash }]
+              })
+              if (playlist_tracks_add.status !== ApiInvokeStatus.Success) {
+                notify.error('添加失败')
+                return
               }
+
+              notify.success('添加成功')
+              // 如果是添加到我喜欢,同步列表
+              if (list.is_def === 2) listStore.addLikeList(music.id)
+            } catch (error) {
+              console.error(error)
+              notify.error('添加失败')
             }
           }
         }))
@@ -81,22 +84,27 @@ const handlePlay = async (music: ListMusic) => {
 }
 
 const handleLike = async (music: ListMusic) => {
-  if (isLike(music.id)) {
-    const playlist_tracks_del = await invoke('api_playlist_tracks_del', {
-      listId: listStore.show.info.id,
-      fileIds: [music.id]
-    })
-    if (playlist_tracks_del?.status !== 1) return
+  try {
+    if (isLike(music.id)) {
+      const api_playlist_tracks_del = await invoke('api_playlist_tracks_del', {
+        listId: listStore.show.info.id,
+        fileIds: [music.id]
+      })
+      if (api_playlist_tracks_del.status !== ApiInvokeStatus.Success) return
 
-    listStore.removeLikeList(music.id)
-  } else {
-    const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-      listId: +listStore.like.info.id,
-      musicList: [{ name: music.title, hash: music.hash }]
-    })
-    if (playlist_tracks_add?.status !== 1) return
+      listStore.removeLikeList(music.id)
+    } else {
+      const api_playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+        listId: listStore.like.info.id,
+        musicList: [{ name: music.title, hash: music.hash }]
+      })
+      if (api_playlist_tracks_add.status !== ApiInvokeStatus.Success) return
 
-    listStore.addLikeList(music.id)
+      listStore.addLikeList(music.id)
+    }
+  } catch (error) {
+    console.error(error)
+    notify.error('操作失败')
   }
 }
 </script>

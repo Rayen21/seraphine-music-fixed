@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Add from './Actions/Add/Add.vue'
 import AllCheckBtn from './Actions/AllCheck.vue'
 import CancelBtn from './Actions/Cancel.vue'
@@ -9,7 +9,7 @@ import RemoveBtn from './Actions/Remove.vue'
 import Search from './Actions/Search.vue'
 import Sort from './Actions/Sort.vue'
 import { useListStore } from '@/stores/list'
-import { ListType } from '@/utils/params.ts'
+import { ListType } from '@/utils/params'
 
 const listType = inject<ListType>('listType', ListType.Show)
 

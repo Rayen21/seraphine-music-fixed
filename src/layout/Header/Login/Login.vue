@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Form from './Form.vue'
 import QRCode from './QRCode.vue'
 import Sidebar from './Sidebar.vue'
@@ -9,8 +9,8 @@ import { notify } from '@/components/Notification.tsx'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useUserStore } from '@/stores/user'
-import { LoginMode, UserAction } from '@/utils/params.ts'
-import { invoke } from '@/utils/tools.ts'
+import { ApiInvokeStatus, LoginMode, UserAction } from '@/utils/params'
+import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 
 const route = useRoute()
@@ -42,25 +42,33 @@ const handleSelect = async (value: UserAction) => {
         return
       }
 
-      const youth_day_vip = await invoke('api_youth_day_vip')
-      if (youth_day_vip?.status !== 1) {
-        notify.error('领取畅听VIP失败')
-        return
-      }
+      try {
+        const youth_day_vip = await invoke('api_youth_day_vip')
+        if (youth_day_vip.status !== ApiInvokeStatus.Success) {
+          notify.error('领取畅听VIP失败')
+          return
+        }
 
-      const youth_day_upgrade = await invoke('api_youth_day_upgrade')
-      if (youth_day_upgrade?.status !== 1) {
-        notify.error('升级VIP失败')
-        return
-      }
+        const youth_day_upgrade = await invoke('api_youth_day_upgrade')
+        if (youth_day_upgrade.status !== ApiInvokeStatus.Success) {
+          notify.error('升级VIP失败')
+          return
+        }
 
-      notify.success('升级VIP成功')
-      userStore.isVip = true
+        notify.success('升级VIP成功')
+        userStore.setVipStatus(true)
+      } catch (error) {
+        console.error(error)
+        notify.error('领取会员失败')
+      }
       break
     case UserAction.Info:
+      // TODO: 个人资料
       break
     case UserAction.Logout:
       userStore.logout()
+
+      // 如果在歌单页面,重定向到首页
       if (route.path === '/user-playlist-table') router.replace('/')
       break
   }

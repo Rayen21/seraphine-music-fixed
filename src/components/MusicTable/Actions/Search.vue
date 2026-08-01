@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListContext } from '@/utils/hooks'
 import { Interval } from '@/utils/params'

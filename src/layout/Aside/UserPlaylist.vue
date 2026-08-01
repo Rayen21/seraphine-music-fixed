@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import Modal from '@/components/Modal.vue'
 import { notify } from '@/components/Notification'
@@ -10,7 +10,7 @@ import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useRefreshStore } from '@/stores/refresh'
 import { useUserStore } from '@/stores/user'
-import { AddPlaylistType, ListType, PageSize, PlaylistType } from '@/utils/params'
+import { AddPlaylistType, ApiInvokeStatus, ListType, PageSize, PlaylistType } from '@/utils/params'
 import { getPic, getPlayingOrigin, getPrivilegeTags, invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 
@@ -27,10 +27,15 @@ const slideOptions: Array<SelectOption<PlaylistType>> = [
   { label: '自建歌单', value: PlaylistType.User },
   { label: '收藏歌单', value: PlaylistType.Collection }
 ]
-const addOptions: Array<SelectOption<AddPlaylistType>> = [
-  { label: '新建歌单', value: AddPlaylistType.Add, prefixIcon: 'Plus' },
+const addOptions = computed<Array<SelectOption<AddPlaylistType>>>(() => [
+  {
+    label: '新建歌单',
+    value: AddPlaylistType.Add,
+    prefixIcon: 'Plus',
+    disabled: !userStore.userinfo
+  },
   { label: '导入歌单', value: AddPlaylistType.Import, prefixIcon: 'Link', disabled: true }
-]
+])
 
 let likePlaylistGid = ''
 
@@ -50,39 +55,44 @@ const transition = computed(() =>
 )
 
 const getUserPlaylist = async () => {
-  const api_playlist_user = await invoke('api_playlist_user', { pageSize: 300 })
-  if (api_playlist_user?.status !== 1) return
+  try {
+    const api_playlist_user = await invoke('api_playlist_user', { pageSize: PageSize.Max })
+    if (api_playlist_user.status !== 1) return
 
-  userPlaylist.value = api_playlist_user.data.info.map((playlist) => {
-    if (playlist.is_def === 1) {
-      // 默认收藏
-      playlist.sort = 0
-    } else if (playlist.is_def === 2) {
-      // 我喜欢
-      playlist.sort = 1
+    userPlaylist.value = api_playlist_user.data.info.map((playlist) => {
+      if (playlist.is_def === 1) {
+        // 默认收藏
+        playlist.sort = 0
+      } else if (playlist.is_def === 2) {
+        // 我喜欢
+        playlist.sort = 1
 
-      likePlaylistGid = playlist.list_create_gid
-      listStore.setLikeList({
-        info: {
-          id: playlist.list_create_listid,
-          cover: '',
-          title: '我喜欢',
-          artist: '',
-          count: playlist.count,
-          tags: []
-        },
-        list: []
-      })
-    } else {
-      // 默认0, +2确保 默认收藏/我喜欢 在顶部
-      playlist.sort += 2
-    }
+        likePlaylistGid = playlist.list_create_gid
+        listStore.setLikeList({
+          info: {
+            id: playlist.list_create_listid,
+            cover: '',
+            title: '我喜欢',
+            artist: '',
+            count: playlist.count,
+            tags: []
+          },
+          list: []
+        })
+      } else {
+        // 默认0, +2确保 默认收藏/我喜欢 在顶部
+        playlist.sort += 2
+      }
 
-    return playlist
-  })
+      return playlist
+    })
 
-  userPlaylist.value.sort((a, b) => a.sort - b.sort)
-  userStore.setUserPlaylist(userPlaylist.value.filter((list) => list.type === PlaylistType.User))
+    userPlaylist.value.sort((a, b) => a.sort - b.sort)
+    userStore.setUserPlaylist(userPlaylist.value.filter((list) => list.type === PlaylistType.User))
+  } catch (error) {
+    console.error(error)
+    notify.error('获取用户歌单失败')
+  }
 }
 
 const clearUserPlaylist = () => {
@@ -93,15 +103,20 @@ const getLikePlaylist = async () => {
   let page = 1
   const list: ID[] = []
 
-  while (list.length < listStore.like.info.count) {
-    const playlist_tracks_all = await invoke('api_playlist_tracks_all', {
-      gid: likePlaylistGid,
-      page: page++,
-      pageSize: PageSize.Max
-    })
-    if (playlist_tracks_all?.status !== 1) break
+  try {
+    while (list.length < listStore.like.info.count) {
+      const playlist_tracks_all = await invoke('api_playlist_tracks_all', {
+        gid: likePlaylistGid,
+        page: page++,
+        pageSize: PageSize.Max
+      })
+      if (playlist_tracks_all.status !== ApiInvokeStatus.Success) break
 
-    list.push(...playlist_tracks_all.data.songs.map((song) => song.fileid))
+      list.push(...playlist_tracks_all.data.songs.map((song) => song.fileid))
+    }
+  } catch (error) {
+    console.error(error)
+    notify.error('获取歌单歌曲失败')
   }
 
   listStore.like.info.count = list.length
@@ -120,63 +135,69 @@ const handleAddSelect = (type: AddPlaylistType) => {
   addSelectVisible.value = false
 }
 
-const handlePlay = async (playlist: Playlist) => {
-  if (playlist.list_create_listid === listStore.play.info.id) return
-
-  const info: ListInfo = {
-    id: playlist.list_create_listid,
-    cover: playlist.pic,
-    title: playlist.name,
-    artist: playlist.list_create_username,
-    tags: playlist.musiclib_tags.map((tag) => tag.tag_name),
-    count: playlist.count
-  }
-  const list: ListMusic[] = []
-
-  let page = 1
-  let total = 0
-
-  // 获取全部歌曲
-  while (total < playlist.count) {
-    const playlist_tracks_all = await invoke('api_playlist_tracks_all', {
-      gid: playlist.list_create_gid,
-      page: page++,
-      pageSize: PageSize.Max
-    })
-    if (playlist_tracks_all?.status !== 1) break
-
-    total += playlist_tracks_all.data.songs.length
-
-    for (const song of playlist_tracks_all.data.songs) {
-      if (!song.hash) continue
-
-      const [artist, title] = song.name.split('-')
-
-      list.push({
-        id: song.fileid,
-        path: null,
-        hash: song.hash,
-        title: title.trim(),
-        artist: artist.trim(),
-        album: song.albuminfo.name,
-        cover: song.trans_param.union_cover,
-        duration: song.timelen / 1000,
-        sort: song.sort,
-        privilegeTags: getPrivilegeTags(song.privilege, song.download[0].pay_type)
-      })
-    }
-  }
-
-  listStore.setList(ListType.Play, { info, list })
-  musicStore.setMusic(list[0], { origin: getPlayingOrigin(list[0]) })
-}
-
 const handleContextMenu = (e: MouseEvent, playlist: Playlist) => {
   contextMenuStore.show({
     x: e.clientX,
     y: e.clientY,
     options: [
-      { label: '播放', prefixIcon: 'Play', onClick: () => handlePlay(playlist) },
+      {
+        label: '播放',
+        prefixIcon: 'Play',
+        onClick: async () => {
+          if (playlist.list_create_listid === listStore.play.info.id) return
+
+          const info: ListInfo = {
+            id: playlist.list_create_listid,
+            cover: playlist.pic,
+            title: playlist.name,
+            artist: playlist.list_create_username,
+            tags: playlist.musiclib_tags.map((tag) => tag.tag_name),
+            count: playlist.count
+          }
+          const list: ListMusic[] = []
+
+          try {
+            let page = 1
+            let total = 0
+
+            while (total < playlist.count) {
+              const playlist_tracks_all = await invoke('api_playlist_tracks_all', {
+                gid: playlist.list_create_gid,
+                page: page++,
+                pageSize: PageSize.Max
+              })
+              if (playlist_tracks_all.status !== ApiInvokeStatus.Success) break
+
+              total += playlist_tracks_all.data.songs.length
+
+              for (const song of playlist_tracks_all.data.songs) {
+                if (!song.hash) continue
+
+                const [artist, title] = song.name.split('-')
+
+                list.push({
+                  id: song.fileid,
+                  path: null,
+                  hash: song.hash,
+                  title: title.trim(),
+                  artist: artist.trim(),
+                  album: song.albuminfo.name,
+                  cover: song.trans_param.union_cover,
+                  duration: song.timelen / 1000,
+                  sort: song.sort,
+                  privilegeTags: getPrivilegeTags(song.privilege, song.download[0].pay_type)
+                })
+              }
+            }
+          } catch (error) {
+            console.error(error)
+            notify.error('获取歌单歌曲失败')
+          }
+
+          listStore.setList(ListType.Play, { info, list })
+          musicStore.setMusic(list[0], { origin: getPlayingOrigin(list[0]) })
+        }
+      },
       { label: '分享', prefixIcon: 'Share', disabled: true, onClick: () => 'TODO: 分享' },
       { divider: true },
       {
@@ -214,25 +235,30 @@ const handlePlaylistClick = async (playlist: Playlist) => {
 }
 
 const handleAddConfirm = async () => {
-  if (addLoading.value) return
-  if (!userStore.userinfo) return notify.error('暂不支持本地歌单')
-  if (!addForm.value.name) return notify.error('请填写歌单名称')
-
-  addLoading.value = true
-
-  const api_playlist_add = await invoke('api_playlist_add', {
-    name: addForm.value.name,
-    isPri: addForm.value.isPri,
-    listCreateUserid: userStore.userinfo.userid
-  })
-  if (api_playlist_add?.status !== 1) {
-    addLoading.value = false
+  if (addLoading.value || !userStore.userinfo) return
+  if (!addForm.value.name) {
+    notify.error('请填写歌单名称')
     return
   }
+  addLoading.value = true
 
-  notify.success('创建歌单成功')
-  handleAddCancel()
-  getUserPlaylist()
+  try {
+    const api_playlist_add = await invoke('api_playlist_add', {
+      name: addForm.value.name,
+      isPri: addForm.value.isPri,
+      listCreateUserid: userStore.userinfo.userid
+    })
+    if (api_playlist_add.status === ApiInvokeStatus.Success) {
+      handleAddCancel()
+      getUserPlaylist()
+      notify.success('创建歌单成功')
+    }
+  } catch (error) {
+    console.error(error)
+    notify.error('创建歌单失败')
+  } finally {
+    addLoading.value = false
+  }
 }
 
 const handleAddCancel = () => {

@@ -1,6 +1,6 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
-import { useMainLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
 import { LyricFormat, LyricTransMode } from '@/utils/params'
@@ -13,7 +13,7 @@ interface Emits {
 
 const emits = defineEmits<Emits>()
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 const musicStore = useMusicStore()
 const settingStore = useSettingStore()
 
@@ -25,13 +25,16 @@ let wheelTimer: number | null = null // 滚轮定时器
 const lyricPadding = ref(0) // 歌词容器内边距
 const isWheelling = ref(false) // 鼠标滚轮是否正在滚动
 
+// 当前歌词的偏移量
+const lyricOffset = computed(() =>
+  lyricStore.lyric ? lyricStore.offsetMap[lyricStore.lyric.id] || 0 : 0
+)
 const fontSize = computed(
   () =>
     lyricStore.setting.fontSize + (settingStore.isFullscreen || settingStore.isMaximized ? 4 : 0)
 )
 const wordHeight = computed(() => fontSize.value + 4)
 const linePadding = computed(() => fontSize.value / 2)
-
 // 行高（根据翻译显示模式动态计算）
 const lineHeight = computed(() => {
   const baseHeight = wordHeight.value + linePadding.value * 2
@@ -44,7 +47,7 @@ const lineHeight = computed(() => {
 const currentIndex = computed(() => {
   if (!lyricStore.lyric) return -1
 
-  const progress = (musicStore.playProgress + lyricStore.offset) * 1000 + FORWARD_DURATION
+  const progress = (musicStore.playProgress + lyricOffset.value) * 1000 + FORWARD_DURATION
   return lyricStore.lyric.lines.findIndex((line, index, list) => {
     const start = line.offset
     const end = list[index + 1]?.offset || Infinity
@@ -67,10 +70,11 @@ const setLyricPadding = async () => {
 }
 
 // 获取单词进度百分比
-const getWordProgress = (offset: number, duration: number) => {
-  const pg = (musicStore.playProgress + lyricStore.offset) * 1000 - offset
-  return `${Math.max(0, Math.min(1, pg / duration)) * 100}%`
-}
+const getWordProgress = (offset: number, duration: number) =>
+  Math.max(
+    0,
+    Math.min(1, ((musicStore.playProgress + lyricOffset.value) * 1000 - offset) / duration)
+  ) * 100
 
 // 滚动到当前行
 const scrollToLine = () => {
@@ -181,7 +185,7 @@ onUnmounted(clearWhellTimer)
               v-for="(word, wordIndex) in line.words"
               :key="wordIndex"
               class="music-lyric"
-              :style="{ '--word-progress': getWordProgress(word.offset, word.duration) }">
+              :style="{ '--word-progress': `${getWordProgress(word.offset, word.duration)}%` }">
               {{ word.text }}
             </span>
           </template>

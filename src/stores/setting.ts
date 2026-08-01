@@ -1,4 +1,4 @@
-import { useMusicStore } from './music'
+﻿import { useMusicStore } from './music'
 import { notify } from '@/components/Notification'
 import { AutoStartMode, CloseStatus, DefaultSystemFonts, ShortcutKey } from '@/utils/params'
 import {
@@ -36,8 +36,7 @@ export const useSettingStore = defineStore(
     const mediaShortcutState = ref(true) // 媒体快捷键状态
     const shortcutMap = ref({ ...Default_Shortcut }) // 快捷键映射
     const device = ref('') // 设备ID
-    const version = ref('') // 应用版本
-    const desktopMiniPosition = ref({ x: 0, y: 0 }) // mini播放器坐标
+    const miniPlayerPosition = ref({ x: 0, y: 0 }) // mini播放器坐标
     const desktopLyricPosition = ref({ x: 0, y: 0 }) //桌面歌词坐标
 
     const musicStore = useMusicStore()
@@ -53,9 +52,15 @@ export const useSettingStore = defineStore(
       { once: true }
     )
 
-    const toggleAutoLiteVipState = () => (autoLiteVipState.value = !autoLiteVipState.value)
-    const toggleMaximizedState = (state: boolean) => (isMaximized.value = state)
-    const toggleFullscreenState = (state: boolean) => (isFullscreen.value = state)
+    const toggleAutoLiteVipState = () => {
+      autoLiteVipState.value = !autoLiteVipState.value
+    }
+    const toggleMaximizedState = (state: boolean) => {
+      isMaximized.value = state
+    }
+    const toggleFullscreenState = (state: boolean) => {
+      isFullscreen.value = state
+    }
     const getAvailableFonts = () => {
       const canvas = document.createElement('canvas')
       const context = canvas.getContext('2d')
@@ -78,10 +83,18 @@ export const useSettingStore = defineStore(
 
       availableFonts.value = fonts
     }
-    const setFontFamily = (font: FontValue) => (fontFamily.value = font)
-    const toggleAutoStartState = (state: boolean) => (autoStartState.value = state)
-    const setAutoStartMode = (mode: AutoStartMode) => (autoStartMode.value = mode)
-    const setCloseStatus = (status: CloseStatus) => (closeStatus.value = status)
+    const setFontFamily = (font: FontValue) => {
+      fontFamily.value = font
+    }
+    const toggleAutoStartState = (state: boolean) => {
+      autoStartState.value = state
+    }
+    const setAutoStartMode = (mode: AutoStartMode) => {
+      autoStartMode.value = mode
+    }
+    const setCloseStatus = (status: CloseStatus) => {
+      closeStatus.value = status
+    }
     const toggleGlobalShortcutState = () => {
       globalShortcutState.value = !globalShortcutState.value
 
@@ -100,10 +113,16 @@ export const useSettingStore = defineStore(
         unregisterMediaShortcut()
       }
     }
-    const setDevice = (id: string) => (device.value = id)
+    const setDevice = (id: string) => {
+      device.value = id
+    }
 
-    const setShortcutMap = (key: ShortcutKey, value: string) => (shortcutMap.value[key] = value)
-    const resetShortcutMap = () => (shortcutMap.value = { ...Default_Shortcut })
+    const setShortcutMap = (key: ShortcutKey, value: string) => {
+      shortcutMap.value[key] = value
+    }
+    const resetShortcutMap = () => {
+      shortcutMap.value = { ...Default_Shortcut }
+    }
 
     // 注册全局快捷键
     const registerGlobalShortcut = async (type: ShortcutKey) => {
@@ -178,8 +197,8 @@ export const useSettingStore = defineStore(
             })
             break
         }
-      } catch (e) {
-        console.error(e)
+      } catch (error) {
+        console.error(error)
 
         mediaShortcutState.value = false
         notify.error('注册失败, 可能被占用')
@@ -229,8 +248,8 @@ export const useSettingStore = defineStore(
 
           musicStore.playPrevOrNext('prev')
         })
-      } catch (e) {
-        console.error(e)
+      } catch (error) {
+        console.error(error)
 
         mediaShortcutState.value = false
         notify.error('媒体快捷键启用失败, 可能被占用')
@@ -245,12 +264,8 @@ export const useSettingStore = defineStore(
       unregister('MediaTrackPrevious')
     }
 
-    const setVersion = (ver: string) => {
-      version.value = ver
-    }
-
-    const setDesktopMiniPosition = (pos: { x: number; y: number }) => {
-      desktopMiniPosition.value = pos
+    const setMiniPlayerPosition = (pos: { x: number; y: number }) => {
+      miniPlayerPosition.value = pos
     }
 
     const setdesktopLyricPosition = (pos: { x: number; y: number }) => {
@@ -271,8 +286,7 @@ export const useSettingStore = defineStore(
       mediaShortcutState,
       shortcutMap,
       device,
-      version,
-      desktopMiniPosition,
+      miniPlayerPosition,
       desktopLyricPosition,
 
       toggleAutoLiteVipState,
@@ -292,8 +306,7 @@ export const useSettingStore = defineStore(
       unregisterGlobalShortcut,
       registerAllGlobalShortcut,
       unregisterAllGlobalShortcut,
-      setVersion,
-      setDesktopMiniPosition,
+      setMiniPlayerPosition,
       setdesktopLyricPosition
     }
   },
@@ -310,7 +323,7 @@ export const useSettingStore = defineStore(
         'mediaShortcutState',
         'shortcutMap',
         'device',
-        'desktopMiniPosition',
+        'miniPlayerPosition',
         'desktopLyricPosition'
       ],
       afterHydrate: (ctx) => (ctx.store.isHydrated = true)

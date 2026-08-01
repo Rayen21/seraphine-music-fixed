@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'

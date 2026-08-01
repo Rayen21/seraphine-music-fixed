@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import Modal from './Modal.vue'
-import { notify } from './Notification.tsx'
-import SvgIcon from './SvgIcon.vue'
-import { useDesktopMiniBridge } from '@/composables/useDesktopMiniBridge.ts'
+import Modal from '@/components/Modal.vue'
+import { notify } from '@/components/Notification.tsx'
+import SvgIcon from '@/components/SvgIcon.vue'
+import { useMiniPlayerBridge } from '@/composables/useMiniPlayerBridge'
 import { useSettingStore } from '@/stores/setting'
-import { CloseStatus, WindowName, desktopMiniSize } from '@/utils/params'
+import { CloseStatus, WindowTarget, miniPlayerSize } from '@/utils/params'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useColorMode } from '@vueuse/core'
@@ -18,24 +18,24 @@ const miniWindow = ref<WebviewWindow>()
 const closeVisible = ref(false)
 const closeStatus = ref(settingStore.closeStatus ?? CloseStatus.Hide)
 
-const miniBridge = useDesktopMiniBridge(miniWindow, mainWindow)
+const miniBridge = useMiniPlayerBridge(miniWindow, mainWindow)
 
 const handleColor = () => {
   colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
 }
 
-const handleDesktopMini = async () => {
+const handleMiniPlayer = async () => {
   if (!miniWindow.value) {
     const scaleFactor = await mainWindow.scaleFactor()
 
-    const { width, height } = desktopMiniSize
-    const { x, y } = settingStore.desktopMiniPosition
+    const { width, height } = miniPlayerSize
+    const { x, y } = settingStore.miniPlayerPosition
     const logicalX = x / scaleFactor || Math.round(window.screen.availWidth - width - 16)
     const logicalY = y / scaleFactor || 48
 
-    miniWindow.value = new WebviewWindow(WindowName.DesktopMini, {
+    miniWindow.value = new WebviewWindow(WindowTarget.MiniPlayer, {
       title: '迷你播放器',
-      url: '/desktop-mini.html',
+      url: '/mini-player.html',
       width,
       height,
       x: logicalX,
@@ -112,7 +112,7 @@ const handleConfirm = () => {
     size="18"
     @click="handleColor" />
 
-  <SvgIcon class="action-icon" name="PIP" size="18" title="迷你播放器" @click="handleDesktopMini" />
+  <SvgIcon class="action-icon" name="PIP" size="18" title="迷你播放器" @click="handleMiniPlayer" />
 
   <SvgIcon class="action-icon" name="Minimize" @click="handleMinimize" />
 

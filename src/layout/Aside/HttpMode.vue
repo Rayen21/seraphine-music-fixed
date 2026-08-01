@@ -1,4 +1,5 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
+import { notify } from '@/components/Notification'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { invoke } from '@/utils/tools'
@@ -9,23 +10,37 @@ const modeOptions = ref<SelectOption[]>([])
 const modeSelection = ref<SelectOption>()
 
 const getModeList = async () => {
-  const http_mode_list = await invoke('http_mode_list')
-  if (http_mode_list) modeOptions.value = http_mode_list
+  try {
+    modeOptions.value = await invoke('http_mode_list')
+  } catch (error) {
+    console.error(error)
+    notify.error('获取模式列表失败')
+  }
 }
 
 const getMode = async () => {
-  const http_mode_get = await invoke('http_mode_get')
-  modeSelection.value = modeOptions.value.find((option) => option.value === http_mode_get)
+  try {
+    const http_mode_get = await invoke('http_mode_get')
+    modeSelection.value = modeOptions.value.find((option) => option.value === http_mode_get)
+  } catch (error) {
+    console.error(error)
+    notify.error('获取当前模式失败')
+  }
 }
 
 const modeSelect = async (mode: string) => {
   const existMode = modeOptions.value.find((option) => option.value === mode)
   if (!existMode) return
 
-  await invoke('http_mode_set', { mode })
-  modeSelection.value = existMode
-  modeVisible.value = false
-  window.location.reload()
+  try {
+    await invoke('http_mode_set', { mode })
+    modeSelection.value = existMode
+    modeVisible.value = false
+    window.location.reload()
+  } catch (error) {
+    console.error(error)
+    notify.error('设置模式失败')
+  }
 }
 
 onMounted(async () => {

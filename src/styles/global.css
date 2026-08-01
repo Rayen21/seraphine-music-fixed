@@ -94,7 +94,6 @@
   .card-actived {
     @apply bg-actived text-background;
   }
-
   .music-title {
     @apply truncate font-bold leading-6;
   }
@@ -104,5 +103,21 @@
 
   .action-icon {
     @apply size-8 cursor-pointer transition-[color,transform] hover:text-minor active:scale-90;
+  }
+
+  .action-default {
+    @apply border-border bg-card hover:bg-hover;
+  }
+  .action-info {
+    @apply border-info bg-info-bg text-info hover:bg-info hover:text-neutral-50;
+  }
+  .action-success {
+    @apply border-success bg-success-bg text-success hover:bg-success hover:text-neutral-50;
+  }
+  .action-warning {
+    @apply border-warning bg-warning-bg text-warning hover:bg-warning hover:text-neutral-50;
+  }
+  .action-error {
+    @apply border-error bg-error-bg text-error hover:bg-error hover:text-neutral-50;
   }
 }

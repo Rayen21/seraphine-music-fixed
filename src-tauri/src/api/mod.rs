@@ -1,6 +1,7 @@
 pub mod artist;
 // pub mod images;
 pub mod album;
+pub mod audio;
 pub mod lib;
 pub mod login;
 pub mod lyric;

@@ -1,12 +1,12 @@
-<script lang="ts" setup>
-import ActionButton from '../ActionButton.vue'
-import SvgIcon from '../SvgIcon.vue'
+﻿<script lang="ts" setup>
 import Card from './Card.vue'
-import { useListStore } from '@/stores/list.ts'
-import { useMusicStore } from '@/stores/music.ts'
-import { useObserver } from '@/utils/hooks.ts'
+import ActionButton from '@/components/ActionButton.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
+import { useListStore } from '@/stores/list'
+import { useMusicStore } from '@/stores/music'
+import { useObserver } from '@/utils/hooks'
 import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools.ts'
+import { getPlayingOrigin } from '@/utils/tools'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
 
 interface Props {

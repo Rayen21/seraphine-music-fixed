@@ -166,6 +166,23 @@ impl HttpConfig {
     }
   }
 
+  /// 清除 kg 的动态配置
+  /// 这将清除当前模式的 cookies，包括 mobile 和 lite 模式。
+  pub fn clear_kg_dynamic_config(app_handle: &AppHandle) -> anyhow::Result<()> {
+    let mut config = DYNAMIC_CONFIG.write().map_err(|e| anyhow!(e.to_string()))?;
+
+    match HttpMode::get_mode() {
+      Mode::KgMobile => config.kg.mobile.cookies = KgCookies::default(),
+      Mode::KgLite => config.kg.lite.cookies = KgCookies::default(),
+    }
+
+    let store = app_handle.store(STORE_PATH)?;
+    store.set(CONFIG_KEY, json!(*config));
+    store.save()?;
+
+    Ok(())
+  }
+
   /// 获取 kg 的静态配置
   pub fn get_kg_static_config() -> &'static KgStaticConfig {
     match HttpMode::get_mode() {
@@ -173,4 +190,9 @@ impl HttpConfig {
       Mode::KgLite => &STATIC_CONFIG.kg.lite,
     }
   }
+}
+
+#[tauri::command]
+pub fn http_config_clear(app: AppHandle) -> Result<(), String> {
+  HttpConfig::clear_kg_dynamic_config(&app).map_err(|e| e.to_string())
 }

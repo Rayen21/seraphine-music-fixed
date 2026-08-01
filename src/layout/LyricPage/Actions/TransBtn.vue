@@ -1,8 +1,8 @@
-<script lang="ts" setup>
-import { useMainLyricStore } from '@/stores/lyric'
+﻿<script lang="ts" setup>
+import { useLyricStore } from '@/stores/lyric'
 import { LyricTransMode } from '@/utils/params'
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 
 const handleClick = (mode: LyricTransMode) => {
   lyricStore.setTransMode(lyricStore.setting.transMode === mode ? LyricTransMode.Off : mode)

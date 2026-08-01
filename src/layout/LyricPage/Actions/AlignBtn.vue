@@ -1,12 +1,12 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useMainLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 import { IconName } from '@/utils/icons'
 import { LyricTextAlign } from '@/utils/params'
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 
-const Align_Titles = {
+const Align_Titles: Record<LyricTextAlign, string> = {
   [LyricTextAlign.Left]: '左对齐',
   [LyricTextAlign.Center]: '居中对齐',
   [LyricTextAlign.Right]: '右对齐'
@@ -40,6 +40,6 @@ const handleClick = () => {
   <SvgIcon
     class="action-icon card"
     :name="iconName"
-    :title="Align_Titles[lyricStore.setting.textAlign]"
+    :title="Align_Titles[lyricStore.setting.textAlign as LyricTextAlign]"
     @click="handleClick" />
 </template>

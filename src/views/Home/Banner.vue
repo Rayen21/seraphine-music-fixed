@@ -1,9 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import Carousel from '@/components/Carousel.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
-import { ListType } from '@/utils/params'
+import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { getFullName, getPic, getPlayingOrigin, invoke } from '@/utils/tools'
 
 const musciStore = useMusicStore()
@@ -95,35 +95,39 @@ const getLikeList = async () => {
 }
 
 const getRecommendLisd = async () => {
-  const music_everyday = await invoke('api_music_everyday')
-  if (music_everyday?.status !== 1) return
+  try {
+    const api_music_everyday = await invoke('api_music_everyday')
+    if (api_music_everyday.status !== ApiInvokeStatus.Success) return
 
-  const info: ListInfo = {
-    id: 'recommend',
-    cover: '',
-    title: '猜你喜欢',
-    artist: '',
-    count: music_everyday.data.song_list_size,
-    tags: []
+    const info: ListInfo = {
+      id: 'recommend',
+      cover: '',
+      title: '猜你喜欢',
+      artist: '',
+      count: api_music_everyday.data.song_list_size,
+      tags: []
+    }
+    const list: ListMusic[] = api_music_everyday.data.song_list.map((song, index) => ({
+      id: song.songid,
+      path: null,
+      hash: song.hash,
+      cover: song.trans_param.union_cover,
+      title: song.songname,
+      artist: song.author_name,
+      album: '',
+      duration: song.time_length,
+      sort: index
+    }))
+
+    recommendMusicList.value = { info, list }
+    currentRecommendMusic.value = list[0]
+    bannerList.value[1].intro = getFullName(currentRecommendMusic.value)
+    bannerList.value[1].img = currentRecommendMusic.value.cover
+      ? getPic(currentRecommendMusic.value.cover, 'md')
+      : ''
+  } catch (error) {
+    console.error(error)
   }
-  const list: ListMusic[] = music_everyday.data.song_list.map((song, index) => ({
-    id: song.songid,
-    path: null,
-    hash: song.hash,
-    cover: song.trans_param.union_cover,
-    title: song.songname,
-    artist: song.author_name,
-    album: '',
-    duration: song.time_length,
-    sort: index
-  }))
-
-  recommendMusicList.value = { info, list }
-  currentRecommendMusic.value = list[0]
-  bannerList.value[1].intro = getFullName(currentRecommendMusic.value)
-  bannerList.value[1].img = currentRecommendMusic.value.cover
-    ? getPic(currentRecommendMusic.value.cover, 'md')
-    : ''
 }
 
 onMounted(() => {

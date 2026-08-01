@@ -1,8 +1,8 @@
-# Desktop Mini 播放器：事件驱动的数据传递
+# Mini Player：事件驱动的数据传递
 
 ## Problem Statement
 
-迷你播放器（`desktop-mini` 窗口）需要展示当前播放信息、播放列表和歌词，并支持基本播放控制。当前迷你窗口通过独立的 Pinia + localStorage 持久化层来获取数据——两个窗口各自维护独立的 Pinia 实例，依赖持久化层的写入和读取来做数据同步。这种方式存在隐式竞态和同步延迟问题，且迷你窗口只是一个展示型 UI，却承载了完整的 store 依赖链。
+迷你播放器（`mini-player` 窗口）需要展示当前播放信息、播放列表和歌词，并支持基本播放控制。当前迷你窗口通过独立的 Pinia + localStorage 持久化层来获取数据——两个窗口各自维护独立的 Pinia 实例，依赖持久化层的写入和读取来做数据同步。这种方式存在隐式竞态和同步延迟问题，且迷你窗口只是一个展示型 UI，却承载了完整的 store 依赖链。
 
 用户期望迷你播放器能**实时、可靠地**反映主窗口的播放状态，且行为可预测。
 
@@ -13,18 +13,18 @@
 数据流：
 
 ```
-主窗口 stores → bridge composable → emitTo('desktop-mini', 'desktop-mini:handler', { type, data })
+主窗口 stores → bridge composable → emitTo('mini-player', 'mini-player:handler', { type, data })
                                         │
                                         ▼
                               迷你窗口 ref() → 渲染 UI
                                         │
-                        用户操作 → emitTo('main', 'desktop-mini:handler', { type, data })
+                        用户操作 → emitTo('main', 'mini-player:handler', { type, data })
                                         │
                                         ▼
                               主窗口 bridge → 调用 store action → 自动推送新状态
 ```
 
-事件统一通过 `WindowEvent.DesktopMini`（即 `'desktop-mini:handler'`）信道传输，用 `DesktopMiniEmit` 枚举区分消息类型。
+事件统一通过 `WindowEvent.MiniPlayer`（即 `'mini-player:handler'`）信道传输，用 `MiniPlayerEmit` 枚举区分消息类型。
 
 ## User Stories
 
@@ -44,18 +44,18 @@
 
 ### 1. 事件协议
 
-通过 `WindowEvent.DesktopMini`（`'desktop-mini:handler'`）单一信道传输，使用 `DesktopMiniEmit` 枚举区分消息类型。所有类型定义在 `src/types/global.d.ts` 和 `src/utils/params.ts` 中。
+通过 `WindowEvent.MiniPlayer`（`'mini-player:handler'`）单一信道传输，使用 `MiniPlayerEmit` 枚举区分消息类型。所有类型定义在 `src/types/global.d.ts` 和 `src/utils/params.ts` 中。
 
-主窗口 → 迷你窗口（`DesktopMiniEmit`）：
+主窗口 → 迷你窗口（`MiniPlayerEmit`）：
 
 | 类型 | 载荷类型 | 推送时机 |
 |------|---------|---------|
-| `Audio` | `DesktopMiniAudio` | `musicStore.isLoading / isPlaying / music / origin` 变化时立即推送 |
+| `Audio` | `MiniPlayerAudio` | `musicStore.isLoading / isPlaying / music / origin` 变化时立即推送 |
 | `Lyric` | `string`（纯文本） | 播放进度/歌词变化时推送（throttled 100ms），主窗口预计算当前行文本 |
 | `Playlist` | `ListMusic[]` | `listStore.play.list` 变化时立即推送 |
 
 ```typescript
-interface DesktopMiniAudio {
+interface MiniPlayerAudio {
   isLoading: boolean
   isPlaying: boolean
   music: PlayingMusic | null
@@ -63,7 +63,7 @@ interface DesktopMiniAudio {
 }
 ```
 
-迷你窗口 → 主窗口（`DesktopMiniEmit`）：
+迷你窗口 → 主窗口（`MiniPlayerEmit`）：
 
 | 类型 | 载荷 | 说明 |
 |------|------|------|
@@ -76,12 +76,12 @@ interface DesktopMiniAudio {
 | `Close` | — | 关闭窗口 |
 | `Pos` | `PhysicalPosition` | 窗口位置变化 |
 
-### 2. 主窗口端：composable `useDesktopMiniBridge`
+### 2. 主窗口端：composable `useMiniPlayerBridge`
 
-`src/composables/useDesktopMiniBridge.ts`，签名：
+`src/composables/useMiniPlayerBridge.ts`，签名：
 
 ```typescript
-export function useDesktopMiniBridge(
+export function useMiniPlayerBridge(
   miniWindow: Ref<WebviewWindow | undefined>,
   mainWindow: Window
 ): { start: () => Promise<void>; stop: () => void }
@@ -89,7 +89,7 @@ export function useDesktopMiniBridge(
 
 职责：
 
-- 通过 `WindowEvent.DesktopMini` 信道监听迷你窗口的 action 事件，按 `DesktopMiniEmit` 类型分发到对应 store action
+- 通过 `WindowEvent.MiniPlayer` 信道监听迷你窗口的 action 事件，按 `MiniPlayerEmit` 类型分发到对应 store action
 - 监听相关 store 字段变化，通过 `syncAudio` / `syncLyric` / `syncPlaylist` 推送对应类型的载荷
 - 传入的 `miniWindow` ref 作为窗口存活判据
 - `stop()` 清理所有 watcher/listener，关闭迷你窗口，然后聚焦主窗口
@@ -98,28 +98,28 @@ export function useDesktopMiniBridge(
 
 ### 3. 迷你窗口端
 
-迷你窗口入口文件创建裸 Vue app（`src/desktop-mini.ts`，不引入主窗口 store）。
+迷你窗口入口文件创建裸 Vue app（`src/mini-player.ts`，不引入主窗口 store）。
 
-`DesktopMini.vue` 组件：
+`MiniPlayer.vue` 组件：
 
 - 通过 `ref()` 持有主窗口推送的状态数据
-- 在 `onMounted` 中发送 `Init` 事件请求首帧，注册 `listen(WindowEvent.DesktopMini, ...)` 接收推送
-- 用户交互通过 `emitTo(WindowName.Main, WindowEvent.DesktopMini, { type, data })` 回传
+- 在 `onMounted` 中发送 `Init` 事件请求首帧，注册 `listen(WindowEvent.MiniPlayer, ...)` 接收推送
+- 用户交互通过 `emitTo(WindowName.Main, WindowEvent.MiniPlayer, { type, data })` 回传
 - 仅 `playlistVisible`、hover 状态等纯 UI 状态使用本地 `ref()`
 
 ### 4. 窗口尺寸常量
 
-迷你窗口尺寸（width=298, height=66）定义在 `src/utils/params.ts`（`desktopMiniSize`），主窗口创建窗口时使用。
+迷你窗口尺寸（width=298, height=66）定义在 `src/utils/params.ts`（`miniPlayerSize`），主窗口创建窗口时使用。
 
 ### 5. 数据预计算
 
 主窗口 bridge 负责歌词文本预计算，迷你窗口只做渲染：
 
-- 歌词文本：bridge 中的 `syncLyric` 根据 `playProgress` + `offset` + `lyric.lines` 计算出当前应显示的歌词文本，通过 `DesktopMiniEmit.Lyric` 推送纯文本字符串
+- 歌词文本：bridge 中的 `syncLyric` 根据 `playProgress` + `offset` + `lyric.lines` 计算出当前应显示的歌词文本，通过 `MiniPlayerEmit.Lyric` 推送纯文本字符串
 
 ### 6. 迷你窗口 capabilities
 
-`src-tauri/capabilities/desktop-mini.json` 需确保包含事件通信所需的权限（当前已有 `core:event:default`，无需额外修改）。
+`src-tauri/capabilities/mini-player.json` 需确保包含事件通信所需的权限（当前已有 `core:event:default`，无需额外修改）。
 
 ## Testing Decisions
 
@@ -129,8 +129,8 @@ export function useDesktopMiniBridge(
 
 ### 测试层级
 
-1. **事件序列化测试**：验证 `useDesktopMiniBridge` 在 store 变化时生成正确的 `DesktopMiniAudio` / `DesktopMiniPlaylist` 载荷和歌词文本
-2. **组件渲染测试**：给 `DesktopMini.vue` 注入模拟数据，验证 DOM 输出
+1. **事件序列化测试**：验证 `useMiniPlayerBridge` 在 store 变化时生成正确的 `MiniPlayerAudio` / `MiniPlayerPlaylist` 载荷和歌词文本
+2. **组件渲染测试**：给 `MiniPlayer.vue` 注入模拟数据，验证 DOM 输出
 3. **事件回传测试**：模拟用户点击，验证正确的 `emitTo` 事件和类型被发送
 
 ### 参考现有实践
@@ -150,4 +150,4 @@ export function useDesktopMiniBridge(
 - 迷你窗口可能在主窗口 store 水合完成之前被创建，bridge 的 `start()` 在 `tauri://created` 后立即调用，子窗口 `onMounted` 发送 `Init` 触发全量同步
 - `stop()` 清理所有 watcher/listener 并关闭窗口，避免向不存在窗口发送事件
 - `Audio` / `Playlist` 使用即时 `watch`，`Lyric` 使用 100ms throttle
-- 事件类型常量统一定义在 `src/utils/params.ts`，`DesktopMiniEmit` 与 `DesktopLyricEmit` 保持独立
+- 事件类型常量统一定义在 `src/utils/params.ts`，`MiniPlayerEmit` 与 `DesktopLyricEmit` 保持独立

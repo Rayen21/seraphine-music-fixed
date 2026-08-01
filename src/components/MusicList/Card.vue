@@ -1,11 +1,12 @@
-<script lang="ts" setup>
-import Image from '../Image.vue'
-import SvgIcon from '../SvgIcon.vue'
+﻿<script lang="ts" setup>
+import Image from '@/components/Image.vue'
 import { notify } from '@/components/Notification'
-import { useContextMenuStore } from '@/stores/context-menu.ts'
+import SvgIcon from '@/components/SvgIcon.vue'
+import { useContextMenuStore } from '@/stores/context-menu'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
+import { ApiInvokeStatus } from '@/utils/params'
 import { getPic, invoke } from '@/utils/tools'
 
 interface Props {
@@ -54,19 +55,25 @@ const handleContextMenu = (e: MouseEvent) => {
           onClick: async () => {
             if (!data.musicInfo) return
 
-            const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-              listId: list.list_create_listid,
-              musicList: [{ name: data.musicInfo.title, hash: data.musicInfo.hash }]
-            })
-            if (playlist_tracks_add?.status !== 1) {
-              notify.error('添加失败')
-            } else {
-              notify.success('添加成功')
+            try {
+              const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+                listId: list.list_create_listid,
+                musicList: [{ name: data.musicInfo.title, hash: data.musicInfo.hash }]
+              })
+              if (playlist_tracks_add.status !== ApiInvokeStatus.Success) {
+                notify.error('添加失败')
+              } else {
+                notify.success('添加成功')
 
-              // 如果是添加到我喜欢,同步列表
-              if (list.is_def === 2) {
-                listStore.addLikeList(data.musicInfo.id)
+                // 如果是添加到我喜欢,同步列表
+                if (list.is_def === 2) {
+                  listStore.addLikeList(data.musicInfo.id)
+                }
               }
+            } catch (error) {
+              console.error(error)
+
+              notify.error('添加失败')
             }
           }
         }))

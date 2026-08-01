@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import Login from './Login/Login.vue'
 import Menu from './Menu/Menu.vue'
 import Search from './Search.vue'

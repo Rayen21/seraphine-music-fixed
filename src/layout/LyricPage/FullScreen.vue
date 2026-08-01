@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useSettingStore } from '@/stores/setting'
 import { getCurrentWindow } from '@tauri-apps/api/window'

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import ToTop from '@/components/PageActions/ToTop.vue'
 import { useRefreshStore } from '@/stores/refresh'
 

@@ -1,11 +1,16 @@
 import { useListStore } from './list'
-import { useMainLyricStore } from './lyric'
+import { useLyricStore } from './lyric'
 import { notify } from '@/components/Notification'
-import { Interval, PlayingMode, PlayingOrigin, PlayingQuality } from '@/utils/params'
-import { getFullName, getPlayingOrigin, getRandomNumber, invoke } from '@/utils/tools'
+import {
+  ApiInvokeStatus,
+  Interval,
+  PlayingMode,
+  PlayingOrigin,
+  PlayingQuality
+} from '@/utils/params'
+import { getFullName, getPlayingOrigin, getRandomNumber, invoke, setAppTitle } from '@/utils/tools'
 import { Channel } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 
 export const useMusicStore = defineStore(
   'music',
@@ -35,7 +40,7 @@ export const useMusicStore = defineStore(
     let downloadChannel: Channel<number> | null = null
 
     const listStore = useListStore()
-    const { load: loadLyric } = useMainLyricStore()
+    const { load: loadLyric } = useLyricStore()
 
     // 水合完成时恢复播放状态
     watch(
@@ -69,21 +74,23 @@ export const useMusicStore = defineStore(
         await stop()
         await load(newMusic, origin)
         if (autoPlay) await play()
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e)
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
         notify.error(msg)
       }
     }
 
     // 设置音量
     const setVolume = async (newVolume: number) => {
-      if (newVolume < 0) newVolume = 0
-      if (newVolume > 100) newVolume = 100
+      newVolume = Math.max(0, Math.min(100, newVolume))
 
-      await invoke('music_player_set_volume', { volume: newVolume })
-      volume.value = newVolume
-
-      if (newVolume > 0) lastVolumn.value = newVolume
+      try {
+        await invoke('music_player_set_volume', { volume: newVolume })
+        volume.value = newVolume
+        if (newVolume > 0) lastVolumn.value = newVolume
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 设置播放模式
@@ -104,65 +111,75 @@ export const useMusicStore = defineStore(
       music.value = newMusic
       origin.value = newOrigin
 
-      switch (newOrigin) {
-        case PlayingOrigin.Local:
-          if (!newMusic.path) {
-            isLoading.value = false
-            startWaitNext()
-            throw new Error(`无法播放: "${newMusic.title}"`)
-          }
+      try {
+        const PLAY_ERROR = new Error(`无法播放: "${newMusic.title}", 即将切换下一首`)
 
-          await invoke('music_player_load_file', { path: newMusic.path }).then(
-            () => (isLoaded.value = true)
-          )
-          break
+        switch (newOrigin) {
+          case PlayingOrigin.Local:
+            if (!newMusic.path) {
+              isLoading.value = false
+              startWaitNext()
+              throw PLAY_ERROR
+            }
 
-        case PlayingOrigin.Online:
-          if (!newMusic.hash) {
-            isLoading.value = false
-            startWaitNext()
-            throw new Error(`无法播放: "${newMusic.title}", 即将切换下一首`)
-          }
+            await invoke('music_player_load_file', { path: newMusic.path })
+            break
+          case PlayingOrigin.Online:
+            if (!newMusic.hash) {
+              isLoading.value = false
+              startWaitNext()
+              throw PLAY_ERROR
+            }
 
-          const api_song_url = await invoke('api_song_url', {
-            hash: newMusic.hash,
-            quality: quality.value
-          })
-          if (api_song_url?.status !== 1 || !api_song_url.backupUrl?.length) {
-            isLoading.value = false
-            startWaitNext()
-            throw new Error(`无法播放: "${newMusic.title}", 即将切换下一首`)
-          }
+            const api_song_url = await invoke('api_song_url', {
+              hash: newMusic.hash,
+              quality: quality.value
+            })
+            if (
+              api_song_url.status !== ApiInvokeStatus.Success ||
+              !api_song_url.backupUrl?.length
+            ) {
+              isLoading.value = false
+              startWaitNext()
+              throw PLAY_ERROR
+            }
 
-          music.value.path = api_song_url.backupUrl[0]
-          await invoke('music_player_load_url', {
-            path: music.value.path,
-            hash: newMusic.hash
-          }).then(() => (isLoaded.value = true))
-          break
+            music.value.path = api_song_url.backupUrl[0]
+            await invoke('music_player_load_url', { path: music.value.path, hash: newMusic.hash })
+            break
+        }
+
+        isLoaded.value = true
+        retryCount.value = 0
+      } catch (error) {
+        throw error
+      } finally {
+        setAppTitle(getFullName(newMusic))
+        loadLyric(music.value)
+        isLoading.value = false
       }
-
-      const title = getFullName(newMusic)
-      document.title = title
-      getCurrentWindow().setTitle(title)
-
-      loadLyric(music.value)
-      retryCount.value = 0
-      isLoading.value = false
     }
 
     // 播放音频
     const play = async () => {
       if (!music.value || isLoading.value || !isLoaded.value) return
 
-      await invoke('music_player_play')
-      isPlaying.value = true
+      try {
+        await invoke('music_player_play')
+        isPlaying.value = true
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 暂停音频
     const pause = async () => {
-      await invoke('music_player_pause')
-      isPlaying.value = false
+      try {
+        await invoke('music_player_pause')
+        isPlaying.value = false
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 停止音频
@@ -170,19 +187,25 @@ export const useMusicStore = defineStore(
       stopWaitNext()
       stopWaitDownload()
 
-      await invoke('music_player_stop')
-      isPlaying.value = false
-      playProgress.value = 0
-      downloadProgress.value = 0
+      try {
+        await invoke('music_player_stop')
+        isPlaying.value = false
+        playProgress.value = 0
+        downloadProgress.value = 0
 
-      const title = 'Seraphine'
-      document.title = title
-      getCurrentWindow().setTitle(title)
+        setAppTitle('Seraphine')
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 跳转
     const seek = async (pos: number) => {
-      await invoke('music_player_seek', { pos })
+      try {
+        await invoke('music_player_seek', { pos })
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 自动播放下一首
@@ -341,16 +364,24 @@ export const useMusicStore = defineStore(
       waitDownloadTimer = null
     }
 
-    const monitorDevice = () => {
-      listen('reload_device', async () => {
-        const pg = playProgress.value
-        await setMusic(music.value, { origin: origin.value, loop: true, autoPlay: isPlaying.value })
-        await seek(pg)
-      })
+    const monitorDevice = async () => {
+      try {
+        await listen('music:reload_device', async () => {
+          const lastProgress = playProgress.value
+          await setMusic(music.value, {
+            origin: origin.value,
+            loop: true,
+            autoPlay: isPlaying.value
+          })
+          await seek(lastProgress)
+        })
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 监听下载进度
-    const monitorDownload = () => {
+    const monitorDownload = async () => {
       if (downloadChannel !== null) return
 
       downloadChannel = new Channel<number>()
@@ -360,32 +391,40 @@ export const useMusicStore = defineStore(
         downloadProgress.value = pg
       }
 
-      return invoke('music_player_monitor_download', { channel: downloadChannel })
+      try {
+        await invoke('music_player_monitor_download', { channel: downloadChannel })
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 监听播放进度
     const monitorPlay = () => {
       if (playChannel !== null) return
 
-      let last_pg = 0 // 用于检测是否越过阈值（防止重复触发）
+      let lastProgress = 0 // 用于检测是否越过阈值（防止重复触发）
 
       playChannel = new Channel<number>()
       playChannel.onmessage = (pg) => {
         if (!music.value || !isPlaying.value || isLoading.value) {
-          last_pg = pg
+          lastProgress = pg
           return
         }
 
         // 仅在从未到达阈值的位置“跨越”到阈值或更后的位置时触发一次
-        if (pg + 0.5 >= music.value.duration && last_pg + 0.5 < music.value.duration) {
+        if (pg + 0.3 >= music.value.duration && lastProgress + 0.3 < music.value.duration) {
           playAutoNext()
         }
 
         playProgress.value = pg
-        last_pg = pg
+        lastProgress = pg
       }
 
-      return invoke('music_player_monitor_play', { channel: playChannel })
+      try {
+        invoke('music_player_monitor_play', { channel: playChannel })
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     return {

@@ -1,8 +1,8 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useMainLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 
-const { setOffsetMap } = useMainLyricStore()
+const { setOffsetMap } = useLyricStore()
 </script>
 
 <template>

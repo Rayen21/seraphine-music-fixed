@@ -1,6 +1,6 @@
 import { LyricTransMode, PlayingOrigin, PlayingQuality } from './params'
-import { notify } from '@/components/Notification'
 import { invoke as tauriInvoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -50,6 +50,12 @@ export function formatFileSize(bytes: number, decimals: number = 2) {
   const size = bytes / Math.pow(1024, unitIndex)
 
   return `${size.toFixed(safeDecimals)} ${SIZE_UNITS[unitIndex]}`
+}
+
+/** 设置应用标题 */
+export function setAppTitle(title: string) {
+  document.title = title
+  getCurrentWindow().setTitle(title)
 }
 
 /**
@@ -212,9 +218,33 @@ export function parseKrcLyric(content: string) {
 export function parseLrcLyric(content: string) {
   if (!content) return []
 
+  // 译制歌词信息
+  const translations: Translation = {
+    [LyricTransMode.Roman]: [],
+    [LyricTransMode.Trans]: []
+  }
+
+  let matchIndex = 0 // 歌词匹配索引
   const lines: LyricLine[] = []
 
   for (const line of content.split('\n')) {
+    const languageMatch = line.match(/\[language:([^\]]*)\]/) // 匹配 [language:xx]
+    if (languageMatch) {
+      // 处理翻译歌词
+      try {
+        const lyricLanguageList: LyricLanguageList = JSON.parse(atob(languageMatch[1]))
+
+        lyricLanguageList.content.forEach((item) => {
+          const transContent = item.lyricContent.map((content) => content.join(''))
+
+          if (item.type === 0) translations[LyricTransMode.Roman] = transContent
+          else if (item.type === 1) translations[LyricTransMode.Trans] = transContent
+        })
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
     const match = line.match(/\[(\d+):(\d+)\.(\d+)\](.*)/)
     if (!match) continue
 
@@ -227,8 +257,8 @@ export function parseLrcLyric(content: string) {
       duration: 0,
       words: [{ offset, duration: 0, text }],
       translations: {
-        [LyricTransMode.Roman]: '',
-        [LyricTransMode.Trans]: ''
+        [LyricTransMode.Roman]: translations[LyricTransMode.Roman][matchIndex],
+        [LyricTransMode.Trans]: translations[LyricTransMode.Trans][matchIndex++]
       }
     })
   }
@@ -236,61 +266,64 @@ export function parseLrcLyric(content: string) {
   return lines
 }
 
-type InvokeKey = keyof Invoke
-type InvokeParams<K extends InvokeKey> = Invoke[K]['params']
-type InvokeReturn<K extends InvokeKey> = Invoke[K]['return']
+type InvokeCmd = keyof Invoke
+type InvokeArgs<C extends InvokeCmd> = Invoke[C]['args']
+type InvokeReturn<C extends InvokeCmd> = Invoke[C]['return']
 
 /**
  * 封装 Tauri 的 invoke 函数
- * @param key 函数名
- * @param params 参数
+ * @description 统一参数和返回类型
+ * @param cmd 指令名称
+ * @param args 要传递给指令的参数
  */
-export async function invoke<K extends InvokeKey>(
-  key: K,
-  params?: InvokeParams<K>
-): Promise<InvokeReturn<K> | undefined> {
+export async function invoke<C extends InvokeCmd>(cmd: C, args?: InvokeArgs<C>) {
   try {
-    const res = await tauriInvoke<InvokeReturn<K>>(key, params)
-    return res
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    notify.error(msg)
-
-    // throw Error(msg)
+    return await tauriInvoke<InvokeReturn<C>>(cmd, args)
+  } catch (error) {
+    // 不参与 UI 处理，直接抛出错误在使用时捕获
+    const msg = error instanceof Error ? error.message : String(error)
+    throw Error(msg)
   }
 }
 
+/** 拦截浏览器快捷键 */
 export function disableHotkeys(disabled: boolean = true) {
   if (!disabled || import.meta.env.DEV) return
 
-  window.addEventListener('contextmenu', (e) => e.preventDefault(), { capture: true })
+  window.addEventListener('contextmenu', (e) => e.preventDefault(), true)
   window.addEventListener(
     'keydown',
     (e) => {
-      const ctrlMeta = e.ctrlKey || e.metaKey
+      // 中文输入法组合过程，直接放行，防止打字故障
+      if (e.isComposing) return
 
-      const isBrowserShortcut =
-        e.key === 'Tab' ||
-        e.key === 'F5' ||
-        e.key === 'F12' ||
-        (ctrlMeta && (e.key === 'r' || e.key === 'R')) || // 刷新
-        (ctrlMeta && e.shiftKey && (e.key === 'r' || e.key === 'R')) || // 强制刷新
-        (ctrlMeta && e.key === 'g') || // 搜索
-        (ctrlMeta && e.key === 'j') || // 下载
-        (ctrlMeta && e.key === 'w') || // 关闭标签
-        (ctrlMeta && e.key === 't') || // 新建标签
-        (ctrlMeta && e.key === 'p') || // 打印
-        (ctrlMeta && e.key === 's') || // 保存
-        (ctrlMeta && e.key === 'f') || // 查找
-        (ctrlMeta && e.key === 'Tab') || // 切换标签
-        (ctrlMeta && e.shiftKey && /[ijc]/i.test(e.key)) || // 开发者工具 / 控制台 / 检查
-        (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) // 后退/前进
+      const target = e.target as HTMLElement
+      // 如果焦点在输入框/可编辑区域，放行所有按键
+      const isEditable = ['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable
+      if (isEditable) return
 
-      if (isBrowserShortcut) {
+      const { code, ctrlKey, metaKey, shiftKey } = e
+      const ctrlMeta = ctrlKey || metaKey
+
+      // 黑名单：所有需要拦截的快捷键
+      const needBlock =
+        // Tab焦点切换
+        code === 'Tab' ||
+        // F功能键
+        ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'].includes(
+          code
+        ) ||
+        // Ctrl/Command组合浏览器快捷键
+        (ctrlMeta &&
+          ['KeyG', 'KeyJ', 'KeyW', 'KeyT', 'KeyP', 'KeyR', , 'KeyS', 'KeyF'].includes(code)) ||
+        // Ctrl+Shift组合
+        (ctrlMeta && shiftKey && ['KeyR', 'KeyI', 'KeyJ', 'KeyC'].includes(code))
+
+      if (needBlock) {
         e.preventDefault()
-        e.stopImmediatePropagation()
+        e.stopPropagation()
       }
     },
-    { capture: true }
+    true
   )
 }

@@ -1,10 +1,10 @@
-<script lang="ts" setup>
-import { useMainLyricStore } from '@/stores/lyric'
+﻿<script lang="ts" setup>
+import { useLyricStore } from '@/stores/lyric'
 import { Interval, PresetsColors } from '@/utils/params'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 
 const pickerVisible = ref(false)
 const usedColor = ref(lyricStore.setting.textColor) // 使用的颜色

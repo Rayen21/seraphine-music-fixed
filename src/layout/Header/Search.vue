@@ -1,7 +1,8 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
+import { notify } from '@/components/Notification'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useUserStore } from '@/stores/user'
-import { Interval, SearchType } from '@/utils/params'
+import { ApiInvokeStatus, Interval, SearchType } from '@/utils/params'
 import { getFullName, invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
@@ -11,7 +12,7 @@ const userStore = useUserStore()
 const router = useRouter()
 const searchRef = useTemplateRef('searchInputRef')
 
-const idSearching = ref(false)
+const isSearching = ref(false)
 const searchQuery = ref('')
 const searchVisible = ref(false)
 const searchResult = ref<{
@@ -22,61 +23,73 @@ const searchResult = ref<{
 
 const handleSearch = async (query: string) => {
   if (query) {
-    idSearching.value = true
+    isSearching.value = true
 
-    const search_complex = await invoke('api_search_complex', { keywords: query, pageSize: 5 })
-    if (search_complex?.status !== 1) {
-      idSearching.value = false
-      return
-    }
+    try {
+      const api_search_complex = await invoke('api_search_complex', {
+        keywords: query,
+        pageSize: 5
+      })
+      if (api_search_complex.status === ApiInvokeStatus.Success) {
+        api_search_complex.data.lists.forEach((item) => {
+          if (!searchResult.value) searchResult.value = { song: [], author: [], collect: [] }
 
-    search_complex.data.lists.forEach((item) => {
-      if (!searchResult.value) searchResult.value = { song: [], author: [], collect: [] }
+          switch (item.type) {
+            case SearchType.Song:
+              searchResult.value[SearchType.Song] = item.lists.map((song, index) => {
+                const artist = Array.isArray(song.Singers)
+                  ? song.Singers.map((item: any) => item.name).join('、')
+                  : song.Singers
 
-      if (item.type === SearchType.Song) {
-        searchResult.value[SearchType.Song] = item.lists.map((song, index) => {
-          const artist = Array.isArray(song.Singers)
-            ? song.Singers.map((item: any) => item.name).join('、')
-            : song.Singers
+                return {
+                  id: song.Audioid,
+                  hash: song.FileHash,
+                  path: null,
+                  cover: song.trans_param.union_cover,
+                  title: song.SongName,
+                  artist: artist,
+                  album: song.AlbumName,
+                  duration: song.Duration,
+                  sort: index
+                }
+              })
+              break
 
-          return {
-            id: song.Audioid,
-            hash: song.FileHash,
-            path: null,
-            cover: song.trans_param.union_cover,
-            title: song.SongName,
-            artist: artist,
-            album: song.AlbumName,
-            duration: song.Duration,
-            sort: index
+            case SearchType.Author:
+              searchResult.value[SearchType.Author] = item.lists.map((artist) => ({
+                id: artist.AuthorId,
+                cover: artist.Avatar,
+                name: artist.AuthorName,
+                fanscount: artist.FansNum,
+                descibe: '',
+                url: ''
+              }))
+              break
+
+            case SearchType.Collect:
+              searchResult.value[SearchType.Collect] = item.lists.map((playlist) => ({
+                id: playlist.gid,
+                cover: playlist.img,
+                title: playlist.specialname,
+                artist: playlist.nickname,
+                play_count: playlist.play_count
+              }))
+              break
           }
         })
-      } else if (item.type === SearchType.Author) {
-        searchResult.value[SearchType.Author] = item.lists.map((artist) => ({
-          id: artist.AuthorId,
-          cover: artist.Avatar,
-          name: artist.AuthorName,
-          fanscount: artist.FansNum,
-          descibe: '',
-          url: ''
-        }))
-      } else if (item.type === SearchType.Collect) {
-        searchResult.value[SearchType.Collect] = item.lists.map((playlist) => ({
-          id: playlist.gid,
-          cover: playlist.img,
-          title: playlist.specialname,
-          artist: playlist.nickname,
-          play_count: playlist.play_count
-        }))
-      }
-    })
 
-    searchVisible.value = true
-    idSearching.value = false
+        searchVisible.value = true
+      }
+    } catch (error) {
+      console.error(error)
+      notify.error('搜索失败')
+    } finally {
+      isSearching.value = false
+    }
   } else {
     searchVisible.value = false
     searchResult.value = undefined
-    idSearching.value = false
+    isSearching.value = false
   }
 }
 
@@ -111,7 +124,7 @@ watchThrottled(searchQuery, handleSearch, { throttle: Interval.Sec })
       <SvgIcon
         class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2"
         size="14"
-        :name="!idSearching ? 'Search' : 'Ring'" />
+        :name="!isSearching ? 'Search' : 'Ring'" />
       <input
         ref="searchInputRef"
         class="card h-8 w-48 border border-border px-8"

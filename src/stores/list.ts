@@ -19,8 +19,8 @@ export const useListStore = defineStore(
       list: []
     })
     // 我喜欢列表
-    const like = ref<{ info: ListInfo; list: ID[] }>({
-      info: { id: '', cover: '', title: '', artist: '', count: 0, tags: [] },
+    const like = ref<MusicList<ID>>({
+      info: { id: 'like', cover: '', title: '我喜欢', artist: '', count: 0, tags: [] },
       list: []
     })
 
@@ -73,7 +73,7 @@ export const useListStore = defineStore(
 
       checkedList.value = checkedList.value.filter((checkedId) => checkedId !== id)
       target.value.list = target.value.list.filter((music) => music.id !== id)
-      target.value.info.count -= 1
+      target.value.info.count--
     }
 
     // 清空列表
@@ -104,7 +104,7 @@ export const useListStore = defineStore(
     const addNextList = (index: number, music: ListMusic) => {
       // 会出现同一首歌曲, 所以 id要不同
       play.value.list.splice(index + 1, 0, { ...music, id: `${music.id}-${crypto.randomUUID()}` })
-      play.value.info.count += 1
+      play.value.info.count++
     }
 
     // 设置最喜欢列表
@@ -204,7 +204,7 @@ export const useListStore = defineStore(
       if (!sortInfo) return
 
       target.value.list.sort((a: ListMusic, b: ListMusic) => {
-        const conditions = {
+        const conditions: Record<SortType, number> = {
           [SortType.Default]: a.sort - b.sort,
           [SortType.Title]: a.title.localeCompare(b.title),
           [SortType.Artist]: (a.artist || '').localeCompare(b.artist || ''),
@@ -212,7 +212,7 @@ export const useListStore = defineStore(
           [SortType.Duration]: a.duration - b.duration
         }
 
-        const result = conditions[sortInfo.type]
+        const result = conditions[sortInfo.type as SortType]
         return sortInfo.order === SortOrder.ASC ? result : -result
       })
     }

@@ -6,8 +6,8 @@ use tauri::{
 
 use crate::{
   api::{
-    album, artist, login, lyric as api_lyric, music as api_music, personal, playlist, privilege,
-    rank, register, search, song, top, user, youth,
+    album, artist, audio, login, lyric as api_lyric, music as api_music, personal, playlist,
+    privilege, rank, register, search, song, top, user, youth,
   },
   http::{config, mode},
   music::{file, lyric as music_lyric, player, scan},
@@ -44,17 +44,17 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
-      setting::get_app_version,
+      config::http_config_clear,
       setting::system_setting_restore_window,
       path::system_path_all,
+      path::system_path_file_open,
+      path::system_path_dir_open,
+      path::system_path_dir_clear,
       scan::music_scan_dir,
       scan::music_scan_type,
       scan::music_scan_file,
       scan::music_scan_cancel,
       file::music_file_detail,
-      file::music_file_open,
-      file::music_dir_open,
-      file::music_file_clear,
       player::music_player_get_device,
       player::music_player_set_device,
       player::music_player_get_devices,
@@ -88,6 +88,7 @@ pub fn run() {
       album::api_album_songs,
       artist::api_artist_list,
       artist::api_artist_audios,
+      audio::api_audio_info,
       playlist::api_playlist_tags,
       playlist::api_playlist_user,
       playlist::api_playlist_detail,
@@ -126,7 +127,7 @@ pub fn run() {
 
 // 显示主窗口（迷你播放器打开时跳过）
 fn show_main_window(app: &AppHandle) {
-  if app.get_webview_window("desktop-mini").is_some() {
+  if app.get_webview_window("mini-player").is_some() {
     return;
   }
   if let Some(window) = app.get_webview_window("main") {

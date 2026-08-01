@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ContextMenu from '@/components/ContextMenu.vue'
 import { NotificationContainer } from '@/components/Notification'
 import Aside from '@/layout/Aside/Aside.vue'

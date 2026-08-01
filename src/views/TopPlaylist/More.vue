@@ -1,9 +1,9 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
-import { PageSize } from '@/utils/params'
+import { ApiInvokeStatus, PageSize } from '@/utils/params'
 import { getPic, invoke } from '@/utils/tools'
 
 const router = useRouter()
@@ -25,23 +25,24 @@ const page = ref(1)
 const playlistList = ref<PlaylistInfo[]>([])
 
 const handleSlideGet = async () => {
-  const api_playlist_tags = await invoke('api_playlist_tags')
-  if (api_playlist_tags?.status !== 1) return
+  try {
+    const api_playlist_tags = await invoke('api_playlist_tags')
+    if (api_playlist_tags.status !== ApiInvokeStatus.Success) return
 
-  firstSlideOptions.value = api_playlist_tags.data.map((item) => ({
-    label: item.tag_name,
-    value: item.tag_id,
-    son: item.son
-  }))
-  firstSlideSelection.value = firstSlideOptions.value[0]
-
-  secondSlideOptions.value = firstSlideSelection.value.son
-    .slice(0, 10)
-    .map((item: PlaylistTag) => ({
+    firstSlideOptions.value = api_playlist_tags.data.map((item) => ({
       label: item.tag_name,
-      value: item.tag_id
+      value: item.tag_id,
+      son: item.son
     }))
-  secondSlideSelection.value = secondSlideOptions.value[0]
+    firstSlideSelection.value = firstSlideOptions.value[0]
+
+    secondSlideOptions.value = firstSlideSelection.value.son
+      .slice(0, 10)
+      .map((item: PlaylistTag) => ({ label: item.tag_name, value: item.tag_id }))
+    secondSlideSelection.value = secondSlideOptions.value[0]
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 const handleSlideChange = (option: SlideOption, type: 'first' | 'second') => {
@@ -70,49 +71,55 @@ const handleLoad = async () => {
   if (!secondSlideSelection.value) return
   isLoading.value = true
 
-  const api_top_playlist = await invoke('api_top_playlist', {
-    categoryId: secondSlideSelection.value.value,
-    page: page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_top_playlist?.status !== 1) {
+  try {
+    const api_top_playlist = await invoke('api_top_playlist', {
+      categoryId: secondSlideSelection.value.value,
+      page: page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_top_playlist.status === ApiInvokeStatus.Success) {
+      const list = api_top_playlist.data.special_list.map((playlist) => ({
+        id: playlist.global_collection_id,
+        cover: playlist.flexible_cover,
+        title: playlist.specialname,
+        artist: playlist.nickname,
+        play_count: playlist.play_count
+      }))
+
+      playlistList.value = list
+    }
+  } catch (error) {
+    console.log(error)
+  } finally {
     isLoading.value = false
-    return
   }
-
-  const list = api_top_playlist.data.special_list.map((playlist) => ({
-    id: playlist.global_collection_id,
-    cover: playlist.flexible_cover,
-    title: playlist.specialname,
-    artist: playlist.nickname,
-    play_count: playlist.play_count
-  }))
-
-  playlistList.value = list
-  isLoading.value = false
 }
 
 const handleInfinite = async () => {
   if (isFinished.value || !secondSlideSelection.value) return
 
-  const api_top_playlist = await invoke('api_top_playlist', {
-    categoryId: secondSlideSelection.value.value,
-    page: ++page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_top_playlist?.status !== 1) return
+  try {
+    const api_top_playlist = await invoke('api_top_playlist', {
+      categoryId: secondSlideSelection.value.value,
+      page: ++page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_top_playlist.status !== ApiInvokeStatus.Success) return
 
-  const list = api_top_playlist.data.special_list.map((item) => ({
-    id: item.global_collection_id,
-    cover: item.flexible_cover,
-    title: item.specialname,
-    artist: item.nickname,
-    play_count: item.play_count
-  }))
+    const list = api_top_playlist.data.special_list.map((item) => ({
+      id: item.global_collection_id,
+      cover: item.flexible_cover,
+      title: item.specialname,
+      artist: item.nickname,
+      play_count: item.play_count
+    }))
 
-  if (list.length < PageSize.Default) isFinished.value = true
+    playlistList.value.push(...list)
 
-  playlistList.value.push(...list)
+    if (list.length < PageSize.Default) isFinished.value = true
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 const handleLineClick = (row: PlaylistInfo) => {

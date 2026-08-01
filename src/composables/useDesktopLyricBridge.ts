@@ -1,7 +1,7 @@
-import { useMainLyricStore } from '@/stores/lyric'
+﻿import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
-import { DesktopLyricEmit, Interval, WindowEvent, WindowName } from '@/utils/params'
+import { DesktopLyricEmit, Interval, WindowEvent, WindowTarget } from '@/utils/params'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PhysicalPosition, getCurrentWindow } from '@tauri-apps/api/window'
@@ -9,7 +9,7 @@ import { watchThrottled } from '@vueuse/core'
 
 export function useDesktopLyricBridge(lyricWindow: Ref<WebviewWindow | undefined>) {
   const musicStore = useMusicStore()
-  const lyricStore = useMainLyricStore()
+  const lyricStore = useLyricStore()
   const settingStore = useSettingStore()
 
   const stopFns: (() => void)[] = []
@@ -21,14 +21,14 @@ export function useDesktopLyricBridge(lyricWindow: Ref<WebviewWindow | undefined
       music: musicStore.music
     }
 
-    emitTo(WindowName.DesktopLyric, WindowEvent.DesktopLyric, {
+    emitTo(WindowTarget.DesktopLyric, WindowEvent.DesktopLyric, {
       type: DesktopLyricEmit.Audio,
       data
     })
   }
 
   const syncLyric = () => {
-    emitTo(WindowName.DesktopLyric, WindowEvent.DesktopLyric, {
+    emitTo(WindowTarget.DesktopLyric, WindowEvent.DesktopLyric, {
       type: DesktopLyricEmit.Lyric,
       data: lyricStore.lyric
     })
@@ -37,14 +37,14 @@ export function useDesktopLyricBridge(lyricWindow: Ref<WebviewWindow | undefined
   const syncFonts = () => {
     if (settingStore.availableFonts.length === 0) settingStore.getAvailableFonts()
 
-    emitTo(WindowName.DesktopLyric, WindowEvent.DesktopLyric, {
+    emitTo(WindowTarget.DesktopLyric, WindowEvent.DesktopLyric, {
       type: DesktopLyricEmit.Fonts,
       data: settingStore.availableFonts
     })
   }
 
   const syncProgress = () => {
-    emitTo(WindowName.DesktopLyric, WindowEvent.DesktopLyric, {
+    emitTo(WindowTarget.DesktopLyric, WindowEvent.DesktopLyric, {
       type: DesktopLyricEmit.Progress,
       data: musicStore.playProgress
     })

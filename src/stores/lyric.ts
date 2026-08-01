@@ -1,4 +1,4 @@
-import {
+﻿import {
   LyricBaseColor,
   LyricFontSize,
   LyricFormat,
@@ -12,8 +12,8 @@ import { getFullName, invoke, parseKrcLyric, parseLrcLyric } from '@/utils/tools
 type MatchedMap = Record<ID, { id: string; fmt: LyricFormat }>
 type OffsetMap = Record<ID, number>
 
-export const useMainLyricStore = defineStore(
-  'lyric-main',
+export const useLyricStore = defineStore(
+  'lyric',
   () => {
     const pageVisible = ref(false) // 歌词页可见性
     const pageMode = ref(LyricPageMode.Cover) // 歌词页背景模式
@@ -30,13 +30,18 @@ export const useMainLyricStore = defineStore(
     const matchedMap = ref<MatchedMap>({}) // 歌词匹配列表, 记录歌曲使用的歌词id
     const offsetMap = ref<OffsetMap>({}) // 歌词偏移量列表
 
-    // 当前歌词的偏移量
-    const offset = computed(() => (lyric.value ? offsetMap.value[lyric.value.id] || 0 : 0))
-
-    const togglePageVisible = () => (pageVisible.value = !pageVisible.value)
-    const setPageMode = (newMode: LyricPageMode) => (pageMode.value = newMode)
-    const setLyric = (newLyric: LyricInfo | undefined) => (lyric.value = newLyric)
-    const setFontFamily = (newFontFamily: FontValue) => (setting.value.fontFamily = newFontFamily)
+    const togglePageVisible = () => {
+      pageVisible.value = !pageVisible.value
+    }
+    const setPageMode = (newMode: LyricPageMode) => {
+      pageMode.value = newMode
+    }
+    const setLyric = (newLyric: LyricInfo | undefined) => {
+      lyric.value = newLyric
+    }
+    const setFontFamily = (newFontFamily: FontValue) => {
+      setting.value.fontFamily = newFontFamily
+    }
     const setFontSize = (mode: 'add' | 'sub' | 'restart') => {
       switch (mode) {
         case 'add':
@@ -50,11 +55,18 @@ export const useMainLyricStore = defineStore(
           break
       }
     }
-    const setTextColor = (newColor: string) => (setting.value.textColor = newColor)
-    const setTextAlign = (newTextAlign: LyricTextAlign) => (setting.value.textAlign = newTextAlign)
-    const setTransMode = (newTransMode: LyricTransMode) => (setting.value.transMode = newTransMode)
-    const setMatchedLyric = (musicId: ID, lyricId: string, fmt: LyricFormat) =>
-      (matchedMap.value[musicId] = { id: lyricId, fmt })
+    const setTextColor = (newColor: string) => {
+      setting.value.textColor = newColor
+    }
+    const setTextAlign = (newTextAlign: LyricTextAlign) => {
+      setting.value.textAlign = newTextAlign
+    }
+    const setTransMode = (newTransMode: LyricTransMode) => {
+      setting.value.transMode = newTransMode
+    }
+    const setMatchedLyric = (musicId: ID, lyricId: string, fmt: LyricFormat) => {
+      matchedMap.value[musicId] = { id: lyricId, fmt }
+    }
     const setOffsetMap = (mode: 'add' | 'sub' | 'restart') => {
       if (!lyric.value) return
 
@@ -75,32 +87,40 @@ export const useMainLyricStore = defineStore(
       isLoading.value = true
       setLyric(undefined)
 
+      let lyricInfo: LyricInfo | undefined = undefined
+
       let lyricGet = await getLocalLyric(music, lyric)
       if (!lyricGet) lyricGet = await getOnlineLyric(music, lyric)
 
       if (lyricGet) {
-        const lyricLines: LyricLine[] = []
+        let lyricLines: LyricLine[] = []
 
         switch (lyricGet.fmt) {
           case LyricFormat.Krc:
-            lyricLines.push(...parseKrcLyric(lyricGet.content))
+            lyricLines = parseKrcLyric(lyricGet.content)
             break
           case LyricFormat.Lrc:
-            lyricLines.push(...parseLrcLyric(lyricGet.content))
+            lyricLines = parseLrcLyric(lyricGet.content)
             break
         }
 
-        setLyric({ id: lyricGet.id, fmt: lyricGet.fmt, lines: lyricLines })
-        setMatchedLyric(music.id, lyricGet.id, lyricGet.fmt)
-      } else {
-        setLyric(undefined)
+        lyricInfo = {
+          id: lyricGet.id,
+          fmt: lyricGet.fmt,
+          lines: lyricLines
+        }
+      }
+
+      if (lyricInfo) {
+        setLyric(lyricInfo)
+        setMatchedLyric(music.id, lyricInfo.id, lyricInfo.fmt)
       }
 
       isLoading.value = false
     }
 
     // 获取本地歌词
-    const getLocalLyric = (music: PlayingMusic, lyric?: LyricCandidate) => {
+    const getLocalLyric = async (music: PlayingMusic, lyric?: LyricCandidate) => {
       let id = ''
       let fmt = LyricFormat.Krc
 
@@ -114,32 +134,38 @@ export const useMainLyricStore = defineStore(
         fmt = matchedLyric.fmt
       }
 
-      return invoke('music_lyric_get', { name: getFullName(music), id, fmt })
+      try {
+        return await invoke('music_lyric_get', { name: getFullName(music), id, fmt })
+      } catch (error) {
+        console.error(error)
+      }
     }
 
     // 获取网络歌词
     const getOnlineLyric = async (music: PlayingMusic, lyric?: LyricCandidate) => {
-      if (!lyric) {
-        // 搜索歌词列表
-        const lyric_search = await invoke('api_lyric_search', {
-          keyword: getFullName(music, 'at'),
-          hash: music.hash
+      try {
+        if (!lyric) {
+          // 搜索歌词列表
+          const lyric_search = await invoke('api_lyric_search', {
+            keyword: getFullName(music, 'at'),
+            hash: music.hash
+          })
+          if (lyric_search.status !== 200 || lyric_search.candidates.length === 0) return
+
+          // 默认选择官方推荐, 其次评分最高的(即第一个)
+          lyric =
+            lyric_search.candidates.find((item) => item.product_from === '官方推荐歌词') ||
+            lyric_search.candidates[0]
+        }
+
+        return await invoke('api_lyric_get', {
+          name: getFullName(music),
+          id: lyric.id,
+          accesskey: lyric.accesskey
         })
-        if (lyric_search?.status !== 200) return
-
-        // 默认选择官方推荐, 其次评分最高的(即第一个)
-        lyric =
-          lyric_search.candidates.find((item) => item.product_from === '官方推荐歌词') ||
-          lyric_search.candidates[0]
-
-        if (!lyric) return
+      } catch (error) {
+        console.error(error)
       }
-
-      return invoke('api_lyric_get', {
-        name: getFullName(music),
-        id: lyric.id,
-        accesskey: lyric.accesskey
-      })
     }
 
     return {
@@ -150,7 +176,6 @@ export const useMainLyricStore = defineStore(
       setting,
       matchedMap,
       offsetMap,
-      offset,
 
       togglePageVisible,
       setPageMode,
@@ -167,7 +192,7 @@ export const useMainLyricStore = defineStore(
   },
   {
     persist: {
-      key: 'lyric-main-store',
+      key: 'lyric-store',
       pick: ['pageMode', 'setting', 'matchedMap', 'offsetMap']
     }
   }

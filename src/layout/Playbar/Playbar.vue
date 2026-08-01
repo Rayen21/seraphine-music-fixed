@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import DesktopLyric from './DesktopLyric.vue'
 import PlayList from './PlayList.vue'
 import PlayMode from './PlayMode.vue'
@@ -8,7 +8,7 @@ import Carousel from '@/components/Carousel.vue'
 import Image from '@/components/Image.vue'
 import ProgressRange from '@/components/ProgressRange.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useMainLyricStore } from '@/stores/lyric.ts'
+import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { Interval, PlayingOrigin } from '@/utils/params'
 import { formatDuration, getPic } from '@/utils/tools'
@@ -16,7 +16,7 @@ import { convertFileSrc } from '@tauri-apps/api/core'
 import { watchThrottled } from '@vueuse/core'
 
 const musicStore = useMusicStore()
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 
 const playProgress = ref(musicStore.playProgress)
 

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import Cache from './Cache.vue'
 import Close from './Close.vue'
 import Device from './Device.vue'

@@ -1,8 +1,8 @@
-<script lang="ts" setup>
-import Image from '../Image.vue'
-import SvgIcon from '../SvgIcon.vue'
+﻿<script lang="ts" setup>
+import Image from '@/components/Image.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
 import { useListContext } from '@/utils/hooks'
-import { ListType } from '@/utils/params.ts'
+import { ListType } from '@/utils/params'
 import { getPic } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 

@@ -1,6 +1,6 @@
 <script lang="ts" setup generic="T extends Record<string, any>">
-import SvgIcon from './SvgIcon.vue'
-import { Interval } from '@/utils/params.ts'
+import SvgIcon from '@/components/SvgIcon.vue'
+import { Interval } from '@/utils/params'
 import { useEventListener, useThrottleFn } from '@vueuse/core'
 
 type Key = keyof T

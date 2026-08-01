@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicHeader from '@/components/MusicTable/MusicHeader.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'

@@ -1,18 +1,18 @@
-<script lang="ts" setup>
-import Image from '../Image.vue'
-import Modal from '../Modal.vue'
-import ToTartget from '../PageActions/ToTartget.vue'
-import ToTop from '../PageActions/ToTop.vue'
-import SvgIcon from '../SvgIcon.vue'
-import VirtualList from '../VirtualList.vue'
+﻿<script lang="ts" setup>
 import MusicDetail from './MusicDetail.vue'
-import { notify } from '@/components/Notification'
-import { useContextMenuStore } from '@/stores/context-menu.ts'
-import { useMusicStore } from '@/stores/music.ts'
-import { useUserStore } from '@/stores/user.ts'
-import { useListContext } from '@/utils/hooks.ts'
-import { ListType } from '@/utils/params.ts'
-import { cn, formatDuration, getPic, getPlayingOrigin, invoke } from '@/utils/tools.ts'
+import Image from '@/components/Image.vue'
+import Modal from '@/components/Modal.vue'
+import { notify } from '@/components/Notification.tsx'
+import ToTartget from '@/components/PageActions/ToTartget.vue'
+import ToTop from '@/components/PageActions/ToTop.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
+import VirtualList from '@/components/VirtualList.vue'
+import { useContextMenuStore } from '@/stores/context-menu'
+import { useMusicStore } from '@/stores/music'
+import { useUserStore } from '@/stores/user'
+import { useListContext } from '@/utils/hooks'
+import { ListType } from '@/utils/params'
+import { cn, formatDuration, getPic, getPlayingOrigin, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
 interface Emits {
@@ -127,7 +127,16 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
         label: '打开文件目录',
         prefixIcon: 'Folder',
         disabled: !!music.hash,
-        onClick: () => music.path && invoke('music_file_open', { path: music.path })
+        onClick: async () => {
+          if (!music.path) return
+
+          try {
+            await invoke('system_path_file_open', { path: music.path })
+          } catch (error) {
+            console.error(error)
+            notify.error('打开文件目录失败')
+          }
+        }
       },
       { label: '从列表中删除', prefixIcon: 'Bin', onClick: () => (removeVisible.value = true) }
     ]

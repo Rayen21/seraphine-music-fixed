@@ -1,6 +1,6 @@
-<script lang="ts" setup>
-import ActionButton from './ActionButton.vue'
-import SvgIcon from './SvgIcon.vue'
+﻿<script lang="ts" setup>
+import ActionButton from '@/components/ActionButton.vue'
+import SvgIcon from '@/components/SvgIcon.vue'
 import { useSettingStore } from '@/stores/setting'
 import { cn } from '@/utils/tools'
 

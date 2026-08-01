@@ -1,21 +1,22 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
+import { useDesktopLyricStore } from './stores/desktop-lyric'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useDesktopLyricStore } from '@/stores/desktop-lyric'
 import {
   DesktopLyricEmit,
+  FORWARD_DURATION,
   Interval,
   LyricFontSize,
   LyricFormat,
   LyricTransMode,
   PresetsColors,
   WindowEvent,
-  WindowName,
+  WindowTarget,
   desktopLyricSize
 } from '@/utils/params'
 import { getFullName } from '@/utils/tools'
 import { emitTo, listen } from '@tauri-apps/api/event'
-import { PhysicalPosition, getCurrentWindow } from '@tauri-apps/api/window'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { vOnClickOutside } from '@vueuse/components'
 import { useThrottleFn } from '@vueuse/core'
 
@@ -23,7 +24,6 @@ const lyricWindow = getCurrentWindow()
 
 const desktopLyricStore = useDesktopLyricStore()
 
-const FORWARD_DURATION = 150 // 歌词提前滚动时间 (ms)
 const ContentHeight = desktopLyricSize.height - 32 // 歌词部分的高度, 32 = 操作栏高度(2rem)
 
 const isHovering = ref(false)
@@ -41,13 +41,13 @@ const fontFamilyVisible = ref(false)
 const fontFamilyOptions = ref<Array<SelectOption<FontValue>>>([])
 const isLocked = ref(false)
 
-const fontFamilySelection = computed(
+// 当前歌词的偏移量
+const offset = computed(() => (lyric.value ? desktopLyricStore.offsetMap[lyric.value.id] || 0 : 0))
+const fontFamilySelection = computed<SelectOption<FontValue> | undefined>(
   () =>
     fontFamilyOptions.value.find((item) => item.value === desktopLyricStore.fontFamily) ||
     fontFamilyOptions.value[0]
 )
-// 当前歌词的偏移量
-const offset = computed(() => (lyric.value ? desktopLyricStore.offsetMap[lyric.value.id] || 0 : 0))
 
 // 当前高亮歌词行索引
 const activedIndex = computed(() => {
@@ -65,16 +65,14 @@ const activedIndex = computed(() => {
 })
 
 watch(activedIndex, (index) => {
-  // 情况1：当前播放的 = 上行展示索引
   if (index === currentIndex.value) {
+    // 情况1：当前播放的 = 上行展示索引
     nextIndex.value = index + 1
-  }
-  // 情况2：当前播放的 = 下行展示索引
-  else if (index === nextIndex.value) {
+  } else if (index === nextIndex.value) {
+    // 情况2：当前播放的 = 下行展示索引
     currentIndex.value = index + 1
-  }
-  // 情况3：拖动进度条，跳跃很远，直接重置
-  else {
+  } else {
+    // 情况3：拖动进度条，跳跃很远，直接重置
     currentIndex.value = index
     nextIndex.value = index + 1
   }
@@ -99,55 +97,45 @@ const handleTransClick = (mode: LyricTransMode) => {
 }
 
 // 获取单词进度百分比
-const getWordProgress = (word: LyricWord) => {
-  const pg = (progress.value + offset.value) * 1000 - word.offset
-  return `${Math.max(0, Math.min(1, pg / word.duration)) * 100}%`
-}
+const getWordProgress = (word: LyricWord) =>
+  `${Math.max(0, Math.min(1, ((progress.value + offset.value) * 1000 - word.offset) / word.duration)) * 100}%`
 
 const handleSend = (type: DesktopLyricEmit, data?: any) => {
-  emitTo(WindowName.Main, WindowEvent.DesktopLyric, { type, data })
+  emitTo(WindowTarget.Main, WindowEvent.DesktopLyric, { type, data })
 }
 
 const handleLock = () => {
-  // desktopLyricStore.toggleLockState()
   isLocked.value = !isLocked.value
   lyricWindow.setIgnoreCursorEvents(isLocked.value)
 
   if (isLocked.value) isHovering.value = false
 }
 
-const throttledSendPos = useThrottleFn((e: { payload: PhysicalPosition }) => {
-  handleSend(DesktopLyricEmit.Pos, e.payload)
-}, Interval.Long)
-
-onMounted(() => {
-  // 拖动时鼠标会取消悬停状态, 强制赋值
-  lyricWindow.onMoved((e) => {
+// 拖动时鼠标会取消悬停状态, 强制赋值
+lyricWindow.onMoved(
+  useThrottleFn((e) => {
     isHovering.value = true
-    throttledSendPos(e)
-  })
-
-  emitTo(WindowName.Main, WindowEvent.DesktopLyric, { type: DesktopLyricEmit.Init })
-  listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) => {
-    switch (e.payload.type) {
-      case DesktopLyricEmit.Audio:
-        audio.value = e.payload.data as DesktopLyricAudio
-
-        break
-      case DesktopLyricEmit.Progress:
-        progress.value = e.payload.data as number
-        break
-      case DesktopLyricEmit.Lyric:
-        lyric.value = e.payload.data as LyricInfo
-        break
-      case DesktopLyricEmit.Fonts:
-        fontFamilyOptions.value = (e.payload.data as FontItem[]).map(([label, value]) => ({
-          label,
-          value
-        }))
-        break
-    }
-  })
+    handleSend(DesktopLyricEmit.Pos, e.payload)
+  }, Interval.Long)
+)
+// 向主窗口发送初始化请求
+emitTo(WindowTarget.Main, WindowEvent.DesktopLyric, { type: DesktopLyricEmit.Init })
+listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) => {
+  switch (e.payload.type) {
+    case DesktopLyricEmit.Audio:
+      audio.value = e.payload.data as DesktopLyricAudio
+      break
+    case DesktopLyricEmit.Progress:
+      progress.value = e.payload.data as number
+      break
+    case DesktopLyricEmit.Lyric:
+      lyric.value = e.payload.data as LyricInfo
+      break
+    case DesktopLyricEmit.Fonts:
+      const fonts = e.payload.data as FontItem[]
+      fontFamilyOptions.value = fonts.map(([label, value]) => ({ label, value }))
+      break
+  }
 })
 </script>
 
@@ -301,8 +289,8 @@ onMounted(() => {
         fontFamily: desktopLyricStore.fontFamily,
         fontSize: `${desktopLyricStore.fontSize}px`,
         '-webkit-text-stroke': '0.4px #000',
-        '--color-lyric-base': desktopLyricStore.textColors[0],
-        '--color-lyric-accent': desktopLyricStore.textColors[1]
+        '--color-lyric-base': desktopLyricStore.textBaseColor,
+        '--color-lyric-accent': desktopLyricStore.textAccentColor
       }">
       <template v-if="!lyric?.lines.length">
         <div

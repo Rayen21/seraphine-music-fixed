@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useMusicStore } from '@/stores/music'
@@ -18,37 +18,50 @@ const deviceSelection = computed(
 )
 
 const getDevices = async () => {
-  const player_devices = await invoke('music_player_get_devices')
-  if (!player_devices) return
+  try {
+    const player_devices = await invoke('music_player_get_devices')
+    if (!player_devices) return
 
-  deviceOptions.value = player_devices.map((item) => ({ label: item.name, value: item.id }))
+    deviceOptions.value = player_devices.map((item) => ({ label: item.name, value: item.id }))
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const getDevice = async () => {
-  const player_device = await invoke('music_player_get_device')
-  if (!player_device) return
+  try {
+    const player_device = await invoke('music_player_get_device')
+    if (!player_device) return
 
-  settingStore.setDevice(player_device.id)
+    settingStore.setDevice(player_device.id)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const handleDeviceSelect = async (id: string) => {
   deviceVisible.value = false
 
-  const pg = musicStore.playProgress
-  await invoke('music_player_set_device', { id })
-  await musicStore.setMusic(musicStore.music, {
-    origin: musicStore.origin,
-    loop: true,
-    autoPlay: musicStore.isPlaying
-  })
-  await musicStore.seek(pg)
+  try {
+    const lastProgress = musicStore.playProgress
 
-  settingStore.setDevice(id)
+    await invoke('music_player_set_device', { id })
+    settingStore.setDevice(id)
+
+    await musicStore.setMusic(musicStore.music, {
+      origin: musicStore.origin,
+      loop: true,
+      autoPlay: musicStore.isPlaying
+    })
+    await musicStore.seek(lastProgress)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-onMounted(() => {
-  getDevices()
-  getDevice()
+onMounted(async () => {
+  await getDevices()
+  await getDevice()
 })
 </script>
 

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ProgressRange from '@/components/ProgressRange.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useMusicStore } from '@/stores/music'

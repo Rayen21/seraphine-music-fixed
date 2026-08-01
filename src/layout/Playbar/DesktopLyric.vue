@@ -1,13 +1,11 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import { notify } from '@/components/Notification'
 import { useDesktopLyricBridge } from '@/composables/useDesktopLyricBridge'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
-import { WindowName, desktopLyricSize } from '@/utils/params'
+import { WindowTarget, desktopLyricSize } from '@/utils/params'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-
-const mainWindow = getCurrentWindow()
 
 const musicStore = useMusicStore()
 const settingStore = useSettingStore()
@@ -18,14 +16,14 @@ const lyricBridge = useDesktopLyricBridge(lyricWindow)
 
 const handleDesktopLyric = async () => {
   if (!lyricWindow.value) {
-    const scaleFactor = await mainWindow.scaleFactor()
+    const scaleFactor = await getCurrentWindow().scaleFactor()
 
     const { width, height } = desktopLyricSize
     const { x, y } = settingStore.desktopLyricPosition
     const logicalX = x / scaleFactor || Math.round((window.screen.availWidth - width) / 2)
     const logicalY = y / scaleFactor || Math.round(window.screen.availHeight - height)
 
-    lyricWindow.value = new WebviewWindow(WindowName.DesktopLyric, {
+    lyricWindow.value = new WebviewWindow(WindowTarget.DesktopLyric, {
       title: '桌面歌词',
       url: '/desktop-lyric.html',
       width,

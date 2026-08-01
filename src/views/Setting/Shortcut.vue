@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { useSettingStore } from '@/stores/setting'
 import { ShortcutKey } from '@/utils/params'

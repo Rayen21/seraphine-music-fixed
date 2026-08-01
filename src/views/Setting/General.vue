@@ -17,7 +17,7 @@ const fontFamilyVisible = ref(false)
 const autoStartModeVisible = ref(false)
 
 const fontFamilyOptions = computed<Array<SelectOption<FontValue>>>(() =>
-  settingStore.availableFonts.map(([label, value]) => ({ label, value }))
+  settingStore.availableFonts.map(([label, value]: [string, FontValue]) => ({ label, value }))
 )
 const fontFamilySelection = computed<SelectOption<FontValue> | undefined>(
   () =>

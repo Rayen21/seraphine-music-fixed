@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import { cn } from '@/utils/tools'
 
 interface Props {

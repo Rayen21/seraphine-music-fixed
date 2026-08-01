@@ -1,8 +1,8 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import { useUserStore } from '@/stores/user'
-import { QrcodeStatus, QrcodeType } from '@/utils/params'
+import { ApiInvokeStatus, QrcodeStatus, QrcodeType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import Qrcode from 'qrcode.vue'
 
@@ -20,7 +20,7 @@ const qrcodeOptions: Array<SlideOption<QrcodeType>> = [
   { label: '微信', value: QrcodeType.WX }
 ]
 
-const POLL_INTERVAL = 2 * 1000 // 轮询间隔时间 2s
+const POLL_INTERVAL = 1 * 1000 // 轮询间隔时间 1s
 const POLL_TIMEOUT = 60 * 1000 // 轮询超时时间 60s
 
 let qrcodeKey = '' // 二维码 key
@@ -56,29 +56,34 @@ const loadQrcode = (optison: SlideOption<QrcodeType>) => {
 // 加载 kg 二维码
 const loadKgQrcode = async () => {
   if (qrcodeLoading.value) return
-
   qrcodeLoading.value = true
 
-  const api_login_qr_key = await invoke('api_login_qr_key')
-  if (api_login_qr_key?.status !== 1) {
-    qrcodeLoading.value = false
-    qrcodeStatus.value = QrcodeStatus.Fail
-    return
-  }
+  try {
+    const api_login_qr_key = await invoke('api_login_qr_key')
+    if (api_login_qr_key.status !== ApiInvokeStatus.Success) {
+      qrcodeLoading.value = false
+      qrcodeStatus.value = QrcodeStatus.Fail
+      return
+    }
 
-  const api_login_qr_create = await invoke('api_login_qr_create', {
-    key: api_login_qr_key.data.qrcode
-  })
-  if (!api_login_qr_create) {
-    qrcodeLoading.value = false
-    qrcodeStatus.value = QrcodeStatus.Fail
-    return
-  }
+    const api_login_qr_create = await invoke('api_login_qr_create', {
+      key: api_login_qr_key.data.qrcode
+    })
+    if (!api_login_qr_create) {
+      qrcodeLoading.value = false
+      qrcodeStatus.value = QrcodeStatus.Fail
+      return
+    }
 
-  qrcodeUrl.value = api_login_qr_create
-  qrcodeKey = api_login_qr_key.data.qrcode
-  qrcodeLoading.value = false
-  checkKgStatus()
+    qrcodeKey = api_login_qr_key.data.qrcode
+    qrcodeUrl.value = api_login_qr_create
+    checkKgStatus()
+  } catch (error) {
+    console.error(error)
+    qrcodeStatus.value = QrcodeStatus.Fail
+  } finally {
+    qrcodeLoading.value = false
+  }
 }
 
 // 检查 kg 二维码状态
@@ -92,40 +97,43 @@ const checkKgStatus = async () => {
       return
     }
 
-    const api_login_qr_check = await invoke('api_login_qr_check', { key: qrcodeKey })
-    if (api_login_qr_check?.status !== 1) {
-      qrcodeStatus.value = QrcodeStatus.Fail
-      cleatTimer()
-      return
-    }
+    try {
+      const api_login_qr_check = await invoke('api_login_qr_check', { key: qrcodeKey })
+      if (api_login_qr_check.status !== ApiInvokeStatus.Success) {
+        qrcodeStatus.value = QrcodeStatus.Fail
+        cleatTimer()
+        return
+      }
 
-    if (api_login_qr_check.data.status === 0) {
-      // 过期
-      qrcodeStatus.value = QrcodeStatus.Timeout
-      cleatTimer()
-    } else if (api_login_qr_check.data.status === 1) {
-      // 等待扫码
-      qrcodeStatus.value = QrcodeStatus.Ready
-    } else if (api_login_qr_check.data.status === 2) {
-      // 待确认
-      qrcodeStatus.value = QrcodeStatus.Scan
-    } else if (api_login_qr_check.data.status === 4) {
-      // 登录成功
-      qrcodeStatus.value = QrcodeStatus.Confirm
+      if (api_login_qr_check.data.status === 0) {
+        // 过期
+        qrcodeStatus.value = QrcodeStatus.Timeout
+        cleatTimer()
+      } else if (api_login_qr_check.data.status === 1) {
+        // 等待扫码
+        qrcodeStatus.value = QrcodeStatus.Ready
+      } else if (api_login_qr_check.data.status === 2) {
+        // 待确认
+        qrcodeStatus.value = QrcodeStatus.Scan
+      } else if (api_login_qr_check.data.status === 4) {
+        // 登录成功
+        qrcodeStatus.value = QrcodeStatus.Confirm
 
-      userStore.login(api_login_qr_check.data)
-      cleatTimer()
+        userStore.login(api_login_qr_check.data)
+        cleatTimer()
 
-      emits('close')
-    } else {
-      // 未知状态
-      qrcodeStatus.value = QrcodeStatus.Fail
-      cleatTimer()
+        emits('close')
+      } else {
+        // 未知状态
+        qrcodeStatus.value = QrcodeStatus.Fail
+        cleatTimer()
+      }
+    } catch (error) {
+      console.error(error)
     }
   }, POLL_INTERVAL)
 
   if (pollTimeout !== null) clearTimeout(pollTimeout)
-
   pollTimeout = setTimeout(() => {
     qrcodeStatus.value = QrcodeStatus.Timeout
     cleatTimer()
@@ -135,20 +143,25 @@ const checkKgStatus = async () => {
 // 获取 wx 二维码
 const loadWxQrcode = async () => {
   if (qrcodeLoading.value) return
-
   qrcodeLoading.value = true
 
-  const api_login_wx_create = await invoke('api_login_wx_create')
-  if (api_login_wx_create?.errcode !== 0) {
-    qrcodeLoading.value = false
-    qrcodeStatus.value = QrcodeStatus.Fail
-    return
-  }
+  try {
+    const api_login_wx_create = await invoke('api_login_wx_create')
+    if (api_login_wx_create.errcode !== 0) {
+      qrcodeLoading.value = false
+      qrcodeStatus.value = QrcodeStatus.Fail
+      return
+    }
 
-  qrcodeUrl.value = api_login_wx_create.qrcode.qrcodeurl
-  qrcodeKey = api_login_wx_create.uuid
-  qrcodeLoading.value = false
-  checkWxStatus()
+    qrcodeKey = api_login_wx_create.uuid
+    qrcodeUrl.value = api_login_wx_create.qrcode.qrcodeurl
+    checkWxStatus()
+  } catch (error) {
+    console.error(error)
+    qrcodeStatus.value = QrcodeStatus.Fail
+  } finally {
+    qrcodeLoading.value = false
+  }
 }
 
 // 检查 wx 二维码状态
@@ -161,48 +174,52 @@ const checkWxStatus = async () => {
       return cleatTimer()
     }
 
-    const api_login_wx_check = await invoke('api_login_wx_check', { uuid: qrcodeKey })
-    if (!api_login_wx_check) {
-      qrcodeStatus.value = QrcodeStatus.Fail
-      return cleatTimer()
-    }
-
-    if (api_login_wx_check.wx_errcode === 402) {
-      // 过期
-      qrcodeStatus.value = QrcodeStatus.Timeout
-    } else if (api_login_wx_check.wx_errcode === 403) {
-      // 拒绝登录
-      qrcodeStatus.value = QrcodeStatus.Fail
-      cleatTimer()
-    } else if (api_login_wx_check.wx_errcode === 404) {
-      // 已经扫描
-      qrcodeStatus.value = QrcodeStatus.Scan
-    } else if (api_login_wx_check.wx_errcode === 405) {
-      // 登录成功
-      qrcodeStatus.value = QrcodeStatus.Confirm
-
-      const api_login_openplat = await invoke('api_login_openplat', {
-        code: api_login_wx_check.wx_code
-      })
-
-      if (!api_login_openplat) {
+    try {
+      const api_login_wx_check = await invoke('api_login_wx_check', { uuid: qrcodeKey })
+      if (!api_login_wx_check) {
         qrcodeStatus.value = QrcodeStatus.Fail
         cleatTimer()
         return
       }
 
-      userStore.login(api_login_openplat.data)
-      cleatTimer()
+      if (api_login_wx_check.wx_errcode === 402) {
+        // 过期
+        qrcodeStatus.value = QrcodeStatus.Timeout
+      } else if (api_login_wx_check.wx_errcode === 403) {
+        // 拒绝登录
+        qrcodeStatus.value = QrcodeStatus.Fail
+        cleatTimer()
+      } else if (api_login_wx_check.wx_errcode === 404) {
+        // 已经扫描
+        qrcodeStatus.value = QrcodeStatus.Scan
+      } else if (api_login_wx_check.wx_errcode === 405) {
+        // 登录成功
+        qrcodeStatus.value = QrcodeStatus.Confirm
 
-      emits('close')
-    } else if (api_login_wx_check.wx_errcode === 408) {
-      // 等待扫描
-      qrcodeStatus.value = QrcodeStatus.Ready
+        const api_login_openplat = await invoke('api_login_openplat', {
+          code: api_login_wx_check.wx_code
+        })
+
+        if (!api_login_openplat) {
+          qrcodeStatus.value = QrcodeStatus.Fail
+          cleatTimer()
+          return
+        }
+
+        userStore.login(api_login_openplat.data)
+        cleatTimer()
+
+        emits('close')
+      } else if (api_login_wx_check.wx_errcode === 408) {
+        // 等待扫描
+        qrcodeStatus.value = QrcodeStatus.Ready
+      }
+    } catch (error) {
+      console.error(error)
     }
   }, POLL_INTERVAL)
 
   if (pollTimeout !== null) clearTimeout(pollTimeout)
-
   pollTimeout = setTimeout(() => {
     qrcodeStatus.value = QrcodeStatus.Timeout
     cleatTimer()

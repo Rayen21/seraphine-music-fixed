@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
 import { useListContext } from '@/utils/hooks'

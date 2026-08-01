@@ -1,6 +1,6 @@
-<script lang="ts" setup>
-import SvgIcon from './SvgIcon.vue'
-import { useContextMenuStore } from '@/stores/context-menu.ts'
+﻿<script lang="ts" setup>
+import SvgIcon from '@/components/SvgIcon.vue'
+import { useContextMenuStore } from '@/stores/context-menu'
 import { useSettingStore } from '@/stores/setting'
 import { vOnClickOutside } from '@vueuse/components'
 import { useEventListener, useWindowSize } from '@vueuse/core'

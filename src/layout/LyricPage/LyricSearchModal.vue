@@ -1,14 +1,15 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
+import { notify } from '@/components/Notification'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useMainLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { getFullName, invoke } from '@/utils/tools'
 
 const visible = defineModel({ required: true, default: false })
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 const musicStore = useMusicStore()
 
 const searchQuery = ref('')
@@ -17,22 +18,27 @@ const searchList = ref<LyricCandidate[]>([])
 const selectLyric = ref<LyricCandidate>()
 
 const handleSearch = async () => {
-  if (!musicStore.music) return
-
+  if (searchLoading.value || !musicStore.music) return
   searchLoading.value = true
 
-  const lyric_search = await invoke('api_lyric_search', {
-    keyword: searchQuery.value,
-    hash: musicStore.music.hash
-  })
-  if (lyric_search?.status !== 200) {
-    searchList.value.length = 0
-    searchLoading.value = false
-    return
-  }
+  try {
+    const lyric_search = await invoke('api_lyric_search', {
+      keyword: searchQuery.value,
+      hash: musicStore.music.hash
+    })
+    if (lyric_search.status !== 200) {
+      searchLoading.value = false
+      searchList.value.length = 0
+      return
+    }
 
-  searchList.value = lyric_search.candidates
-  searchLoading.value = false
+    searchList.value = lyric_search.candidates
+  } catch (error) {
+    console.error(error)
+    notify.error('搜索失败')
+  } finally {
+    searchLoading.value = false
+  }
 }
 
 const handleReset = (refresh = false) => {

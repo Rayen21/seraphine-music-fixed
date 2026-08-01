@@ -21,11 +21,11 @@ export default defineConfig({
     })
   ],
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: './index.html',
         desktopLyric: './desktop-lyric.html',
-        desktopMini: './desktop-mini.html'
+        miniPlayer: './mini-player.html'
       }
     }
   },

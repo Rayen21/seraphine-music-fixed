@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
-import { useMainLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 import { useSettingStore } from '@/stores/setting'
 import { vOnClickOutside } from '@vueuse/components'
 
-const lyricStore = useMainLyricStore()
+const lyricStore = useLyricStore()
 const settingStore = useSettingStore()
 
 const fontFamilyVisible = ref(false)
@@ -20,7 +20,9 @@ const handleFontFamilyClick = () => {
   fontFamilyVisible.value = !fontFamilyVisible.value
 
   if (settingStore.availableFonts.length === 0) settingStore.getAvailableFonts()
-  fontFamilyOptions.value = settingStore.availableFonts.map(([label, value]) => ({ label, value }))
+  fontFamilyOptions.value = settingStore.availableFonts.map(
+    ([label, value]: [string, FontValue]) => ({ label, value })
+  )
 }
 
 const handleFontFamilySelect = (font: FontValue) => {

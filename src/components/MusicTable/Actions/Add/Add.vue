@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import AddModal from './AddModal.vue'
 import { notify } from '@/components/Notification.tsx'
 import SelectModal from '@/components/SelectModal.vue'
@@ -41,14 +41,19 @@ const addList = async () => {
   })
   if (!filePaths) return
 
-  const music_scan_file = await invoke('music_scan_file', {
-    filePaths,
-    startIndex: list.value.list.length
-  })
-  if (!music_scan_file) return
+  try {
+    const music_scan_file = await invoke('music_scan_file', {
+      filePaths,
+      startIndex: list.value.list.length
+    })
 
-  const addLen = listStore.addList(listType, music_scan_file)
-  notify.success(`成功添加 ${addLen} 首歌曲`)
+    const addLen = listStore.addList(listType, music_scan_file)
+    notify.success(`成功添加 ${addLen} 首歌曲`)
+  } catch (error) {
+    console.error(error)
+
+    notify.error('添加歌曲失败')
+  }
 }
 
 // 获取可扫描文件类型

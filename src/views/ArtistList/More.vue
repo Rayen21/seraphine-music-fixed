@@ -1,10 +1,10 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
-import { AreaTypes, PageSize, SexTypes } from '@/utils/params'
+import { ApiInvokeStatus, AreaTypes, PageSize, SexTypes } from '@/utils/params'
 import { getPic, invoke } from '@/utils/tools'
 
 const router = useRouter()
@@ -57,55 +57,61 @@ const handleLoad = async () => {
   if (!areaSlideSelection.value || !sexSlideSelection.value) return
   isLoading.value = true
 
-  const api_artist_list = await invoke('api_artist_list', {
-    areaType: areaSlideSelection.value.value,
-    musician: areaSlideSelection.value.musician,
-    sexType: sexSlideSelection.value.value,
-    page: page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_artist_list?.status !== 1) {
+  try {
+    const api_artist_list = await invoke('api_artist_list', {
+      areaType: areaSlideSelection.value.value,
+      musician: areaSlideSelection.value.musician,
+      sexType: sexSlideSelection.value.value,
+      page: page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_artist_list.status === ApiInvokeStatus.Success) {
+      const list = api_artist_list.data.info.map((artist) => ({
+        id: artist.singerid,
+        cover: artist.imgurl,
+        name: artist.singername,
+        fanscount: artist.fanscount,
+        descibe: artist.descibe,
+        url: artist.url
+      }))
+
+      artistList.value = list
+    }
+  } catch (error) {
+    console.log(error)
+  } finally {
     isLoading.value = false
-    return
   }
-
-  const list = api_artist_list.data.info.map((artist) => ({
-    id: artist.singerid,
-    cover: artist.imgurl,
-    name: artist.singername,
-    fanscount: artist.fanscount,
-    descibe: artist.descibe,
-    url: artist.url
-  }))
-
-  artistList.value = list
-  isLoading.value = false
 }
 
 const handleInfinite = async () => {
   if (isFinished.value || !areaSlideSelection.value || !sexSlideSelection.value) return
 
-  const api_artist_list = await invoke('api_artist_list', {
-    areaType: areaSlideSelection.value.value,
-    musician: areaSlideSelection.value.musician,
-    sexType: sexSlideSelection.value.value,
-    page: ++page.value,
-    pageSize: PageSize.Default
-  })
-  if (api_artist_list?.status !== 1) return
+  try {
+    const api_artist_list = await invoke('api_artist_list', {
+      areaType: areaSlideSelection.value.value,
+      musician: areaSlideSelection.value.musician,
+      sexType: sexSlideSelection.value.value,
+      page: ++page.value,
+      pageSize: PageSize.Default
+    })
+    if (api_artist_list.status !== ApiInvokeStatus.Success) return
 
-  const list = api_artist_list.data.info.map((artist) => ({
-    id: artist.singerid,
-    cover: artist.imgurl,
-    name: artist.singername,
-    fanscount: artist.fanscount,
-    descibe: artist.descibe,
-    url: artist.url
-  }))
+    const list = api_artist_list.data.info.map((artist) => ({
+      id: artist.singerid,
+      cover: artist.imgurl,
+      name: artist.singername,
+      fanscount: artist.fanscount,
+      descibe: artist.descibe,
+      url: artist.url
+    }))
 
-  if (list.length < PageSize.Default) isFinished.value = true
+    artistList.value.push(...list)
 
-  artistList.value.push(...list)
+    if (list.length < PageSize.Default) isFinished.value = true
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 const handleLineClick = (row: ArtistInfo) => {

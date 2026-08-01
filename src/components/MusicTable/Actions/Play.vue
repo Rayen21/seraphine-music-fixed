@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { useMusicStore } from '@/stores/music'
 import { useListContext } from '@/utils/hooks'

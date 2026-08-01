@@ -1,6 +1,5 @@
-import { notify } from '@/components/Notification'
+﻿import { notify } from '@/components/Notification'
 import { invoke } from '@/utils/tools'
-import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { type UnlistenFn, listen } from '@tauri-apps/api/event'
 
 /** GitHub API 返回的更新信息 */
@@ -19,112 +18,127 @@ interface DownloadProgress {
   speed: number
 }
 
-export const useUpdaterStore = defineStore('updater', () => {
-  // ========== 状态 ==========
-  const checking = ref(false)
-  const checked = ref(false)
-  const updateInfo = ref<UpdateInfo | null>(null)
-  const downloading = ref(false)
-  const downloaded = ref(false)
-  const downloadPath = ref('')
-  const downloadProgress = ref<DownloadProgress | null>(null)
-  const progressPercent = computed(() => {
-    if (!downloadProgress.value || downloadProgress.value.total === 0) return 0
-    return Math.round((downloadProgress.value.downloaded / downloadProgress.value.total) * 100)
-  })
+export const useUpdaterStore = defineStore(
+  'updater',
+  () => {
+    // ========== 状态 ==========
+    const isHydrated = ref(false) // store 持久化的水合状态
 
-  let unlistenProgress: UnlistenFn | null = null
+    const isChecking = ref(false)
+    const updateInfo = ref<UpdateInfo>()
+    const isDownloading = ref(false)
+    const isDownloaded = ref(false)
+    const downloadPath = ref('')
+    const downloadProgress = ref<DownloadProgress>()
+    const progressPercent = computed(() => {
+      if (!downloadProgress.value || downloadProgress.value.total === 0) return 0
+      return Math.round((downloadProgress.value.downloaded / downloadProgress.value.total) * 100)
+    })
 
-  // ========== 方法 ==========
+    let unlistenProgress: UnlistenFn | undefined
 
-  /**
-   * 检查更新
-   * @param silent 静默模式（不弹错误通知，由调用方处理 UI）
-   */
-  const checkUpdate = async (silent = false) => {
-    if (checking.value || downloading.value) return null
+    // ========== 方法 ==========
 
-    checking.value = true
-    try {
-      const info = silent
-        ? await tauriInvoke<UpdateInfo>('check_update')
-        : await invoke('check_update')
+    watch(
+      isHydrated,
+      () => {
+        checkUpdate()
+      },
+      { once: true }
+    )
 
-      updateInfo.value = info ?? null
-      checked.value = true
+    /** 检查更新 */
+    const checkUpdate = async () => {
+      if (isChecking.value || isDownloading.value) return
+      isChecking.value = true
+      notify.info('检查更新中...')
 
-      if (info?.has_update && !silent) {
-        notify.success(`发现新版本 v${info.latest_version}`)
+      try {
+        const info = await invoke('check_update')
+        if (info) {
+          updateInfo.value = info
+          notify.success(info.has_update ? `发现新版本 ${info.latest_version}` : '已是最新版本')
+        }
+      } catch (error) {
+        console.error(error)
+        notify.error('检查更新失败')
+      } finally {
+        isChecking.value = false
       }
-      return info ?? null
-    } catch (e) {
-      console.error('[update] 检查更新失败:', e)
-      return null
-    } finally {
-      checking.value = false
     }
-  }
 
-  /** 下载更新包（后台运行，通过事件推送进度） */
-  const startDownload = async () => {
-    if (!updateInfo.value?.download_url || downloading.value) return
+    /** 下载更新包（后台运行，通过事件推送进度） */
+    const startDownload = async () => {
+      if (!updateInfo.value?.download_url || isDownloading.value) return
 
-    downloading.value = true
-    downloaded.value = false
-    downloadProgress.value = null
+      isDownloading.value = true
+      isDownloaded.value = false
+      downloadProgress.value = undefined
 
-    try {
-      unlistenProgress = await listen<DownloadProgress>('update:download-progress', (event) => {
-        downloadProgress.value = event.payload
-      })
+      try {
+        unlistenProgress = await listen<DownloadProgress>('update:download-progress', (e) => {
+          downloadProgress.value = e.payload
+        })
 
-      const path = await invoke('download_update', { downloadUrl: updateInfo.value.download_url })
+        const path = await invoke('download_update', { downloadUrl: updateInfo.value.download_url })
+        if (!path) return
 
-      if (path) {
         downloadPath.value = path
-        downloaded.value = true
+        isDownloaded.value = true
         notify.success('下载完成，可在设置页安装更新')
+      } catch (error) {
+        console.error(error)
+        notify.error(`下载失败`)
+      } finally {
+        unlistenProgress?.()
+        unlistenProgress = undefined
+        isDownloading.value = false
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      notify.error(`下载失败: ${msg}`)
-    } finally {
-      downloading.value = false
+    }
+
+    /** 启动已下载的安装程序 */
+    const installUpdate = async () => {
+      if (!downloadPath.value) return
+
+      try {
+        await invoke('install_update', { savePath: downloadPath.value })
+      } catch (error) {
+        console.error(error)
+        notify.error(`安装失败`)
+      }
+    }
+
+    /** 重置下载状态 */
+    const reset = () => {
       unlistenProgress?.()
-      unlistenProgress = null
+      unlistenProgress = undefined
+      isDownloading.value = false
+      isDownloaded.value = false
+      downloadPath.value = ''
+      downloadProgress.value = undefined
+    }
+
+    return {
+      isHydrated,
+      isChecking,
+      updateInfo,
+      isDownloading,
+      isDownloaded,
+      downloadPath,
+      downloadProgress,
+      progressPercent,
+
+      checkUpdate,
+      startDownload,
+      installUpdate,
+      reset
+    }
+  },
+  {
+    persist: {
+      key: 'updater-store',
+      pick: [],
+      afterHydrate: (ctx) => (ctx.store.isHydrated = true)
     }
   }
-
-  /** 启动已下载的安装程序 */
-  const installUpdate = async () => {
-    if (!downloadPath.value) return
-
-    await invoke('install_update', { savePath: downloadPath.value })
-  }
-
-  /** 重置下载状态 */
-  const reset = () => {
-    unlistenProgress?.()
-    unlistenProgress = null
-    downloading.value = false
-    downloaded.value = false
-    downloadPath.value = ''
-    downloadProgress.value = null
-  }
-
-  return {
-    checking,
-    checked,
-    updateInfo,
-    downloading,
-    downloaded,
-    downloadPath,
-    downloadProgress,
-    progressPercent,
-
-    checkUpdate,
-    startDownload,
-    installUpdate,
-    reset
-  }
-})
+)

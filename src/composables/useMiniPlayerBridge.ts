@@ -1,8 +1,8 @@
-import { useListStore } from '@/stores/list'
-import { useMainLyricStore } from '@/stores/lyric'
+﻿import { useListStore } from '@/stores/list'
+import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
-import { DesktopMiniEmit, Interval, WindowEvent, WindowName } from '@/utils/params'
+import { Interval, MiniPlayerEmit, WindowEvent, WindowTarget } from '@/utils/params'
 import { getPlayingOrigin } from '@/utils/tools'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -11,30 +11,35 @@ import { watchThrottled } from '@vueuse/core'
 
 const FORWARD_DURATION = 150 // 歌词提前滚动时间 (ms)
 
-export function useDesktopMiniBridge(
+export function useMiniPlayerBridge(
   miniWindow: Ref<WebviewWindow | undefined>,
   mainWindow: Window
 ) {
-  const musicStore = useMusicStore()
-  const lyricStore = useMainLyricStore()
   const listStore = useListStore()
+  const musicStore = useMusicStore()
+  const lyricStore = useLyricStore()
   const settingStore = useSettingStore()
 
   const stopFns: (() => void)[] = []
 
+  // 当前歌词的偏移量
+  const lyricOffset = computed(() =>
+    lyricStore.lyric ? lyricStore.offsetMap[lyricStore.lyric.id] || 0 : 0
+  )
+
   const syncAudio = async () => {
-    const data: DesktopMiniAudio = {
+    const data: MiniPlayerAudio = {
       isLoading: musicStore.isLoading,
       isPlaying: musicStore.isPlaying,
       music: musicStore.music,
       origin: musicStore.origin
     }
-    emitTo(WindowName.DesktopMini, WindowEvent.DesktopMini, { type: DesktopMiniEmit.Audio, data })
+    emitTo(WindowTarget.MiniPlayer, WindowEvent.MiniPlayer, { type: MiniPlayerEmit.Audio, data })
   }
 
   const syncPlaylist = () => {
-    emitTo(WindowName.DesktopMini, WindowEvent.DesktopMini, {
-      type: DesktopMiniEmit.Playlist,
+    emitTo(WindowTarget.MiniPlayer, WindowEvent.MiniPlayer, {
+      type: MiniPlayerEmit.Playlist,
       data: listStore.play.list
     })
   }
@@ -43,7 +48,7 @@ export function useDesktopMiniBridge(
     if (!lyricStore.lyric) return
 
     const lines = lyricStore.lyric.lines
-    const pg = (musicStore.playProgress + lyricStore.offset) * 1000 + FORWARD_DURATION
+    const pg = (musicStore.playProgress + lyricOffset.value) * 1000 + FORWARD_DURATION
 
     let text = ''
     for (let i = 0; i < lines.length; i++) {
@@ -53,8 +58,8 @@ export function useDesktopMiniBridge(
       break
     }
 
-    emitTo(WindowName.DesktopMini, WindowEvent.DesktopMini, {
-      type: DesktopMiniEmit.Lyric,
+    emitTo(WindowTarget.MiniPlayer, WindowEvent.MiniPlayer, {
+      type: MiniPlayerEmit.Lyric,
       data: text
     })
   }
@@ -67,42 +72,42 @@ export function useDesktopMiniBridge(
     )
     const unwatchPlaylist = watch(() => listStore.play.list, syncPlaylist)
     const unwatchLyric = watchThrottled(
-      [() => musicStore.playProgress, () => lyricStore.lyric, () => lyricStore.offset],
+      [() => musicStore.playProgress, () => lyricStore.lyric, lyricOffset.value],
       syncLyric,
       { throttle: Interval.Long }
     )
-    const unlistenAction = await listen<{ type: DesktopMiniEmit; data: unknown }>(
-      WindowEvent.DesktopMini,
+    const unlistenAction = await listen<{ type: MiniPlayerEmit; data: unknown }>(
+      WindowEvent.MiniPlayer,
       (e) => {
         switch (e.payload.type) {
-          case DesktopMiniEmit.Init:
+          case MiniPlayerEmit.Init:
             syncAudio()
             syncPlaylist()
             syncLyric()
             break
-          case DesktopMiniEmit.Play:
+          case MiniPlayerEmit.Play:
             musicStore.play()
             break
-          case DesktopMiniEmit.Pause:
+          case MiniPlayerEmit.Pause:
             musicStore.pause()
             break
-          case DesktopMiniEmit.Prev:
+          case MiniPlayerEmit.Prev:
             musicStore.playPrevOrNext('prev')
             break
-          case DesktopMiniEmit.Next:
+          case MiniPlayerEmit.Next:
             musicStore.playPrevOrNext('next')
             break
-          case DesktopMiniEmit.Set: {
+          case MiniPlayerEmit.Set: {
             const music = e.payload.data as ListMusic
             musicStore.setMusic(music, { origin: getPlayingOrigin(music) })
             break
           }
-          case DesktopMiniEmit.Close:
+          case MiniPlayerEmit.Close:
             stop()
             break
-          case DesktopMiniEmit.Pos:
+          case MiniPlayerEmit.Pos:
             const { x, y } = e.payload.data as PhysicalPosition
-            settingStore.setDesktopMiniPosition({ x, y })
+            settingStore.setMiniPlayerPosition({ x, y })
             break
         }
       }

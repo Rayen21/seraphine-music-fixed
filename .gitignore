@@ -24,8 +24,4 @@ dist-ssr
 *.sw?
 .history/
 
-# Tauri build artifacts
-src-tauri/target/
-src-tauri/Temp/
-
 .scratch

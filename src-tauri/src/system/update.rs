@@ -1,11 +1,11 @@
-use crate::http::client::{HttpRequest, HttpRequestOptions};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_http::reqwest::Method;
 use tokio_stream::StreamExt;
 
-const GITHUB_API: &str =
-  "https://api.github.com/repos/burenLee/seraphine-music/releases/latest";
+use crate::http::client::{HttpRequest, HttpRequestOptions};
+
+const GITHUB_API: &str = "https://api.github.com/repos/burenLee/seraphine-music/releases/latest";
 const UA: &str = "seraphine-music";
 
 #[derive(Debug, Deserialize)]
@@ -70,10 +70,7 @@ pub async fn check_update(app: AppHandle) -> Result<UpdateInfo, String> {
   let current = parse_version(&current_version)?;
   let latest = parse_version(&release.tag_name)?;
 
-  let nsis_asset = release
-    .assets
-    .iter()
-    .find(|a| a.name.ends_with(".exe"));
+  let nsis_asset = release.assets.iter().find(|a| a.name.ends_with(".exe"));
 
   Ok(UpdateInfo {
     has_update: latest > current,
@@ -86,10 +83,7 @@ pub async fn check_update(app: AppHandle) -> Result<UpdateInfo, String> {
 
 /// 下载更新包到应用数据目录，期间通过事件发送下载进度
 #[tauri::command]
-pub async fn download_update(
-  app: AppHandle,
-  download_url: String,
-) -> Result<String, String> {
+pub async fn download_update(app: AppHandle, download_url: String) -> Result<String, String> {
   let client = HttpRequest::get_client();
   let resp = client
     .get(&download_url)
@@ -118,11 +112,7 @@ pub async fn download_update(
     let now = std::time::Instant::now();
     if now.duration_since(last_emit).as_millis() >= 100 {
       let elapsed = now.duration_since(start).as_secs_f64();
-      let speed = if elapsed > 0.0 {
-        downloaded as f64 / elapsed
-      } else {
-        0.0
-      };
+      let speed = if elapsed > 0.0 { downloaded as f64 / elapsed } else { 0.0 };
       let _ = app.emit(
         "update:download-progress",
         DownloadProgress {
@@ -137,11 +127,7 @@ pub async fn download_update(
 
   // 最后确保 100% 进度
   let elapsed = start.elapsed().as_secs_f64();
-  let speed = if elapsed > 0.0 {
-    downloaded as f64 / elapsed
-  } else {
-    0.0
-  };
+  let speed = if elapsed > 0.0 { downloaded as f64 / elapsed } else { 0.0 };
   let _ = app.emit(
     "update:download-progress",
     DownloadProgress {
@@ -167,12 +153,39 @@ pub async fn download_update(
 }
 
 /// 启动下载好的安装程序
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+/// CREATE_NEW_PROCESS_GROUP：让安装子进程独立于父进程组，
+/// 防止主进程随后退出时影响安装程序的 UI / 提权流程。
+#[cfg(target_os = "windows")]
+const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
+
 #[tauri::command]
 pub async fn install_update(save_path: String) -> Result<(), String> {
-  std::process::Command::new("cmd")
-    .args(["/C", "start", "", &save_path])
+  install_update_impl(save_path).await
+}
+
+#[cfg(target_os = "windows")]
+async fn install_update_impl(save_path: String) -> Result<(), String> {
+  let mut cmd = std::process::Command::new("cmd");
+  // 注意：`start "" <path>` 里的空字符串是 title 参数，
+  // 防止 save_path 含空格时被 start 误当作窗口标题。
+  cmd.args(["/C", "start", "", &save_path]);
+  cmd.creation_flags(CREATE_NO_WINDOW | CREATE_NEW_PROCESS_GROUP);
+
+  // 显式绑定 Child 后丢弃，避免被立即 drop 时的 edge case
+  let _child = cmd
     .spawn()
     .map_err(|e| format!("启动安装程序失败: {}", e))?;
 
   Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn install_update_impl(_save_path: String) -> Result<(), String> {
+  Err("自动安装更新仅支持 Windows 平台".to_string())
 }

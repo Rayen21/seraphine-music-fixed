@@ -73,6 +73,9 @@ export const useObserver = (
   return { unobserve }
 }
 
+/**
+ * 列表上下文
+ */
 export function useListContext() {
   const listStore = useListStore()
   const listType = inject('listType', ListType.Show)

@@ -129,9 +129,9 @@ declare global {
     play_count: number
   }
 
-  interface MusicList {
+  interface MusicList<T = ListMusic> {
     info: ListInfo
-    list: ListMusic[]
+    list: T[]
   }
 
   /** 列表信息 */
@@ -278,7 +278,7 @@ declare global {
   }
 
   /** 迷你播放器音频状态载荷 */
-  interface DesktopMiniAudio {
+  interface MiniPlayerAudio {
     isPlaying: boolean
     isLoading: boolean
     music: PlayingMusic | null
@@ -286,12 +286,12 @@ declare global {
   }
 
   /** 迷你播放器歌词载荷 */
-  interface DesktopMiniLyric {
+  interface MiniPlayerLyric {
     text: string
   }
 
   /** 迷你播放器播放列表载荷 */
-  interface DesktopMiniPlaylist {
+  interface MiniPlayerPlaylist {
     list: ListMusic[]
   }
 
@@ -302,121 +302,123 @@ declare global {
     music: PlayingMusic | null
   }
 
-  type TextColors = readonly [LyricBaseColor, LyricAccentColor]
-
   /** invoke函数的 key 和 params */
   interface Invoke {
+    http_config_clear: {
+      args: undefined
+      return: undefined
+    }
     system_setting_restore_window: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     system_path_all: {
-      params: undefined
+      args: undefined
       return: { temp: string; lyric: string; cover: string }
     }
     music_scan_type: {
-      params: undefined
+      args: undefined
       return: string[]
     }
     music_scan_dir: {
-      params: { dirPaths: string[]; scanTypes: string[]; startIndex: number }
+      args: { dirPaths: string[]; scanTypes: string[]; startIndex: number }
       return: LocalMusic[]
     }
     music_scan_file: {
-      params: { filePaths: string[]; startIndex: usize }
+      args: { filePaths: string[]; startIndex: usize }
       return: LocalMusic[]
     }
     music_scan_cancel: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     music_file_detail: {
-      params: { filePath: string }
+      args: { filePath: string }
       return: MusicDetail
     }
-    music_file_open: {
-      params: { path: string }
+    system_path_file_open: {
+      args: { path: string }
       return: undefined
     }
-    music_dir_open: {
-      params: { path: string }
+    system_path_dir_open: {
+      args: { path: string }
       return: undefined
     }
-    music_file_clear: {
-      params: { dirPath: string }
+    system_path_dir_clear: {
+      args: { dirPath: string }
       return: undefined
     }
     music_player_get_device: {
-      params: undefined
+      args: undefined
       return: deviceInfo
     }
     music_player_set_device: {
-      params: { id: string }
+      args: { id: string }
       return: undefined
     }
     music_player_get_devices: {
-      params: undefined
+      args: undefined
       return: deviceInfo[]
     }
     music_player_load_file: {
-      params: { path: string }
+      args: { path: string }
       return: undefined
     }
     music_player_load_url: {
-      params: { path: string; hash: string }
+      args: { path: string; hash: string }
       return: undefined
     }
     music_player_monitor_download: {
-      params: { channel: Channel<number> }
+      args: { channel: Channel<number> }
       return: undefined
     }
     music_player_monitor_play: {
-      params: { channel: Channel<number> }
+      args: { channel: Channel<number> }
       return: undefined
     }
     music_player_play: {
-      params: undefined
+      args: undefined
       return: undefined
     }
 
     music_player_pause: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     music_player_stop: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     music_player_seek: {
-      params: { pos: number }
+      args: { pos: number }
       return: undefined
     }
     music_player_set_volume: {
-      params: { volume: number }
+      args: { volume: number }
       return: undefined
     }
     music_lyric_get: {
-      params: { name: string; id: string; fmt?: LyricFormat }
-      return: LyricGetResponse
+      args: { name: string; id: string; fmt?: LyricFormat }
+      return: LyricGet
     }
     http_mode_list: {
-      params: undefined
+      args: undefined
       return: Array<{ label: string; value: string; disabled: boolean }>
     }
     http_mode_get: {
-      params: undefined
+      args: undefined
       return: string
     }
     http_mode_set: {
-      params: { mode: string }
+      args: { mode: string }
       return: undefined
     }
     api_lyric_search: {
-      params: { keyword: string; hash: string | null; album_audio_id?: string; man?: 'yse' | 'no' }
+      args: { keyword: string; hash: string | null; album_audio_id?: string; man?: 'yse' | 'no' }
       return: { status: u32; candidates: LyricCandidate[] }
     }
     api_lyric_get: {
-      params: {
+      args: {
         name: string
         id: string
         accesskey: string
@@ -424,10 +426,10 @@ declare global {
         decode?: boolean
         client?: 'android'
       }
-      return: LyricGetResponse
+      return: LyricGet
     }
     api_music_everyday: {
-      params: undefined
+      args: undefined
       return: ApiResponse<{
         song_list_size: number
         song_list: Array<{
@@ -441,7 +443,7 @@ declare global {
       }>
     }
     api_personal_fm: {
-      params: undefined
+      args: undefined
       return: ApiResponse<{
         song_list: Array<{
           songid: number
@@ -454,11 +456,11 @@ declare global {
       }>
     }
     api_album_songs: {
-      params: { id: number; is_buy?: string; page?: number; pageSize?: number }
+      args: { id: number; is_buy?: string; page?: number; pageSize?: number }
       return: ApiResponse
     }
     api_artist_list: {
-      params: {
+      args: {
         sexType?: number
         areaType?: number
         musician?: number
@@ -477,7 +479,7 @@ declare global {
       }>
     }
     api_artist_audios: {
-      params: { id: number; sort?: number; page?: number; pageSize?: number }
+      args: { id: number; sort?: number; page?: number; pageSize?: number }
       return: {
         status: number
         data: Array<{
@@ -489,28 +491,33 @@ declare global {
           album_name: string
           timelength: number
           pay_type: number
+          privilege: number
         }>
         extra: { group: number; page_total: number }
       }
     }
+    api_audio_info: {
+      args: { hashs: string[] }
+      return: ApiResponse
+    }
     api_login: {
-      params: { username: string; password: string }
+      args: { username: string; password: string }
       return: undefined
     }
     api_login_qr_key: {
-      params: { app_type: 'web' }
+      args: { app_type: 'web' }
       return: ApiResponse<{ qrcode: string; qrcode_img: string }>
     }
     api_login_qr_create: {
-      params: { key: string }
+      args: { key: string }
       return: string
     }
     api_login_qr_check: {
-      params: { key: string }
+      args: { key: string }
       return: ApiResponse<{ status: number; userid: number; nickname: string; pic: string }>
     }
     api_login_wx_create: {
-      params: undefined
+      args: undefined
       return: {
         errcode: number
         errmsg: string
@@ -520,43 +527,43 @@ declare global {
       }
     }
     api_login_wx_check: {
-      params: { uuid: string }
+      args: { uuid: string }
       return: { wx_errcode: number; wx_code: string }
     }
     api_login_openplat: {
-      params: { code: string }
+      args: { code: string }
       return: ApiResponse<{ userid: number; nickname: string; pic: string }>
     }
     api_login_captcha: {
-      params: { mobile: string }
+      args: { mobile: string }
       return: ApiResponse<{ count: number }>
     }
     api_login_cellphone: {
-      params: { mobile: string; code: string; userid?: string }
+      args: { mobile: string; code: string; userid?: string }
       return: ApiResponse<{ userid: number; nickname: string; pic: string }>
     }
     api_login_token: {
-      params: undefined
+      args: undefined
       return: ApiResponse
     }
     api_login_out: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     api_playlist_tags: {
-      params: undefined
+      args: undefined
       return: ApiResponse<PlaylistTag[]>
     }
     api_playlist_user: {
-      params: { page?: number; pageSize?: number }
+      args: { page?: number; pageSize?: number }
       return: ApiResponse<{ info: Playlist[] }>
     }
     api_playlist_detail: {
-      params: { gids: string[] }
+      args: { gids: string[] }
       return: ApiResponse<Playlist[]>
     }
     api_playlist_add: {
-      params: {
+      args: {
         name: string
         listCreateUserid: number
         isPri?: number
@@ -568,11 +575,11 @@ declare global {
       return: ApiResponse
     }
     api_playlist_del: {
-      params: { listid: number }
+      args: { listid: number }
       return: ApiResponse
     }
     api_playlist_tracks_all: {
-      params: { gid: string; page?: number; pageSize?: number }
+      args: { gid: string; page?: number; pageSize?: number }
       return: ApiResponse<{
         begin_idx: number
         pagesize: number
@@ -582,35 +589,35 @@ declare global {
       }>
     }
     api_playlist_tracks_all_new: {
-      params: { listid: number }
+      args: { listid: number }
       return: ApiResponse
     }
     api_playlist_tracks_add: {
-      params: {
-        listId: number
+      args: {
+        listId: ID
         musicList: Array<{
           name: string
           hash: string | null
-          album_id?: number
+          albumId?: number
           mixsongid?: number
         }>
       }
-      return: ApiResponse<any>
+      return: ApiResponse
     }
     api_playlist_tracks_del: {
-      params: { listId: ID; fileIds: ID[] }
+      args: { listId: ID; fileIds: ID[] }
       return: ApiResponse
     }
     api_privilege_lite: {
-      params: { hashes: string[] }
+      args: { hashes: string[] }
       return: ApiResponse
     }
     api_rank_list: {
-      params: { withsong: 0 | 1 }
+      args: { withsong: 0 | 1 }
       return: ApiResponse
     }
     api_rank_top: {
-      params: undefined
+      args: undefined
       return: ApiResponse<{
         list: Array<{
           rankid: number
@@ -621,7 +628,7 @@ declare global {
       }>
     }
     api_rank_audio: {
-      params: { rankId: number; rankCid?: number; page?: number; pageSize?: number }
+      args: { rankId: number; rankCid?: number; page?: number; pageSize?: number }
       return: ApiResponse<{
         songlist: Array<{
           audio_id: number
@@ -637,11 +644,11 @@ declare global {
       }>
     }
     api_register_dev: {
-      params: undefined
+      args: undefined
       return: undefined
     }
     api_search: {
-      params: { keywords: string; searchType?: SearchType; page?: number; pageSize?: number }
+      args: { keywords: string; searchType?: SearchType; page?: number; pageSize?: number }
       return: ApiResponse<{
         total: number
         lists: Array<
@@ -654,6 +661,7 @@ declare global {
             AlbumName: string
             Duration: number
             PayType: number
+            AlbumPrivilege: number
           } & {
             AuthorId: number
             Avatar: string
@@ -670,11 +678,11 @@ declare global {
       }>
     }
     api_search_complex: {
-      params: { keywords: string; page?: number; pageSize?: number }
+      args: { keywords: string; page?: number; pageSize?: number }
       return: ApiResponse<{ lists: Array<{ lists: any[]; total: number; type: SearchType }> }>
     }
     api_song_url: {
-      params: {
+      args: {
         hash: string
         quality?: PlayingQuality
         albumId?: number
@@ -684,7 +692,7 @@ declare global {
       return: { status: number; backupUrl?: string[] }
     }
     api_top_card: {
-      params: { cardId: number }
+      args: { cardId: number }
       return: ApiResponse<{
         rec_desc: string
         song_list: Array<{
@@ -699,7 +707,7 @@ declare global {
       }>
     }
     api_top_playlist: {
-      params: {
+      args: {
         categoryId: string
         moduleId?: number
         withtag?: number
@@ -719,30 +727,30 @@ declare global {
       }>
     }
     api_top_album: {
-      params: { page?: number; pageSize?: number }
+      args: { page?: number; pageSize?: number }
       return: ApiResponse<TopAlbum>
     }
     api_user_detail: {
-      params: undefined
+      args: undefined
       return: ApiResponse
     }
     api_youth_union_vip: {
-      params: undefined
+      args: undefined
       return: ApiResponse<{
         busi_vip: Array<{ is_vip: number; product_type: string }>
         is_vip: number
       }>
     }
     api_youth_day_vip: {
-      params: { receiveDay?: string }
+      args: { receiveDay?: string }
       return: ApiResponse
     }
     api_youth_day_upgrade: {
-      params: undefined
+      args: undefined
       return: ApiResponse
     }
     check_update: {
-      params: undefined
+      args: undefined
       return: {
         has_update: boolean
         current_version: string
@@ -752,16 +760,16 @@ declare global {
       }
     }
     download_update: {
-      params: { downloadUrl: string }
+      args: { downloadUrl: string }
       return: string
     }
     install_update: {
-      params: { savePath: string }
+      args: { savePath: string }
       return: undefined
     }
   }
 
-  interface LyricGetResponse {
+  interface LyricGet {
     id: string
     fmt: LyricFormat
     content: string
