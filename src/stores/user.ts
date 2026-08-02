@@ -1,4 +1,4 @@
-﻿import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 

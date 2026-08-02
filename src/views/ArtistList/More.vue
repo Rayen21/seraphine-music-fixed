@@ -4,8 +4,9 @@ import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
+import { getPic } from '@/utils/music'
 import { ApiInvokeStatus, AreaTypes, PageSize, SexTypes } from '@/utils/params'
-import { getPic, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 const router = useRouter()
 
@@ -29,7 +30,8 @@ const artistList = ref<ArtistInfo[]>([])
 const handleSlideGet = async () => {
   areaSlideOptions.value = AreaTypes.map((areaType) => ({
     label: areaType.title,
-    value: areaType.type,
+    value: areaType.id,
+    apiAreaType: areaType.type,
     musician: areaType.musician
   }))
   areaSlideSelection.value = areaSlideOptions.value[0]
@@ -59,7 +61,7 @@ const handleLoad = async () => {
 
   try {
     const api_artist_list = await invoke('api_artist_list', {
-      areaType: areaSlideSelection.value.value,
+      areaType: areaSlideSelection.value.apiAreaType,
       musician: areaSlideSelection.value.musician,
       sexType: sexSlideSelection.value.value,
       page: page.value,

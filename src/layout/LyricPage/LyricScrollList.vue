@@ -30,17 +30,14 @@ const lyricOffset = computed(() =>
   lyricStore.lyric ? lyricStore.offsetMap[lyricStore.lyric.id] || 0 : 0
 )
 const fontSize = computed(
-  () =>
-    lyricStore.setting.fontSize + (settingStore.isFullscreen || settingStore.isMaximized ? 4 : 0)
+  () => lyricStore.fontSize + (settingStore.isFullscreen || settingStore.isMaximized ? 4 : 0)
 )
 const wordHeight = computed(() => fontSize.value + 4)
 const linePadding = computed(() => fontSize.value / 2)
 // 行高（根据翻译显示模式动态计算）
 const lineHeight = computed(() => {
   const baseHeight = wordHeight.value + linePadding.value * 2
-  return lyricStore.setting.transMode === LyricTransMode.Off
-    ? baseHeight
-    : baseHeight + lyricStore.setting.fontSize
+  return lyricStore.transMode === LyricTransMode.Off ? baseHeight : baseHeight + lyricStore.fontSize
 })
 
 // 当前高亮歌词行索引
@@ -120,13 +117,9 @@ watch(
   (isDragging) => !isDragging && scrollToLine()
 )
 
-watch(
-  [currentIndex, () => lyricStore.setting.transMode, () => lyricStore.setting.fontSize],
-  scrollToLine,
-  {
-    flush: 'post'
-  }
-)
+watch([currentIndex, () => lyricStore.transMode, () => lyricStore.fontSize], scrollToLine, {
+  flush: 'post'
+})
 
 useEventListener('resize', setLyricPadding)
 onMounted(setLyricPadding)
@@ -139,13 +132,13 @@ onUnmounted(clearWhellTimer)
     class="hide-scrollbar relative overflow-y-scroll"
     :style="{
       paddingBlock: `${lyricPadding}px`,
-      fontFamily: lyricStore.setting.fontFamily,
+      fontFamily: lyricStore.fontFamily,
       '--line-padding': `${linePadding}px`,
       '--word-font-size': `${fontSize}px`,
       '--trans-font-size': `${fontSize - 4}px`,
       '--word-height': `${wordHeight}px`,
-      '--trans-height': `${lyricStore.setting.fontSize}px`,
-      '--color-lyric': lyricStore.setting.textColor
+      '--trans-height': `${lyricStore.fontSize}px`,
+      '--color-lyric': lyricStore.textColor
     }"
     @wheel.passive="setWheelTimer">
     <!-- 加载中状态 -->
@@ -176,7 +169,7 @@ onUnmounted(clearWhellTimer)
         :key="lineIndex"
         :id="`lyric-line-${lineIndex}`"
         class="group/line text-[length:var(--word-font-size)] leading-[var(--word-height)] card-hover relative cursor-pointer rounded-lg px-3 py-[var(--line-padding)] font-bold"
-        :class="lyricStore.setting.textAlign"
+        :class="lyricStore.textAlign"
         @click="handleLineClick(line.offset)">
         <!-- 歌词文本 -->
         <div v-if="currentIndex === lineIndex">
@@ -206,12 +199,11 @@ onUnmounted(clearWhellTimer)
         <!-- 翻译文本 -->
         <div
           v-if="
-            lyricStore.setting.transMode !== LyricTransMode.Off &&
-            line.translations[lyricStore.setting.transMode]
+            lyricStore.transMode !== LyricTransMode.Off && line.translations[lyricStore.transMode]
           "
           class="text-[length:var(--trans-font-size)] leading-[var(--trans-height)]"
           :class="currentIndex === lineIndex ? 'text-accent' : 'text-minor'">
-          {{ line.translations[lyricStore.setting.transMode] }}
+          {{ line.translations[lyricStore.transMode] }}
         </div>
 
         <!-- 跳转时间提示 -->

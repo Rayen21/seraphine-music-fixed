@@ -17,7 +17,7 @@ const iconName = ref<IconName>('AlignLeft')
 const handleClick = () => {
   let mode = LyricTextAlign.Center
 
-  switch (lyricStore.setting.textAlign) {
+  switch (lyricStore.textAlign) {
     case LyricTextAlign.Left:
       mode = LyricTextAlign.Center
       iconName.value = 'AlignCenter'
@@ -40,6 +40,6 @@ const handleClick = () => {
   <SvgIcon
     class="action-icon card"
     :name="iconName"
-    :title="Align_Titles[lyricStore.setting.textAlign as LyricTextAlign]"
+    :title="Align_Titles[lyricStore.textAlign as LyricTextAlign]"
     @click="handleClick" />
 </template>

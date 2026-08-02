@@ -1,6 +1,7 @@
 import { useListStore } from './list'
 import { useLyricStore } from './lyric'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
+import { getFullName, getOrigin } from '@/utils/music'
 import {
   ApiInvokeStatus,
   Interval,
@@ -8,7 +9,7 @@ import {
   PlayingOrigin,
   PlayingQuality
 } from '@/utils/params'
-import { getFullName, getPlayingOrigin, getRandomNumber, invoke, setAppTitle } from '@/utils/tools'
+import { getRandomNumber, invoke, setAppTitle } from '@/utils/tools'
 import { Channel } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 
@@ -247,7 +248,7 @@ export const useMusicStore = defineStore(
       }
 
       const newMusic = listStore.play.list[index]
-      setMusic(newMusic, { origin: getPlayingOrigin(newMusic), loop, autoPlay })
+      setMusic(newMusic, { origin: getOrigin(newMusic), loop, autoPlay })
     }
 
     // 播放上/下一首
@@ -280,7 +281,7 @@ export const useMusicStore = defineStore(
       }
 
       const newMusic = listStore.play.list[index]
-      setMusic(newMusic, { origin: getPlayingOrigin(newMusic), loop: true })
+      setMusic(newMusic, { origin: getOrigin(newMusic), loop: true })
     }
 
     const startWaitNext = () => {

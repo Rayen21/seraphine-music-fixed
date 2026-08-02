@@ -2,8 +2,8 @@
 import Image from '@/components/Image.vue'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
-import { PlayingOrigin } from '@/utils/params'
-import { getPic } from '@/utils/tools'
+import { getPic } from '@/utils/music'
+import { PicSize, PlayingOrigin } from '@/utils/params'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
 const musicStore = useMusicStore()
@@ -13,7 +13,7 @@ const cover = computed(() => {
   if (!musicStore.music?.cover) return ''
 
   return musicStore.origin === PlayingOrigin.Online
-    ? getPic(musicStore.music.cover, 'lg')
+    ? getPic(musicStore.music.cover, PicSize.Lg)
     : convertFileSrc(musicStore.music.cover)
 })
 </script>

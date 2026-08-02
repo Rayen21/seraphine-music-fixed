@@ -1,14 +1,15 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useContextMenuStore } from '@/stores/context-menu'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
+import { getFullName, getOrigin } from '@/utils/music'
 import { ApiInvokeStatus, ListType } from '@/utils/params'
-import { getFullName, getPlayingOrigin, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 
 provide('listType', ListType.Play)
@@ -46,7 +47,7 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
       { divider: true },
       {
         label: '添加到',
-        prefixIcon: 'Plus',
+        prefixIcon: 'Add',
         suffixIcon: 'Right',
         disabled: !userStore.userinfo,
         children: userStore.userPlaylist.map((list) => ({
@@ -80,7 +81,7 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
 }
 
 const handlePlay = async (music: ListMusic) => {
-  musicStore.setMusic(music, { origin: getPlayingOrigin(music) })
+  musicStore.setMusic(music, { origin: getOrigin(music) })
 }
 
 const handleLike = async (music: ListMusic) => {
@@ -111,7 +112,7 @@ const handleLike = async (music: ListMusic) => {
 
 <template>
   <div v-on-click-outside="() => (listVisible = false)">
-    <SvgIcon class="action-icon" name="Musiclist" size="20" @click="listVisible = !listVisible" />
+    <SvgIcon class="action-icon" name="Playlist" size="20" @click="listVisible = !listVisible" />
 
     <Transition name="slide-page-left">
       <div

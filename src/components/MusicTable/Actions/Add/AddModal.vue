@@ -1,12 +1,13 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useListContext } from '@/utils/hooks'
+import { getFullName } from '@/utils/music'
 import { ScanStatus } from '@/utils/params'
-import { getFullName, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 import { OpenDialogOptions, open } from '@tauri-apps/plugin-dialog'
 
 interface Props {
@@ -168,7 +169,7 @@ watch(
           <div
             v-if="!scanPaths.length"
             class="flex items-center justify-center size-full flex-col text-minor">
-            <SvgIcon name="LinesRemove" size="56" />
+            <SvgIcon name="Empty" size="56" />
             <div class="text-xl font-bold">列表为空</div>
           </div>
 

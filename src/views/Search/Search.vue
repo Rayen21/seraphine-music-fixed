@@ -6,8 +6,9 @@ import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useListStore } from '@/stores/list'
+import { getPic, getPrivilegeTags } from '@/utils/music'
 import { ApiInvokeStatus, ListType, PageSize, SearchType } from '@/utils/params'
-import { getPic, getPrivilegeTags, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 provide('listType', ListType.Show)
 

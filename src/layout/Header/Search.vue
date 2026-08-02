@@ -1,9 +1,10 @@
-﻿<script lang="ts" setup>
-import { notify } from '@/components/Notification'
+<script lang="ts" setup>
+import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useUserStore } from '@/stores/user'
+import { getFullName } from '@/utils/music'
 import { ApiInvokeStatus, Interval, SearchType } from '@/utils/params'
-import { getFullName, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
 

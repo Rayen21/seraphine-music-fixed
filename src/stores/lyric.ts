@@ -1,4 +1,5 @@
-﻿import {
+﻿import { getFullName, parseKrcLyric, parseLrcLyric } from '@/utils/music'
+import {
   LyricBaseColor,
   LyricFontSize,
   LyricFormat,
@@ -7,7 +8,7 @@
   LyricTextAlign,
   LyricTransMode
 } from '@/utils/params'
-import { getFullName, invoke, parseKrcLyric, parseLrcLyric } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 type MatchedMap = Record<ID, { id: string; fmt: LyricFormat }>
 type OffsetMap = Record<ID, number>
@@ -17,16 +18,13 @@ export const useLyricStore = defineStore(
   () => {
     const pageVisible = ref(false) // 歌词页可见性
     const pageMode = ref(LyricPageMode.Cover) // 歌词页背景模式
-
     const isLoading = ref(false)
-    const lyric = ref<LyricInfo>()
-    const setting = ref<LyricSetting>({
-      fontFamily: 'system-ui',
-      fontSize: LyricFontSize.Default,
-      textColor: LyricBaseColor.Blue,
-      textAlign: LyricTextAlign.Left,
-      transMode: LyricTransMode.Off
-    })
+    const lyric = ref<LyricInfo | null>(null) // 歌词属性
+    const fontFamily = ref<FontValue>('system-ui') // 歌词字体
+    const fontSize = ref(LyricFontSize.Default) // 歌词字体大小
+    const textColor = ref<LyricBaseColor | string>(LyricBaseColor.Blue) // 歌词字体颜色
+    const textAlign = ref(LyricTextAlign.Left) // 歌词对齐方式
+    const transMode = ref(LyricTransMode.Off) // 歌词翻译模式
     const matchedMap = ref<MatchedMap>({}) // 歌词匹配列表, 记录歌曲使用的歌词id
     const offsetMap = ref<OffsetMap>({}) // 歌词偏移量列表
 
@@ -36,36 +34,36 @@ export const useLyricStore = defineStore(
     const setPageMode = (newMode: LyricPageMode) => {
       pageMode.value = newMode
     }
-    const setLyric = (newLyric: LyricInfo | undefined) => {
+    const setLyric = (newLyric: LyricInfo | null) => {
       lyric.value = newLyric
     }
     const setFontFamily = (newFontFamily: FontValue) => {
-      setting.value.fontFamily = newFontFamily
+      fontFamily.value = newFontFamily
     }
     const setFontSize = (mode: 'add' | 'sub' | 'restart') => {
       switch (mode) {
         case 'add':
-          setting.value.fontSize += LyricFontSize.Step
+          fontSize.value += LyricFontSize.Step
           break
         case 'sub':
-          setting.value.fontSize -= LyricFontSize.Step
+          fontSize.value -= LyricFontSize.Step
           break
         case 'restart':
-          setting.value.fontSize = LyricFontSize.Default
+          fontSize.value = LyricFontSize.Default
           break
       }
     }
-    const setTextColor = (newColor: string) => {
-      setting.value.textColor = newColor
+    const setTextColor = (newColor: LyricBaseColor | string) => {
+      textColor.value = newColor
     }
     const setTextAlign = (newTextAlign: LyricTextAlign) => {
-      setting.value.textAlign = newTextAlign
+      textAlign.value = newTextAlign
     }
     const setTransMode = (newTransMode: LyricTransMode) => {
-      setting.value.transMode = newTransMode
+      transMode.value = newTransMode
     }
-    const setMatchedLyric = (musicId: ID, lyricId: string, fmt: LyricFormat) => {
-      matchedMap.value[musicId] = { id: lyricId, fmt }
+    const setMatchedLyric = (musicId: ID, lyricInfo: { id: string; fmt: LyricFormat }) => {
+      matchedMap.value[musicId] = lyricInfo
     }
     const setOffsetMap = (mode: 'add' | 'sub' | 'restart') => {
       if (!lyric.value) return
@@ -85,9 +83,9 @@ export const useLyricStore = defineStore(
 
     const load = async (music: PlayingMusic, lyric?: LyricCandidate) => {
       isLoading.value = true
-      setLyric(undefined)
+      setLyric(null)
 
-      let lyricInfo: LyricInfo | undefined = undefined
+      let lyricInfo: LyricInfo | null = null
 
       let lyricGet = await getLocalLyric(music, lyric)
       if (!lyricGet) lyricGet = await getOnlineLyric(music, lyric)
@@ -113,7 +111,7 @@ export const useLyricStore = defineStore(
 
       if (lyricInfo) {
         setLyric(lyricInfo)
-        setMatchedLyric(music.id, lyricInfo.id, lyricInfo.fmt)
+        setMatchedLyric(music.id, { id: lyricInfo.id, fmt: lyricInfo.fmt })
       }
 
       isLoading.value = false
@@ -173,7 +171,11 @@ export const useLyricStore = defineStore(
       pageMode,
       isLoading,
       lyric,
-      setting,
+      fontFamily,
+      fontSize,
+      textColor,
+      textAlign,
+      transMode,
       matchedMap,
       offsetMap,
 
@@ -193,7 +195,16 @@ export const useLyricStore = defineStore(
   {
     persist: {
       key: 'lyric-store',
-      pick: ['pageMode', 'setting', 'matchedMap', 'offsetMap']
+      pick: [
+        'pageMode',
+        'fontFamily',
+        'fontSize',
+        'textColor',
+        'textAlign',
+        'transMode',
+        'matchedMap',
+        'offsetMap'
+      ]
     }
   }
 )

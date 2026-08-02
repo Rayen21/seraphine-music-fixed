@@ -1,7 +1,7 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import { invoke } from '@/utils/tools'
 
 interface CacheOption {

@@ -1,11 +1,12 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
-import { getFullName, invoke } from '@/utils/tools'
+import { getFullName } from '@/utils/music'
+import { invoke } from '@/utils/tools'
 
 const visible = defineModel({ required: true, default: false })
 

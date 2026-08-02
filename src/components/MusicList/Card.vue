@@ -1,13 +1,14 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useContextMenuStore } from '@/stores/context-menu'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
+import { getPic } from '@/utils/music'
 import { ApiInvokeStatus } from '@/utils/params'
-import { getPic, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 interface Props {
   data: CardInfo
@@ -47,7 +48,7 @@ const handleContextMenu = (e: MouseEvent) => {
       { divider: true },
       {
         label: '添加到',
-        prefixIcon: 'Plus',
+        prefixIcon: 'Add',
         suffixIcon: 'Right',
         disabled: !userStore.userinfo,
         children: userStore.userPlaylist.map((list) => ({

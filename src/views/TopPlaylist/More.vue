@@ -3,8 +3,9 @@ import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
+import { getPic } from '@/utils/music'
 import { ApiInvokeStatus, PageSize } from '@/utils/params'
-import { getPic, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 const router = useRouter()
 

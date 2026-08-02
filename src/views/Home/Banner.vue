@@ -3,8 +3,9 @@ import Carousel from '@/components/Carousel.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
-import { ApiInvokeStatus, ListType } from '@/utils/params'
-import { getFullName, getPic, getPlayingOrigin, invoke } from '@/utils/tools'
+import { getFullName, getOrigin, getPic } from '@/utils/music'
+import { ApiInvokeStatus, ListType, PicSize } from '@/utils/params'
+import { invoke } from '@/utils/tools'
 
 const musciStore = useMusicStore()
 const listStore = useListStore()
@@ -29,7 +30,7 @@ const bannerList = ref([
       if (!currentLikeMusic.value) return
 
       musciStore.setMusic(currentLikeMusic.value, {
-        origin: getPlayingOrigin(currentLikeMusic.value)
+        origin: getOrigin(currentLikeMusic.value)
       })
       if (listStore.play.info.id !== likeMusicList.value.info.id) {
         listStore.setList(ListType.Play, likeMusicList.value)
@@ -45,7 +46,7 @@ const bannerList = ref([
       if (!currentRecommendMusic.value) return
 
       musciStore.setMusic(currentRecommendMusic.value, {
-        origin: getPlayingOrigin(currentRecommendMusic.value)
+        origin: getOrigin(currentRecommendMusic.value)
       })
       if (listStore.play.info.id !== recommendMusicList.value.info.id) {
         listStore.setList(ListType.Play, recommendMusicList.value)
@@ -90,7 +91,7 @@ const getLikeList = async () => {
   currentLikeMusic.value = list[0]
   bannerList.value[0].intro = getFullName(currentLikeMusic.value)
   bannerList.value[0].img = currentLikeMusic.value.cover
-    ? getPic(currentLikeMusic.value.cover, 'md')
+    ? getPic(currentLikeMusic.value.cover, PicSize.Md)
     : ''
 }
 
@@ -123,7 +124,7 @@ const getRecommendLisd = async () => {
     currentRecommendMusic.value = list[0]
     bannerList.value[1].intro = getFullName(currentRecommendMusic.value)
     bannerList.value[1].img = currentRecommendMusic.value.cover
-      ? getPic(currentRecommendMusic.value.cover, 'md')
+      ? getPic(currentRecommendMusic.value.cover, PicSize.Md)
       : ''
   } catch (error) {
     console.error(error)

@@ -2,6 +2,7 @@
 import Image from '@/components/Image.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
+import { getFullName, getPic } from '@/utils/music'
 import {
   Interval,
   MiniPlayerEmit,
@@ -10,7 +11,6 @@ import {
   WindowTarget,
   miniPlayerSize
 } from '@/utils/params'
-import { getFullName, getPic } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { LogicalSize } from '@tauri-apps/api/dpi'
 import { emitTo, listen } from '@tauri-apps/api/event'
@@ -107,7 +107,7 @@ listen<{ type: MiniPlayerEmit; data: unknown }>(WindowEvent.MiniPlayer, (e) => {
               :name="audio.isPlaying ? 'PauseBold' : 'PlayBold'"
               size="24"
               @click="handleSend(audio.isPlaying ? MiniPlayerEmit.Pause : MiniPlayerEmit.Play)" />
-            <SvgIcon v-else class="action-icon pointer-events-none" name="Ring" size="28" />
+            <SvgIcon v-else class="action-icon pointer-events-none" name="Ring" size="24" />
             <SvgIcon
               class="action-icon"
               name="NextBold"
@@ -119,14 +119,14 @@ listen<{ type: MiniPlayerEmit; data: unknown }>(WindowEvent.MiniPlayer, (e) => {
             <SvgIcon
               class="action-icon"
               name="Playlist"
-              size="20"
               title="展开播放列表"
+              size="20"
               @click="showPlaylist" />
             <SvgIcon
               class="action-icon shrink-0 hover:text-error"
               name="Close"
-              size="14"
               title="关闭迷你播放器"
+              size="14"
               @click="handleSend(MiniPlayerEmit.Close)" />
           </div>
         </div>

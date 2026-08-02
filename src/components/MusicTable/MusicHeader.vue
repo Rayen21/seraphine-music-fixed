@@ -2,8 +2,8 @@
 import Image from '@/components/Image.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListContext } from '@/utils/hooks'
+import { getPic } from '@/utils/music'
 import { ListType } from '@/utils/params'
-import { getPic } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
 const { listStore, listType, list } = useListContext()

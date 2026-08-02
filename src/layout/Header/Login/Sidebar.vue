@@ -1,6 +1,6 @@
 <!-- filepath: e:\Code\tauri\SeraphineMusic\src\layout\Header\Login\Sidebar.vue -->
 <script lang="ts" setup>
-import loginBg from '@/assets/login_bg.jpg'
+import loginBg from '@/assets/imgs/login_bg.jpg'
 import { LoginMode } from '@/utils/params'
 
 const mode = defineModel({ required: true, default: LoginMode.Code })

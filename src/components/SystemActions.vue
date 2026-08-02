@@ -1,27 +1,56 @@
 <script lang="ts" setup>
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification.tsx'
+import { notify } from '@/components/Notification.vue'
+import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useMiniPlayerBridge } from '@/composables/useMiniPlayerBridge'
 import { useSettingStore } from '@/stores/setting'
-import { CloseStatus, WindowTarget, miniPlayerSize } from '@/utils/params'
+import { IconName } from '@/utils/icons'
+import { CloseStatus, ThemeMode, WindowTarget, miniPlayerSize } from '@/utils/params'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { vOnClickOutside } from '@vueuse/components'
 import { useColorMode } from '@vueuse/core'
 
 const mainWindow = getCurrentWindow()
 
-const colorMode = useColorMode()
+const { store: colorMode } = useColorMode()
 const settingStore = useSettingStore()
 
 const miniWindow = ref<WebviewWindow>()
 const closeVisible = ref(false)
+const themeVisible = ref(false)
 const closeStatus = ref(settingStore.closeStatus ?? CloseStatus.Hide)
+
+const themeOptions: Array<SelectOption<ThemeMode>> = [
+  { label: '浅色', value: ThemeMode.Light, prefixIcon: 'Sun' },
+  { label: '深色', value: ThemeMode.Dark, prefixIcon: 'Moon' },
+  { label: '跟随系统', value: ThemeMode.Auto, prefixIcon: 'Laptop' }
+]
+
+const themeSelection = computed<SelectOption<ThemeMode>>(
+  () => themeOptions.find((item) => item.value === colorMode.value) || themeOptions[2]
+)
+
+const themeIcon = computed<IconName>(() => {
+  switch (colorMode.value) {
+    case ThemeMode.Light:
+      return 'Sun'
+    case ThemeMode.Dark:
+      return 'Moon'
+    case ThemeMode.Auto:
+      return 'Laptop'
+    default:
+      return 'Sun'
+  }
+})
+const maxIcon = computed<IconName>(() => (settingStore.isMaximized ? 'Restore' : 'Maximize'))
 
 const miniBridge = useMiniPlayerBridge(miniWindow, mainWindow)
 
-const handleColor = () => {
-  colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark'
+const handleTheme = (mode: ThemeMode) => {
+  colorMode.value = mode
+  themeVisible.value = false
 }
 
 const handleMiniPlayer = async () => {
@@ -34,7 +63,7 @@ const handleMiniPlayer = async () => {
     const logicalY = y / scaleFactor || 48
 
     miniWindow.value = new WebviewWindow(WindowTarget.MiniPlayer, {
-      title: '迷你播放器',
+      title: 'Seraphine 迷你播放器',
       url: '/mini-player.html',
       width,
       height,
@@ -105,29 +134,31 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <SvgIcon
-    class="action-icon"
-    :name="colorMode === 'dark' ? 'Moon' : 'Sun'"
-    title="主题"
-    size="18"
-    @click="handleColor" />
+  <div class="relative" v-on-click-outside="() => (themeVisible = false)">
+    <SvgIcon
+      class="action-icon"
+      :name="themeIcon"
+      title="主题"
+      size="18"
+      @click="themeVisible = !themeVisible" />
 
-  <SvgIcon class="action-icon" name="PIP" size="18" title="迷你播放器" @click="handleMiniPlayer" />
-
-  <SvgIcon class="action-icon" name="Minimize" @click="handleMinimize" />
-
-  <SvgIcon
-    class="action-icon"
-    :name="!settingStore.isMaximized ? 'Maximize' : 'Restore'"
-    size="14"
-    @click="handleMaximize" />
-
+    <SelectModal
+      class="absolute top-full left-1/2 -translate-x-1/2"
+      transition="zoom-top"
+      :visible="themeVisible"
+      :options="themeOptions"
+      :selection="themeSelection"
+      @select="handleTheme" />
+  </div>
+  <SvgIcon class="action-icon" name="PIP" title="迷你播放器" size="18" @click="handleMiniPlayer" />
+  <SvgIcon class="action-icon" name="Minimize" title="最小化" @click="handleMinimize" />
+  <SvgIcon class="action-icon" :name="maxIcon" title="最大化" size="14" @click="handleMaximize" />
   <SvgIcon class="action-icon hover:text-error" name="Close" size="14" @click="handleClose" />
 
   <Modal
     v-model="closeVisible"
     class="w-80"
-    title="关闭"
+    title="关闭窗口"
     @cancel="handleCancel"
     @confirm="handleConfirm">
     <div class="px-6">

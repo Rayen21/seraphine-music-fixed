@@ -12,7 +12,7 @@ const lyricStore = useLyricStore()
       class="action-icon"
       name="ZoomIn"
       title="增大歌词字体"
-      :disabled="lyricStore.setting.fontSize >= LyricFontSize.Max"
+      :disabled="lyricStore.fontSize >= LyricFontSize.Max"
       @click="lyricStore.setFontSize('add')" />
 
     <div class="h-px w-full bg-border"></div>
@@ -29,7 +29,7 @@ const lyricStore = useLyricStore()
       class="action-icon"
       name="ZoomOut"
       title="减小歌词字体"
-      :disabled="lyricStore.setting.fontSize <= LyricFontSize.Min"
+      :disabled="lyricStore.fontSize <= LyricFontSize.Min"
       @click="lyricStore.setFontSize('sub')" />
   </div>
 </template>

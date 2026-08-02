@@ -1,5 +1,5 @@
-﻿<script lang="ts" setup>
-import { notify } from '@/components/Notification'
+<script lang="ts" setup>
+import { notify } from '@/components/Notification.vue'
 import { useDesktopLyricBridge } from '@/composables/useDesktopLyricBridge'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'

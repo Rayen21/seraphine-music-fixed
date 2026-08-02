@@ -1,8 +1,8 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Image from '@/components/Image.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification.tsx'
+import { notify } from '@/components/Notification.vue'
 import { formatFileSize, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'

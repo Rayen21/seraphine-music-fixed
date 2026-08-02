@@ -2,6 +2,7 @@
 import { useDesktopLyricStore } from './stores/desktop-lyric'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
+import { getFullName } from '@/utils/music'
 import {
   DesktopLyricEmit,
   FORWARD_DURATION,
@@ -14,7 +15,6 @@ import {
   WindowTarget,
   desktopLyricSize
 } from '@/utils/params'
-import { getFullName } from '@/utils/tools'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { vOnClickOutside } from '@vueuse/components'
@@ -156,7 +156,7 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
       :class="isHovering ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'">
       <SvgIcon
         class="action-icon"
-        name="MusicBold"
+        name="Music"
         title="打开主界面"
         @click="handleSend(DesktopLyricEmit.Main)" />
 
@@ -164,24 +164,19 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
 
       <SvgIcon
         class="action-icon"
-        name="PreviousBold"
+        name="Previous"
         title="上一首"
         @click="handleSend(DesktopLyricEmit.Prev)" />
       <SvgIcon
         v-if="!audio.isLoading"
         class="action-icon"
-        :name="audio.isPlaying ? 'PauseBold' : 'PlayBold'"
+        :name="audio.isPlaying ? 'Pause' : 'Play'"
         :title="audio.isPlaying ? '暂停' : '播放'"
         @click="handleSend(audio.isPlaying ? DesktopLyricEmit.Pause : DesktopLyricEmit.Play)" />
-      <SvgIcon
-        v-else
-        class="action-icon pointer-events-none"
-        name="Ring"
-        size="28"
-        title="加载中" />
+      <SvgIcon v-else class="action-icon pointer-events-none" name="Ring" title="加载中" />
       <SvgIcon
         class="action-icon"
-        name="NextBold"
+        name="Next"
         title="下一首"
         @click="handleSend(DesktopLyricEmit.Next)" />
 
@@ -189,7 +184,7 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
 
       <SvgIcon
         class="action-icon"
-        name="ForwardLeftBold"
+        name="ForwardLeft"
         title="歌词进度 -0.2 秒"
         @click="lyric && desktopLyricStore.setOffsetMap('sub', lyric.id)" />
       <SvgIcon
@@ -199,16 +194,18 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
         @click="lyric && desktopLyricStore.setOffsetMap('restart', lyric.id)" />
       <SvgIcon
         class="action-icon"
-        name="ForwardRightBold"
+        name="ForwardRight"
         title="歌词进度 +0.2 秒"
         @click="lyric && desktopLyricStore.setOffsetMap('add', lyric.id)" />
 
+      <div class="mx-1 h-4 w-px bg-minor" />
+
       <SvgIcon
         class="action-icon"
-        name="ZoomInBold"
-        title="增大歌词字体"
-        :disabled="desktopLyricStore.fontSize >= LyricFontSize.Max"
-        @click="desktopLyricStore.setFontSize('add')" />
+        name="ZoomOut"
+        title="减小歌词字体"
+        :disabled="desktopLyricStore.fontSize <= LyricFontSize.Min"
+        @click="desktopLyricStore.setFontSize('sub')" />
       <SvgIcon
         class="action-icon"
         name="Restart"
@@ -216,10 +213,12 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
         @click="desktopLyricStore.setFontSize('restart')" />
       <SvgIcon
         class="action-icon"
-        name="ZoomOutBold"
-        title="减小歌词字体"
-        :disabled="desktopLyricStore.fontSize <= LyricFontSize.Min"
-        @click="desktopLyricStore.setFontSize('sub')" />
+        name="ZoomIn"
+        title="增大歌词字体"
+        :disabled="desktopLyricStore.fontSize >= LyricFontSize.Max"
+        @click="desktopLyricStore.setFontSize('add')" />
+
+      <div class="mx-1 h-4 w-px bg-minor" />
 
       <div class="relative" v-on-click-outside="() => (colorVisible = false)">
         <div
@@ -258,8 +257,6 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
           @select="handleFontFamilySelect" />
       </div>
 
-      <div class="mx-1 h-4 w-px bg-minor" />
-
       <div
         class="action-icon flex justify-center items-center"
         :class="desktopLyricStore.transMode === LyricTransMode.Trans ? 'text-info' : ''"
@@ -273,7 +270,9 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
         音
       </div>
 
-      <SvgIcon class="action-icon" name="LockBold" @click="handleLock" />
+      <div class="mx-1 h-4 w-px bg-minor" />
+
+      <SvgIcon class="action-icon" name="Lock" @click="handleLock" />
 
       <SvgIcon
         class="action-icon hover:text-error"

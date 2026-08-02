@@ -1,5 +1,5 @@
-﻿import { useMusicStore } from './music'
-import { notify } from '@/components/Notification'
+import { useMusicStore } from './music'
+import { notify } from '@/components/Notification.vue'
 import { AutoStartMode, CloseStatus, DefaultSystemFonts, ShortcutKey } from '@/utils/params'
 import {
   isRegistered,

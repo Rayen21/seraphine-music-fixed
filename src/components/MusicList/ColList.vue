@@ -5,15 +5,15 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useObserver } from '@/utils/hooks'
+import { getOrigin } from '@/utils/music.ts'
 import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
 
 interface Props {
-  /** 列表数据 */
-  data: ColList
   /** 列表加载中 */
   loading?: boolean
+  /** 列表数据 */
+  data: ColList
   /** 列表行数 */
   rows?: number
   /** 不显示更多按钮 */
@@ -29,12 +29,10 @@ interface IEmits {
 const { data, loading, rows = 3, notMore } = defineProps<Props>()
 const emits = defineEmits<IEmits>()
 
-const musicStore = useMusicStore()
-const listStore = useListStore()
-
 const router = useRouter()
 const { width: windowWidth } = useWindowSize()
-
+const musicStore = useMusicStore()
+const listStore = useListStore()
 const listRef = useTemplateRef('listRef')
 
 const TotalHeight = 4.825 + 4.5 * rows
@@ -53,11 +51,12 @@ const handleMore = () => !notMore && emits('more', data)
 
 const handleClick = (info: CardInfo, index: number) => {
   if (info.musicInfo) {
-    const list: ListMusic[] = []
-    data.list[index].list.forEach((item) => item.musicInfo && list.push(item.musicInfo))
+    const list = data.list[index]
+    const playList: ListMusic[] = []
+    list.list.forEach((item) => item.musicInfo && playList.push(item.musicInfo))
 
-    listStore.setList(ListType.Play, { info: data.list[index].info, list })
-    musicStore.setMusic(info.musicInfo, { origin: getPlayingOrigin(info.musicInfo) })
+    listStore.setList(ListType.Play, { info: list.info, list: playList })
+    musicStore.setMusic(info.musicInfo, { origin: getOrigin(info.musicInfo) })
   } else if (info.artistInfo) {
     const { id, cover, name } = info.artistInfo
     router.push({ path: '/artist-list-table', query: { id, cover, name } })
@@ -67,16 +66,13 @@ const handleClick = (info: CardInfo, index: number) => {
   }
 }
 
-const { unobserve } = useObserver(
-  () => listRef.value,
-  (entry) => {
-    if (!entry.isIntersecting) return
+const { unobserve } = useObserver(listRef, (entry) => {
+  if (!entry.isIntersecting) return
 
-    isIntersecting.value = entry.isIntersecting
-    emits('load')
-    unobserve()
-  }
-)
+  isIntersecting.value = true
+  emits('load')
+  unobserve()
+})
 </script>
 
 <template>
@@ -112,7 +108,7 @@ const { unobserve } = useObserver(
   <div
     v-else-if="!data"
     class="flex items-center justify-center card gap-3"
-    :style="{ height: `${4.825 + 4.5 * rows}rem` }">
+    :style="{ height: `${TotalHeight}rem` }">
     <div class="font-bold text-xl">无数据或请求失败</div>
 
     <ActionButton

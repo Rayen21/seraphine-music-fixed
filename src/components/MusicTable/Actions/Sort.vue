@@ -10,7 +10,7 @@ const { listStore, listType, list } = useListContext()
 const sortVisible = ref(false)
 const sortOptions = ref<Array<SelectOption<SortType>>>([
   { label: '默认', value: SortType.Default, prefixIcon: 'Sort', suffixIcon: 'SortUp' },
-  { label: '歌名', value: SortType.Title, prefixIcon: 'Title' },
+  { label: '歌名', value: SortType.Title, prefixIcon: 'Music' },
   { label: '歌手', value: SortType.Artist, prefixIcon: 'User' },
   { label: '专辑', value: SortType.Album, prefixIcon: 'Album' },
   { label: '时长', value: SortType.Duration, prefixIcon: 'Timer' }

@@ -1,7 +1,7 @@
+import App from './App.vue'
 import router from '@/router/index'
 import '@/styles/global.css'
 import { disableHotkeys, invoke } from '@/utils/tools'
-import App from '@/views/App.vue'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 // 注册设备

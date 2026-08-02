@@ -1,5 +1,4 @@
 import vue from '@vitejs/plugin-vue'
-import vueJsx from '@vitejs/plugin-vue-jsx'
 import AutoImport from 'unplugin-auto-import/vite'
 import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import Icons from 'unplugin-icons/vite'
@@ -9,11 +8,14 @@ const host = process.env.TAURI_DEV_HOST
 
 // https://vite.dev/config/
 export default defineConfig({
-  resolve: { alias: { '@': '/src' } },
+  resolve: {
+    alias: { '@': '/src' }
+  },
   plugins: [
     vue(),
-    vueJsx(),
-    Icons({ customCollections: { 'custom-icons': FileSystemIconLoader('./src/assets/svg') } }),
+    Icons({
+      customCollections: { 'custom-icons': FileSystemIconLoader('./src/assets/svgs') }
+    }),
     AutoImport({
       imports: ['vue', 'pinia', 'vue-router'],
       dts: './auto-imports.d.ts',

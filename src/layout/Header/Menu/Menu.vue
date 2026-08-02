@@ -1,6 +1,6 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useUpdaterStore } from '@/stores/updater'
@@ -84,7 +84,7 @@ const handleUpdateCancel = () => {
 
 <template>
   <div class="relative" v-on-click-outside="() => (menuVisible = false)">
-    <SvgIcon class="action-icon" name="Menu" size="20" @click="menuVisible = !menuVisible" />
+    <SvgIcon class="action-icon" name="Menu" size="22" @click="menuVisible = !menuVisible" />
 
     <SelectModal
       class="absolute left-1/2 -translate-x-1/2 top-full"

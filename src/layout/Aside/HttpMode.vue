@@ -1,5 +1,5 @@
-﻿<script lang="ts" setup>
-import { notify } from '@/components/Notification'
+<script lang="ts" setup>
+import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { invoke } from '@/utils/tools'

@@ -1,7 +1,7 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
@@ -10,8 +10,9 @@ import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useRefreshStore } from '@/stores/refresh'
 import { useUserStore } from '@/stores/user'
+import { getOrigin, getPic, getPrivilegeTags } from '@/utils/music'
 import { AddPlaylistType, ApiInvokeStatus, ListType, PageSize, PlaylistType } from '@/utils/params'
-import { getPic, getPlayingOrigin, getPrivilegeTags, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 
 const route = useRoute()
@@ -31,7 +32,7 @@ const addOptions = computed<Array<SelectOption<AddPlaylistType>>>(() => [
   {
     label: '新建歌单',
     value: AddPlaylistType.Add,
-    prefixIcon: 'Plus',
+    prefixIcon: 'Add',
     disabled: !userStore.userinfo
   },
   { label: '导入歌单', value: AddPlaylistType.Import, prefixIcon: 'Link', disabled: true }
@@ -195,7 +196,7 @@ const handleContextMenu = (e: MouseEvent, playlist: Playlist) => {
           }
 
           listStore.setList(ListType.Play, { info, list })
-          musicStore.setMusic(list[0], { origin: getPlayingOrigin(list[0]) })
+          musicStore.setMusic(list[0], { origin: getOrigin(list[0]) })
         }
       },
       { label: '分享', prefixIcon: 'Share', disabled: true, onClick: () => 'TODO: 分享' },
@@ -324,7 +325,7 @@ watch(
       <div class="relative" v-on-click-outside="() => (addSelectVisible = false)">
         <SvgIcon
           class="action-icon card-hover transition-colors rounded-lg hover:text-foreground"
-          name="Plus"
+          name="Add"
           @click="addSelectVisible = !addSelectVisible" />
 
         <SelectModal

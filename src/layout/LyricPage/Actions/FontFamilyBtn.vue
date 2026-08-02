@@ -12,7 +12,7 @@ const fontFamilyOptions = ref<Array<SelectOption<FontValue>>>([])
 
 const fontFamilySelection = computed(
   () =>
-    fontFamilyOptions.value.find((item) => item.value === lyricStore.setting.fontFamily) ||
+    fontFamilyOptions.value.find((item) => item.value === lyricStore.fontFamily) ||
     fontFamilyOptions.value[0]
 )
 

@@ -17,6 +17,9 @@ declare global {
   type FontName = (typeof DefaultSystemFonts)[number][0]
   type FontValue = (typeof DefaultSystemFonts)[number][1]
   type FontItem = [FontName, FontValue]
+  type InvokeCmd = keyof Invoke
+  type InvokeArgs<C extends InvokeCmd> = Invoke[C]['args']
+  type InvokeReturn<C extends InvokeCmd> = Invoke[C]['return']
 
   /** 后端接口第一层返回结果 */
   interface ApiResponse<T = any> {

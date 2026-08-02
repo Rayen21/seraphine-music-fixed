@@ -1,7 +1,7 @@
 {
   "name": "seraphine-music",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,8 +10,8 @@
     "tauri": "tauri",
     "format": "prettier --write .",
     "lint": "eslint . --fix",
-    "set-version": "node scripts/sync-version.cjs",
-    "check-version": "node scripts/sync-version.cjs --check"
+    "set-ver": "node scripts/sync-version.cjs",
+    "check-ver": "node scripts/sync-version.cjs --check"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -35,7 +35,6 @@
     "@tauri-apps/cli": "^2.11.4",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vitejs/plugin-vue-jsx": "^5.1.6",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/test-utils": "^2.4.11",

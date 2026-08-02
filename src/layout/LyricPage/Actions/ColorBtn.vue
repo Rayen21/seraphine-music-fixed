@@ -7,8 +7,8 @@ import { watchThrottled } from '@vueuse/core'
 const lyricStore = useLyricStore()
 
 const pickerVisible = ref(false)
-const usedColor = ref(lyricStore.setting.textColor) // 使用的颜色
-const lastColor = ref(lyricStore.setting.textColor) // 缓存最后可用的颜色
+const usedColor = ref(lyricStore.textColor) // 使用的颜色
+const lastColor = ref(lyricStore.textColor) // 缓存最后可用的颜色
 
 watchThrottled(
   usedColor,
@@ -26,7 +26,7 @@ watchThrottled(
 <template>
   <div class="relative" v-on-click-outside="() => (pickerVisible = false)">
     <div class="action-icon card p-1" title="歌词颜色" @click="pickerVisible = !pickerVisible">
-      <div class="rounded-md size-full" :style="{ background: lyricStore.setting.textColor }"></div>
+      <div class="rounded-md size-full" :style="{ background: lyricStore.textColor }"></div>
     </div>
 
     <Transition name="zoom-fade">

@@ -1,6 +1,6 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import AddModal from './AddModal.vue'
-import { notify } from '@/components/Notification.tsx'
+import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListContext } from '@/utils/hooks'
@@ -16,7 +16,7 @@ const addVisible = ref(false)
 const addModalVisible = ref(false)
 
 const addOptions: Array<SelectOption<AddMusicType>> = [
-  { label: '添加歌曲', value: AddMusicType.Add, prefixIcon: 'AddMusic' },
+  { label: '添加歌曲', value: AddMusicType.Add, prefixIcon: 'MusicLibrary' },
   { label: '扫描歌曲', value: AddMusicType.Scan, prefixIcon: 'AddFolder' }
 ]
 
@@ -71,7 +71,7 @@ onMounted(getScanTypes)
   <div class="relative" v-on-click-outside="() => (addVisible = false)">
     <SvgIcon
       class="action-icon card-hover transition-colors rounded-lg hover:text-foreground"
-      name="Plus"
+      name="Add"
       @click="addVisible = !addVisible" />
 
     <SelectModal

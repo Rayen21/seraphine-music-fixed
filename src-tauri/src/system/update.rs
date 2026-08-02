@@ -1,4 +1,6 @@
+use semver::Version;
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_http::reqwest::Method;
 use tokio_stream::StreamExt;
@@ -38,9 +40,9 @@ pub struct DownloadProgress {
 }
 
 /// 将 semver 版本号（可能带 v 前缀）解析为 Version
-fn parse_version(version: &str) -> Result<semver::Version, String> {
+fn parse_version(version: &str) -> Result<Version, String> {
   let cleaned = version.trim_start_matches('v');
-  semver::Version::parse(cleaned).map_err(|_| format!("版本号格式错误: {}", version))
+  Version::parse(cleaned).map_err(|_| format!("版本号格式错误: {}", version))
 }
 
 /// 检查 GitHub 最新 Release（版本号从 tauri.conf.json 读取）
@@ -98,7 +100,7 @@ pub async fn download_update(app: AppHandle, download_url: String) -> Result<Str
 
   let total = resp.content_length().unwrap_or(0);
   let mut downloaded: u64 = 0;
-  let start = std::time::Instant::now();
+  let start = Instant::now();
   let mut last_emit = start;
   let mut bytes = Vec::with_capacity(total as usize);
 
@@ -109,7 +111,7 @@ pub async fn download_update(app: AppHandle, download_url: String) -> Result<Str
     bytes.extend_from_slice(&chunk);
     downloaded += chunk.len() as u64;
 
-    let now = std::time::Instant::now();
+    let now = Instant::now();
     if now.duration_since(last_emit).as_millis() >= 100 {
       let elapsed = now.duration_since(start).as_secs_f64();
       let speed = if elapsed > 0.0 { downloaded as f64 / elapsed } else { 0.0 };
@@ -154,7 +156,7 @@ pub async fn download_update(app: AppHandle, download_url: String) -> Result<Str
 
 /// 启动下载好的安装程序
 #[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
+use std::{os::windows::process::CommandExt, process::Command};
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -171,7 +173,7 @@ pub async fn install_update(save_path: String) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 async fn install_update_impl(save_path: String) -> Result<(), String> {
-  let mut cmd = std::process::Command::new("cmd");
+  let mut cmd = Command::new("cmd");
   // 注意：`start "" <path>` 里的空字符串是 title 参数，
   // 防止 save_path 含空格时被 start 误当作窗口标题。
   cmd.args(["/C", "start", "", &save_path]);

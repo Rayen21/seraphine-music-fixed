@@ -3,8 +3,9 @@ import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicHeader from '@/components/MusicTable/MusicHeader.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'
 import { useListStore } from '@/stores/list'
+import { getPrivilegeTags } from '@/utils/music'
 import { ApiInvokeStatus, ListType, PageSize } from '@/utils/params'
-import { getPrivilegeTags, invoke } from '@/utils/tools'
+import { invoke } from '@/utils/tools'
 
 provide('listType', ListType.Show)
 

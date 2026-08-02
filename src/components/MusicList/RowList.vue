@@ -5,8 +5,8 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
 import { useObserver } from '@/utils/hooks'
+import { getOrigin } from '@/utils/music.ts'
 import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
 
 interface Props {
@@ -29,12 +29,10 @@ interface IEmits {
 const { data, loading, rows = 3, notMore } = defineProps<Props>()
 const emits = defineEmits<IEmits>()
 
-const musicStore = useMusicStore()
-const listStore = useListStore()
-
 const router = useRouter()
 const { width: windowWidth } = useWindowSize()
-
+const musicStore = useMusicStore()
+const listStore = useListStore()
 const listRef = useTemplateRef('listRef')
 
 const TotalHeight = 1.5 + 4.75 * rows
@@ -61,7 +59,7 @@ const handleClick = (info: CardInfo) => {
     data.list.forEach((item) => item.musicInfo && list.push(item.musicInfo))
 
     listStore.setList(ListType.Play, { info: data.info, list })
-    musicStore.setMusic(info.musicInfo, { origin: getPlayingOrigin(info.musicInfo) })
+    musicStore.setMusic(info.musicInfo, { origin: getOrigin(info.musicInfo) })
   } else if (info.artistInfo) {
     const { id, cover, name } = info.artistInfo
     router.push({ path: '/artist-list-table', query: { id, cover, name } })
@@ -71,16 +69,13 @@ const handleClick = (info: CardInfo) => {
   }
 }
 
-const { unobserve } = useObserver(
-  () => listRef.value,
-  (entry) => {
-    if (!entry.isIntersecting) return
+const { unobserve } = useObserver(listRef, (entry) => {
+  if (!entry.isIntersecting) return
 
-    isIntersecting.value = entry.isIntersecting
-    emits('load')
-    unobserve()
-  }
-)
+  isIntersecting.value = true
+  emits('load')
+  unobserve()
+})
 </script>
 
 <template>

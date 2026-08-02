@@ -2,8 +2,8 @@
 import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
+import { getOrigin } from '@/utils/music'
 import { Interval, MiniPlayerEmit, WindowEvent, WindowTarget } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PhysicalPosition, Window } from '@tauri-apps/api/window'
@@ -99,7 +99,7 @@ export function useMiniPlayerBridge(
             break
           case MiniPlayerEmit.Set: {
             const music = e.payload.data as ListMusic
-            musicStore.setMusic(music, { origin: getPlayingOrigin(music) })
+            musicStore.setMusic(music, { origin: getOrigin(music) })
             break
           }
           case MiniPlayerEmit.Close:

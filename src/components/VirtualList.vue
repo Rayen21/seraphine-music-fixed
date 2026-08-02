@@ -185,7 +185,7 @@ defineExpose({ scrollToTarget, scrollToIndex, scrollToTop })
     <div
       v-else-if="!list.length"
       class="flex items-center justify-center size-full flex-col text-minor">
-      <SvgIcon name="LinesRemove" size="56" />
+      <SvgIcon name="Empty" size="56" />
       <div class="text-xl font-bold">列表为空</div>
     </div>
 

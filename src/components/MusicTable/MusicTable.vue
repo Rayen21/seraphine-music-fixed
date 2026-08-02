@@ -1,8 +1,8 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import MusicDetail from './MusicDetail.vue'
 import Image from '@/components/Image.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification.tsx'
+import { notify } from '@/components/Notification.vue'
 import ToTartget from '@/components/PageActions/ToTartget.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
@@ -11,8 +11,9 @@ import { useContextMenuStore } from '@/stores/context-menu'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
 import { useListContext } from '@/utils/hooks'
+import { getOrigin, getPic } from '@/utils/music.ts'
 import { ListType } from '@/utils/params'
-import { cn, formatDuration, getPic, getPlayingOrigin, invoke } from '@/utils/tools'
+import { cn, formatDuration, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
 interface Emits {
@@ -86,7 +87,7 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
       { divider: true },
       {
         label: '添加到',
-        prefixIcon: 'Plus',
+        prefixIcon: 'Add',
         suffixIcon: 'Right',
         disabled: !userStore.userinfo,
         children: userStore.userPlaylist.map((list) => ({
@@ -144,7 +145,7 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
 }
 
 const handlePlay = (music: ListMusic) => {
-  musicStore.setMusic(music, { origin: getPlayingOrigin(music) })
+  musicStore.setMusic(music, { origin: getOrigin(music) })
 
   // 如果播放列表不是当前列表，则切换
   if (listStore.play.info.id !== list.value.info.id) {

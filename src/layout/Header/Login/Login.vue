@@ -1,11 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Form from './Form.vue'
 import QRCode from './QRCode.vue'
 import Sidebar from './Sidebar.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import Image from '@/components/Image.vue'
 import Modal from '@/components/Modal.vue'
-import { notify } from '@/components/Notification.tsx'
+import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useUserStore } from '@/stores/user'

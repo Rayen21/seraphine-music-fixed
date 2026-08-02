@@ -212,7 +212,7 @@ export const useListStore = defineStore(
           [SortType.Duration]: a.duration - b.duration
         }
 
-        const result = conditions[sortInfo.type as SortType]
+        const result = conditions[sortInfo.type]
         return sortInfo.order === SortOrder.ASC ? result : -result
       })
     }

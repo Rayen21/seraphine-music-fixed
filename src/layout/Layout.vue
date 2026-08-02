@@ -1,6 +1,6 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ContextMenu from '@/components/ContextMenu.vue'
-import { NotificationContainer } from '@/components/Notification'
+import NotificationContainer from '@/components/Notification.vue'
 import Aside from '@/layout/Aside/Aside.vue'
 import Header from '@/layout/Header/Header.vue'
 import LyricPage from '@/layout/LyricPage/LyricPage.vue'

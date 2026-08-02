@@ -2,8 +2,8 @@
 import ActionButton from '@/components/ActionButton.vue'
 import { useMusicStore } from '@/stores/music'
 import { useListContext } from '@/utils/hooks'
+import { getOrigin } from '@/utils/music'
 import { ListType } from '@/utils/params'
-import { getPlayingOrigin } from '@/utils/tools'
 
 const { listStore, list } = useListContext()
 
@@ -29,7 +29,7 @@ const handlePlay = () => {
     shouldUpdate = true
   }
 
-  musicStore.setMusic(music, { origin: getPlayingOrigin(music) })
+  musicStore.setMusic(music, { origin: getOrigin(music) })
 
   if (shouldUpdate)
     listStore.setList(ListType.Play, { info: list.value.info, list: [...list.value.list] })

@@ -1,4 +1,4 @@
-﻿import { notify } from '@/components/Notification'
+import { notify } from '@/components/Notification.vue'
 import { invoke } from '@/utils/tools'
 import { type UnlistenFn, listen } from '@tauri-apps/api/event'
 

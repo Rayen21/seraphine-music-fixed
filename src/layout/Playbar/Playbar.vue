@@ -10,8 +10,9 @@ import ProgressRange from '@/components/ProgressRange.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
+import { getPic } from '@/utils/music.ts'
 import { Interval, PlayingOrigin } from '@/utils/params'
-import { formatDuration, getPic } from '@/utils/tools'
+import { formatDuration } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { watchThrottled } from '@vueuse/core'
 
@@ -82,7 +83,6 @@ watchThrottled(
       name="PreviousBold"
       size="24"
       @click="musicStore.playPrevOrNext('prev')" />
-
     <SvgIcon
       v-if="!musicStore.isLoading"
       class="action-icon mx-8 size-10"
@@ -90,7 +90,6 @@ watchThrottled(
       size="32"
       @click="musicStore.isPlaying ? musicStore.pause() : musicStore.play()" />
     <SvgIcon v-else class="action-icon pointer-events-none mx-8 size-10" name="Ring" size="32" />
-
     <SvgIcon
       class="action-icon mr-16"
       name="NextBold"

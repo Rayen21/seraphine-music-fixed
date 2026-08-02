@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * 统一版本号管理脚本
  *
  * 用法:
- *   pnpm set-version 0.1.3     # 将所有文件版本号设为 0.1.3
- *   pnpm check-version          # CI 检查，不一致则报错退出
+ *   pn set-ver 0.1.3     # 将所有文件版本号设为 0.1.3
+ *   pn check-ver         # CI 检查，不一致则报错退出
  */
 
 const fs = require('fs')
