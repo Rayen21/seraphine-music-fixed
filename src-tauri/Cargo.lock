@@ -4212,7 +4212,7 @@ dependencies = [
 
 [[package]]
 name = "seraphine-music"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "aes",
  "anyhow",
