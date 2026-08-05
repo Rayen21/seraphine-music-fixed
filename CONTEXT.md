@@ -2,6 +2,10 @@
 
 基于 Tauri 2 + Vue 3 + TypeScript 的跨平台音乐播放器，后端酷狗接口从 KuGouMusicApi 移植到 Rust。
 
+- **本地播放**：扫描本地音频文件（flac/mp3/wav 等）并读取元数据与封面，经 rodio 解码播放。
+- **在线播放**：直连酷狗接口获取音频流，边下边播，支持多音质与 VIP 权限校验。
+- **无额外服务**：酷狗接口在 Rust 端直接发起请求（含参数签名与 key 加密），不依赖独立后端服务。
+
 ## Language
 
 ### 窗口与架构
@@ -123,3 +127,41 @@ _Avoid_: MiniPlayerAction
 **DesktopLyricEmit（桌面歌词通信类型）**:
 桌面歌词窗口事件载荷枚举：Init/Pos/Audio/Lyric/Progress/Fonts/Main/Prev/Next/Play/Pause/Close。
 _Avoid_: DesktopLyricAction
+
+### 设置与系统
+
+**AutoStartMode（开机自启模式）**:
+应用开机自启的启动方式枚举：`Foreground`（前台启动）或 `Background`（后台启动）。
+_Avoid_: StartupMode、LaunchMode
+
+**CloseStatus（关闭行为）**:
+点击窗口关闭按钮时的行为枚举：`Hide`（隐藏到托盘）或 `Exit`（退出应用）。
+_Avoid_: CloseAction、CloseBehavior
+
+**ShortcutKey（全局快捷键）**:
+媒体控制全局快捷键枚举：播放/暂停、音量增减、静音、上一首/下一首、快进/快退。
+_Avoid_: Hotkey、MediaKey
+
+**ThemeMode（主题模式）**:
+界面主题枚举：`Light`（浅色）、`Dark`（深色）、`Auto`（跟随系统）。
+_Avoid_: Theme、Appearance
+
+### 网络与接口
+
+**EncryptType（加密类型）**:
+酷狗接口的参数加密方式枚举：`Web`、`Android`、`Register`，决定请求参数的签名算法与 key 加密策略。
+_Avoid_: EncryptMode、CipherType
+
+**RequestOptions（请求选项）**:
+后端 HTTP 请求的统一配置结构，包含 base_url/method/header/params/data，以及签名与加密开关（should_signature/should_encrypt）。
+_Avoid_: RequestConfig、HttpOptions
+
+### 流式播放与设备
+
+**StreamFile（流式文件）**:
+在线音频边下边播的文件读取器；当播放读取位置超过已下载大小时阻塞等待下载，超时则返回错误。
+_Avoid_: StreamBuffer、StreamingReader
+
+**DeviceInfo（播放设备）**:
+音频输出设备描述（id/name），由 rodio 枚举，用于在多设备间切换音频输出。
+_Avoid_: AudioDevice、OutputDevice
