@@ -7,6 +7,8 @@ import {
   unregister,
   unregisterAll
 } from '@tauri-apps/plugin-global-shortcut'
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
 
 const Default_Shortcut: Record<ShortcutKey, string> = {
   playOrPause: 'Alt+F5',

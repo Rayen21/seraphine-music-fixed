@@ -6,18 +6,12 @@ use tauri_plugin_store::StoreExt;
 
 use crate::http::{
   client::HttpRequest,
-  lib::{
+  libs::{
     DynamicConfig, KgCookies, KgDynamicConfig, KgStaticConfig, KgTerminalConfig, StaticConfig,
+    BASE_URL, CONFIG_KEY, STORE_PATH,
   },
   mode::{HttpMode, Mode},
-  server::BASE_URL,
 };
-
-// 配置文件存储路径
-pub const STORE_PATH: &str = "config.json";
-// 配置文件存储键
-pub const CONFIG_KEY: &str = "http_config";
-pub const MODE_KEY: &str = "http_mode";
 
 // 动态配置
 static DYNAMIC_CONFIG: LazyLock<RwLock<DynamicConfig>> =
@@ -195,4 +189,111 @@ impl HttpConfig {
 #[tauri::command]
 pub fn http_config_clear(app: AppHandle) -> Result<(), String> {
   HttpConfig::clear_kg_dynamic_config(&app).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::http::libs::MODE_KEY;
+
+  use super::*;
+
+  // === 常量 ===
+
+  #[test]
+  fn test_store_path_constant() {
+    assert_eq!(STORE_PATH, "config.json");
+  }
+
+  #[test]
+  fn test_config_key_constant() {
+    assert_eq!(CONFIG_KEY, "http_config");
+  }
+
+  #[test]
+  fn test_mode_key_constant() {
+    assert_eq!(MODE_KEY, "http_mode");
+  }
+
+  // === HttpConfig::get_kg_static_config (不依赖 AppHandle，可纯单测) ===
+
+  #[test]
+  fn test_get_kg_static_config_lite_matches_default_mode() {
+    // 默认 HttpMode::KgLite，应返回 lite 静态配置
+    let cfg = HttpConfig::get_kg_static_config();
+    assert_eq!(cfg.appid, 3116);
+    assert_eq!(cfg.client_ver, 11440);
+    assert_eq!(cfg.api_ver, 20);
+    assert_eq!(cfg.src_appid, 2919);
+    assert_eq!(cfg.wx_appid, "wx72b795aca60ad321");
+    assert_eq!(cfg.wx_secret, "33e486041e5e25729a4e3d2da7502f9a");
+    // padding 配置
+    assert!(!cfg.params_web_padding.is_empty());
+    assert!(!cfg.params_android_padding.is_empty());
+    assert!(!cfg.key_padding.is_empty());
+    assert!(!cfg.key_params_padding.is_empty());
+    assert!(!cfg.rsa_pem.is_empty());
+    assert!(cfg.rsa_pem.contains("BEGIN PUBLIC KEY"));
+  }
+
+  #[test]
+  fn test_get_kg_static_config_returns_static_reference() {
+    // 多次调用应返回同一个 'static 引用
+    let a = HttpConfig::get_kg_static_config();
+    let b = HttpConfig::get_kg_static_config();
+    assert!(std::ptr::eq(a, b));
+  }
+
+  #[test]
+  fn test_get_kg_static_config_appid_distinct_between_modes() {
+    // 默认为 Lite（appid=3116），与 Mobile（appid=1005）不同
+    let lite = HttpConfig::get_kg_static_config();
+    assert_eq!(lite.appid, 3116);
+    assert_ne!(lite.appid, 1005);
+  }
+
+  // === HttpConfig::get_kg_dynamic_config (默认模式为 Lite，未 init 时返回 default) ===
+
+  #[test]
+  fn test_get_kg_dynamic_config_returns_default_when_uninit() {
+    // 单测不调用 HttpConfig::init，DYNAMIC_CONFIG 全局为 DynamicConfig::default()
+    let cfg = HttpConfig::get_kg_dynamic_config();
+    assert_eq!(cfg.mac, "02:00:00:00:00:00");
+    assert_eq!(cfg.platform, "");
+    assert_eq!(cfg.cookies.dfid, "-");
+    assert_eq!(cfg.cookies.userid, 0);
+    // guid 是 md5，长度 32
+    assert_eq!(cfg.guid.len(), 32);
+    assert!(cfg.guid.chars().all(|c| c.is_ascii_hexdigit()));
+    // dev 是 random_string(10)
+    assert_eq!(cfg.dev.len(), 10);
+  }
+
+  #[test]
+  fn test_get_kg_dynamic_config_clone_is_independent() {
+    let a = HttpConfig::get_kg_dynamic_config();
+    let b = a.clone();
+    assert_eq!(a.mac, b.mac);
+    assert_eq!(a.guid, b.guid);
+  }
+
+  // === STATIC_CONFIG 与 DYNAMIC_CONFIG 不会 panic（仅校验全局可访问）===
+
+  #[test]
+  fn test_static_config_is_initialized() {
+    // 通过 get_kg_static_config 间接访问 STATIC_CONFIG，确认 LazyLock 已初始化
+    let _ = HttpConfig::get_kg_static_config();
+  }
+
+  // === 模式切换影响 get_kg_dynamic_config 返回值（不持久化）===
+  // 注：HttpMode::set_mode 需要 AppHandle，无法在纯单测中调用。
+  // 这里通过 get_kg_dynamic_config 的默认 Lite 分支验证 mobile 字段不会被错误返回。
+
+  #[test]
+  fn test_get_kg_dynamic_config_returns_lite_branch_by_default() {
+    // HttpMode 默认 KgLite，get_kg_dynamic_config 返回 mobile 字段是 default 副本
+    let cfg = HttpConfig::get_kg_dynamic_config();
+    // 默认 mobile 和 lite 是独立的 default 实例
+    // 通过 mac 字段（两者都是 "02:00:00:00:00:00"）验证不 panic
+    assert_eq!(cfg.mac, "02:00:00:00:00:00");
+  }
 }

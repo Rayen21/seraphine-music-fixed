@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -74,4 +74,34 @@ pub async fn api_personal_fm(
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_url_path() {
+    let path = "/v2/personal_recommend";
+    assert!(path.starts_with("/v2"));
+    assert!(path.contains("personal"));
+  }
+
+  #[test]
+  fn test_x_router_header() {
+    let router = "persnfm.service.kugou.com";
+    assert!(router.contains("persnfm"));
+  }
+
+  #[test]
+  fn test_fakem_constant() {
+    let fakem = "ca981cfc583a4c37f28d2d49000013c16a0a";
+    assert_eq!(fakem.len(), 36);
+    assert!(fakem.chars().all(|c| c.is_ascii_hexdigit()));
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_personal_fm;
+  }
 }

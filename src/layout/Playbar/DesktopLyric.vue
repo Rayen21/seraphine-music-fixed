@@ -6,6 +6,7 @@ import { useSettingStore } from '@/stores/setting'
 import { WindowTarget, desktopLyricSize } from '@/utils/params'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { ref } from 'vue'
 
 const musicStore = useMusicStore()
 const settingStore = useSettingStore()

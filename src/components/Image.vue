@@ -2,6 +2,7 @@
 import SvgIcon from '@/components/SvgIcon.vue'
 import { IconName } from '@/utils/icons'
 import { cn } from '@/utils/tools'
+import { ref, useAttrs, watch } from 'vue'
 
 interface Props {
   img: string

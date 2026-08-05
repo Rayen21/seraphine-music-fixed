@@ -1,8 +1,9 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import { useLyricStore } from '@/stores/lyric'
 import { Interval, PresetsColors } from '@/utils/params'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
+import { ref } from 'vue'
 
 const lyricStore = useLyricStore()
 

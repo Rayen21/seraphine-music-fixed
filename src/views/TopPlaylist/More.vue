@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
@@ -6,6 +6,8 @@ import VirtualList from '@/components/VirtualList.vue'
 import { getPic } from '@/utils/music'
 import { ApiInvokeStatus, PageSize } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { onMounted, ref, useTemplateRef } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 

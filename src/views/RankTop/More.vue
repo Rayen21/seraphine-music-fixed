@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'
 import SlideBar from '@/components/SlideBar.vue'
@@ -6,6 +6,7 @@ import { useListStore } from '@/stores/list'
 import { getPrivilegeTags } from '@/utils/music'
 import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { onMounted, onUnmounted, provide, ref } from 'vue'
 
 provide('listType', ListType.Show)
 

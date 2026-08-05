@@ -11,6 +11,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { vOnClickOutside } from '@vueuse/components'
 import { useColorMode } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 const mainWindow = getCurrentWindow()
 
@@ -44,7 +45,7 @@ const themeIcon = computed<IconName>(() => {
       return 'Sun'
   }
 })
-const maxIcon = computed<IconName>(() => (settingStore.isMaximized ? 'Restore' : 'Maximize'))
+const maxIcon = computed<IconName>(() => (settingStore.isMaximized ? 'Restore' : 'Square'))
 
 const miniBridge = useMiniPlayerBridge(miniWindow, mainWindow)
 
@@ -151,9 +152,9 @@ const handleConfirm = () => {
       @select="handleTheme" />
   </div>
   <SvgIcon class="action-icon" name="PIP" title="迷你播放器" size="18" @click="handleMiniPlayer" />
-  <SvgIcon class="action-icon" name="Minimize" title="最小化" @click="handleMinimize" />
-  <SvgIcon class="action-icon" :name="maxIcon" title="最大化" size="14" @click="handleMaximize" />
-  <SvgIcon class="action-icon hover:text-error" name="Close" size="14" @click="handleClose" />
+  <SvgIcon class="action-icon" name="Remove" title="最小化" size="20" @click="handleMinimize" />
+  <SvgIcon class="action-icon" :name="maxIcon" title="最大化" size="18" @click="handleMaximize" />
+  <SvgIcon class="action-icon hover:text-error" name="Close" size="20" @click="handleClose" />
 
   <Modal
     v-model="closeVisible"

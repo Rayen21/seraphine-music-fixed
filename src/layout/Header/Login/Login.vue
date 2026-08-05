@@ -12,6 +12,8 @@ import { useUserStore } from '@/stores/user'
 import { ApiInvokeStatus, LoginMode, UserAction } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -117,7 +119,7 @@ const handleSelect = async (value: UserAction) => {
     <SvgIcon
       class="action-icon absolute right-4 top-4 z-50 cursor-pointer"
       name="Close"
-      size="12"
+      size="20"
       @click="modalVisible = false" />
 
     <Sidebar class="w-56" v-model="mode" />

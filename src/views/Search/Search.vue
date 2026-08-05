@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'
@@ -9,6 +9,8 @@ import { useListStore } from '@/stores/list'
 import { getPic, getPrivilegeTags } from '@/utils/music'
 import { ApiInvokeStatus, ListType, PageSize, SearchType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { onMounted, onUnmounted, provide, ref, useTemplateRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 provide('listType', ListType.Show)
 

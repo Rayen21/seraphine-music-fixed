@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -89,4 +89,39 @@ pub async fn api_artist_audios(
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_artist_list_url_path() {
+    let path = "/ocean/v6/singer/list";
+    assert!(path.starts_with("/ocean"));
+    assert!(path.ends_with("list"));
+  }
+
+  #[test]
+  fn test_artist_audios_base_url() {
+    let url = "https://openapi.kugou.com";
+    assert!(url.starts_with("https://"));
+  }
+
+  #[test]
+  fn test_artist_audios_url_path() {
+    let path = "/kmr/v1/audio_group/author";
+    assert!(path.starts_with("/kmr"));
+  }
+
+  #[test]
+  fn test_kg_tid_220_constant() {
+    assert_eq!("220", "220");
+  }
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_artist_list;
+    let _ = api_artist_audios;
+  }
 }

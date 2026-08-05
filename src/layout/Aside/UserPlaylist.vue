@@ -14,6 +14,8 @@ import { getOrigin, getPic, getPrivilegeTags } from '@/utils/music'
 import { AddPlaylistType, ApiInvokeStatus, ListType, PageSize, PlaylistType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -387,7 +389,7 @@ watch(
         <label class="flex cursor-pointer items-center gap-1 pt-2">
           <input type="checkbox" v-model="addForm.isPri" :true-value="1" :false-value="0" />
           <span class="text-sm">设为隐私歌单</span>
-          <SvgIcon name="Info" size="16" title="仅自己可见, 且无法分享" />
+          <SvgIcon name="Info" title="仅自己可见, 且无法分享" />
         </label>
       </form>
     </Modal>

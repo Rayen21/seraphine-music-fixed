@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -140,4 +140,70 @@ pub async fn api_top_playlist(
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === URL 路径 ===
+
+  #[test]
+  fn test_top_card_url() {
+    let path = "/singlecardrec.service/v1/single_card_recommend";
+    assert!(path.starts_with("/singlecardrec"));
+  }
+
+  #[test]
+  fn test_top_album_url() {
+    let path = "/musicadservice/v1/mobile_newalbum_sp";
+    assert!(path.contains("newalbum"));
+  }
+
+  #[test]
+  fn test_top_playlist_url() {
+    let path = "/v2/special_recommend";
+    assert!(path.starts_with("/v2"));
+  }
+
+  // === x-router ===
+
+  #[test]
+  fn test_top_playlist_router() {
+    let router = "specialrec.service.kugou.com";
+    assert!(router.contains("specialrec"));
+  }
+
+  // === fakem 常量 ===
+
+  #[test]
+  fn test_top_card_fakem_constant() {
+    let fakem = "60f7ebf1f812edbac3c63a7310001701760f";
+    assert_eq!(fakem.len(), 36); // 注意：此 fakem 长度非 32
+  }
+
+  #[test]
+  fn test_top_card_fakem_starts_with_60() {
+    let fakem = "60f7ebf1f812edbac3c63a7310001701760f";
+    assert!(fakem.starts_with("60"));
+  }
+
+  // === card_id 取值范围 ===
+
+  #[test]
+  fn test_card_id_documented_values() {
+    // 文档：1:精选, 2:经典, 3:热门, 4:小众, 6:vip专属
+    let valid_ids = [1u8, 2, 3, 4, 6];
+    assert_eq!(valid_ids.len(), 5);
+    assert!(!valid_ids.contains(&5)); // 5 不在文档列表中
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_top_card;
+    let _ = api_top_album;
+    let _ = api_top_playlist;
+  }
 }

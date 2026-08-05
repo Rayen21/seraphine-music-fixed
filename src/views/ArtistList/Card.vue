@@ -1,7 +1,9 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ColList from '@/components/MusicList/ColList.vue'
 import { ApiInvokeStatus, AreaTypes } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 

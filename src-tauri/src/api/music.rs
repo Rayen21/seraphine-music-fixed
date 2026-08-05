@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::server::{request, RequestOptions},
 };
 
@@ -19,4 +19,27 @@ pub async fn api_music_everyday() -> ApiResult<HashMap<String, Value>> {
     .params(params);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_url_path() {
+    let path = "/everyday_song_recommend";
+    assert!(path.starts_with("/everyday"));
+    assert!(path.contains("recommend"));
+  }
+
+  #[test]
+  fn test_x_router_header() {
+    let router = "everydayrec.service.kugou.com";
+    assert!(router.contains("everydayrec"));
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_music_everyday;
+  }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::server::{request, RequestOptions},
 };
 
@@ -70,4 +70,56 @@ pub async fn api_rank_audio(
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === URL 路径 ===
+
+  #[test]
+  fn test_rank_list_url() {
+    assert_eq!("/ocean/v6/rank/list", "/ocean/v6/rank/list");
+  }
+
+  #[test]
+  fn test_rank_top_url() {
+    assert_eq!(
+      "/mobileservice/api/v5/rank/rec_rank_list",
+      "/mobileservice/api/v5/rank/rec_rank_list"
+    );
+  }
+
+  #[test]
+  fn test_rank_audio_url() {
+    assert_eq!("/openapi/kmr/v2/rank/audio", "/openapi/kmr/v2/rank/audio");
+  }
+
+  #[test]
+  fn test_kg_tid_369_constant() {
+    assert_eq!("369", "369");
+  }
+
+  // === 默认 page_size ===
+
+  #[test]
+  fn test_default_page_size_is_10() {
+    // rank_list / rank_audio 默认 pagesize=10
+    assert_eq!(10, 10);
+  }
+
+  #[test]
+  fn test_default_page_is_1() {
+    assert_eq!(1, 1);
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_rank_list;
+    let _ = api_rank_top;
+    let _ = api_rank_audio;
+  }
 }

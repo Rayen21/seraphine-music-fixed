@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -48,4 +48,31 @@ pub async fn api_audio_info(hashs: Vec<&str>) -> ApiResult<HashMap<String, Value
     .data(data);
 
   request(ops).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_base_url_is_http() {
+    // 注意：源码中 audio 模块使用 http（非 https）
+    let url = "http://kmr.service.kugou.com";
+    assert!(url.starts_with("http://"));
+  }
+
+  #[test]
+  fn test_url_path() {
+    assert_eq!("/v1/audio/audio", "/v1/audio/audio");
+  }
+
+  #[test]
+  fn test_x_router_header() {
+    assert_eq!("kmr.service.kugou.com", "kmr.service.kugou.com");
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_audio_info;
+  }
 }

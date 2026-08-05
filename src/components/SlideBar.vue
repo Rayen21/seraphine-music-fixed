@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+
 interface Porps {
   slideWidth?: number
   options: SlideOption[]

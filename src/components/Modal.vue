@@ -1,8 +1,9 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useSettingStore } from '@/stores/setting'
 import { cn } from '@/utils/tools'
+import { onUnmounted, watch } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -83,9 +84,9 @@ onUnmounted(() => document.removeEventListener('keyup', handleKeydown))
             <div v-if="!hideHeader" class="flex items-center justify-between p-4">
               <div class="font-bold text-base">{{ title }}</div>
               <SvgIcon
-                class="action-icon size-4 hover:text-error"
+                class="action-icon hover:text-error"
                 name="Close"
-                size="12"
+                size="20"
                 @click="emits('cancel')" />
             </div>
           </slot>

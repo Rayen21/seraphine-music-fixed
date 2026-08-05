@@ -1,5 +1,4 @@
-import { ListType } from './params'
-import { useListStore } from '@/stores/list'
+import { type ShallowRef, onUnmounted, watchEffect } from 'vue'
 
 interface IntersectionObserverCallback {
   (entry: IntersectionObserverEntry, observer: IntersectionObserver): void
@@ -79,15 +78,4 @@ export const useObserver = (
   onUnmounted(unobserve)
 
   return { unobserve }
-}
-
-/**
- * 列表上下文
- */
-export function useListContext() {
-  const listStore = useListStore()
-  const listType = inject('listType', ListType.Show)
-  const list = computed(() => listStore[listType])
-
-  return { listStore, listType, list }
 }

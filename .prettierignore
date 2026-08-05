@@ -1,1 +1,7 @@
-src-tauri/
+.agents/
+.claude/
+.github/
+
+src-tauri/target
+src-tauri/gen
+src-tauri/Temp

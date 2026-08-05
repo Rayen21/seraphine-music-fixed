@@ -3,10 +3,10 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 
 use crate::{
-  api::lib::{ApiResult, LyricGet},
+  api::libs::{ApiResult, LyricGet},
   http::{
     config::HttpConfig,
-    lib::KgStaticConfig,
+    libs::KgStaticConfig,
     server::{request, RequestOptions, Response},
   },
   music::lyric::{music_lyric_save, Lyric, LyricFormat},
@@ -125,4 +125,94 @@ fn get_decode_content(content: &str, lrc_decode: bool) -> anyhow::Result<String>
   };
 
   Ok(decoded_content)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === get_decode_content 纯函数 ===
+
+  #[test]
+  fn test_get_decode_content_lrc_mode() {
+    // lrc_decode=true：base64 解码后直接转 utf8
+    let original = "[00:00.00]Hello 你好";
+    let encoded = STANDARD.encode(original);
+    let result = get_decode_content(&encoded, true).unwrap();
+    assert_eq!(result, original);
+  }
+
+  #[test]
+  fn test_get_decode_content_lrc_mode_empty() {
+    let encoded = STANDARD.encode("");
+    let result = get_decode_content(&encoded, true).unwrap();
+    assert_eq!(result, "");
+  }
+
+  #[test]
+  fn test_get_decode_content_lrc_mode_multibyte() {
+    // 中文多字节 UTF-8
+    let original = "测试歌词内容";
+    let encoded = STANDARD.encode(original);
+    let result = get_decode_content(&encoded, true).unwrap();
+    assert_eq!(result, original);
+  }
+
+  #[test]
+  fn test_get_decode_content_invalid_base64() {
+    // 非 base64 字符串应返回错误
+    let result = get_decode_content("!!!not-base64!!!", true);
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_get_decode_content_invalid_utf8() {
+    // lrc_decode=true 时，解码后的字节不是合法 utf8 应返回错误
+    // 0xFF 是非法 utf8 序列
+    let encoded = STANDARD.encode([0xFF, 0xFE, 0xFD]);
+    let result = get_decode_content(&encoded, true);
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_get_decode_content_krc_mode_returns_decoded() {
+    // krc 模式走 decode_krc_lyric，需要构造合法的 krc 数据
+    // krc 格式较复杂，此处仅校验非 lrc 路径不会 panic
+    let encoded = STANDARD.encode([0u8; 16]);
+    let result = get_decode_content(&encoded, false);
+    // 不论成功失败，不应 panic
+    let _ = result;
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_lyric_search;
+  }
+
+  // === URL 常量 ===
+
+  #[test]
+  fn test_lyric_search_base_url() {
+    // api_lyric_search 中 base_url 为 https://lyrics.kugou.com
+    let base_url = "https://lyrics.kugou.com";
+    assert!(base_url.starts_with("https://"));
+    assert!(base_url.contains("lyrics.kugou.com"));
+  }
+
+  #[test]
+  fn test_lyric_search_url_path() {
+    // api_lyric_search 中 url 为 /v1/search
+    let url_path = "/v1/search";
+    assert!(url_path.starts_with("/v1"));
+    assert!(url_path.ends_with("search"));
+  }
+
+  #[test]
+  fn test_lyric_get_url_path() {
+    // api_lyric_get 中 url 为 /download
+    let url_path = "/download";
+    assert_eq!(url_path, "/download");
+  }
 }

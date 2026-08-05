@@ -1,9 +1,14 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
-import { useListContext } from '@/utils/hooks'
+import { useListStore } from '@/stores/list'
+import { ListType } from '@/utils/params'
+import { computed, inject } from 'vue'
 
-const { listStore, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
 
+const listStore = useListStore()
+
+const list = computed(() => listStore[listType])
 const isChecked = computed(
   () => listStore.checkedList.length > 0 && listStore.checkedList.length == list.value.list.length
 )

@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -67,44 +68,62 @@ jobs:
           key: 'rust-${{ matrix.os }}-${{ matrix.target }}'
           restore-keys: 'rust-${{ matrix.os }}-${{ matrix.target }}'
 
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+
       - name: Install dependencies
         run: pnpm install --dangerously-allow-all-builds
 
-      - name: Build frontend
-        run: pnpm build
+      # ============================================================
+      # Tag 推送：tauri-action 一站式完成构建 + 签名 + 创建 Release
+      #           + 上传产物 + 生成 latest.json（供 updater 检查更新）
+      # 多平台矩阵并发：首个 job 创建 Release，后续 job 追加产物并
+      # 合并 latest.json 的 platforms 字段（action 内部处理并发）
+      # ============================================================
+      - uses: tauri-apps/tauri-action@v0
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Updater 签名私钥：构建时生成 .sig 文件
+          # 本地构建需先 export TAURI_SIGNING_PRIVATE_KEY="..." 再执行 pnpm tauri build
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # 无密码私钥时此 secret 为空，不影响构建
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Seraphine Music ${{ github.ref_name }}'
+          releaseDraft: false
+          prerelease: false
+          # 使用 GitHub 自动生成的 Release Notes（基于 PR 标题和 label）
+          # 需在仓库 Settings → General → Features 勾选 "Automatically generated release notes"
+          # 配合 .github/release.yml 可自定义分类规则
+          releaseNotes: true
+          # Windows 同时生成 NSIS + MSI，updater 优先使用 NSIS（支持 passive 安装模式）
+          updaterJsonPreferNsis: true
+          tauriScript: pnpm tauri
+          args: --target ${{ matrix.target }}
 
-      - name: Build Tauri bundle
-        run: pnpm tauri build
+      # ============================================================
+      # 手动触发（workflow_dispatch）：仅构建 + 签名，不发布 Release
+      # 产物上传到 Actions Artifacts 供下载验证
+      # ============================================================
+      - name: Build Tauri bundle (no release)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: pnpm tauri build --target ${{ matrix.target }}
 
-      - name: Upload bundle artifacts
+      - name: Upload bundle artifacts (no release)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
           name: seraphine-music-${{ matrix.os }}
           path: |
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.rpm
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.exe
-            src-tauri/target/release/bundle/**/*.msi
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./bundles
-
-      - name: Create GitHub Release and upload bundles
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          artifacts: bundles/**
-          token: ${{ secrets.GITHUB_TOKEN }}
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.sig

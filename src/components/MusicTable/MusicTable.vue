@@ -8,13 +8,16 @@ import ToTop from '@/components/PageActions/ToTop.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useContextMenuStore } from '@/stores/context-menu'
+import { useListStore } from '@/stores/list.ts'
 import { useMusicStore } from '@/stores/music'
 import { useUserStore } from '@/stores/user'
-import { useListContext } from '@/utils/hooks'
 import { getOrigin, getPic } from '@/utils/music.ts'
-import { ListType } from '@/utils/params'
+import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { cn, formatDuration, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
+import { computed, inject, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { useRoute } from 'vue-router'
 
 interface Emits {
   infinite: []
@@ -22,13 +25,14 @@ interface Emits {
 
 const emits = defineEmits<Emits>()
 
+const listType = inject<ListType>('listType', ListType.Show)
+
 const route = useRoute()
 
+const listStore = useListStore()
 const musicStore = useMusicStore()
 const userStore = useUserStore()
 const contextMenuStore = useContextMenuStore()
-
-const { listStore, listType, list } = useListContext()
 
 const musicTableRef = useTemplateRef('musicTableRef')
 
@@ -43,6 +47,7 @@ const contextMenuMusic = ref<ListMusic>()
 const musicDetailVisible = ref(false)
 const removeVisible = ref(false)
 
+const list = computed(() => listStore[listType])
 const getCover = computed(() =>
   // 目前只考虑整个表的类型, 不支持混合类型
   listType === ListType.Local
@@ -69,21 +74,48 @@ const handleCheck = <T,>(value: T) => {
 const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
   contextMenuMusic.value = music
 
+  const play = () => handlePlay(music)
+
+  const addNext = () => {
+    listStore.addNextList(
+      listStore.play.list.findIndex((item) => item.id === musicStore.music?.id),
+      music
+    )
+  }
+
+  const download = () => {
+    console.log('TODO: 下载')
+  }
+
+  const showMusicDetail = () => {
+    musicDetailVisible.value = true
+  }
+
+  const setMusicInfo = () => {
+    console.log('TODO: 歌曲设置')
+  }
+
+  const openPath = async () => {
+    if (!music.path) return
+
+    try {
+      await revealItemInDir(music.path)
+    } catch (error) {
+      console.error(error)
+      notify.error('打开文件目录失败')
+    }
+  }
+
+  const showRemove = () => {
+    removeVisible.value = true
+  }
+
   contextMenuStore.show({
     x: e.clientX,
     y: e.clientY,
     options: [
-      { label: '播放', prefixIcon: 'Play', onClick: () => handlePlay(music) },
-      {
-        label: '下一首播放',
-        prefixIcon: 'Playlist',
-        onClick: () => {
-          listStore.addNextList(
-            listStore.play.list.findIndex((item) => item.id === musicStore.music?.id),
-            music
-          )
-        }
-      },
+      { label: '播放', prefixIcon: 'Play', onClick: play },
+      { label: '下一首播放', prefixIcon: 'Playlist', onClick: addNext },
       { divider: true },
       {
         label: '添加到',
@@ -93,53 +125,32 @@ const handleContextMenu = (e: MouseEvent, music: ListMusic) => {
         children: userStore.userPlaylist.map((list) => ({
           label: list.name,
           onClick: async () => {
-            const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-              listId: list.list_create_listid,
-              musicList: [{ name: music.title, hash: music.hash }]
-            })
-            if (playlist_tracks_add?.status !== 1) {
-              notify.error('添加失败')
-            } else {
-              notify.success('添加成功')
-
-              // 如果是添加到我喜欢,同步列表
-              if (list.is_def === 2) {
-                listStore.addLikeList(music.id)
+            try {
+              const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+                listId: list.list_create_listid,
+                musicList: [{ name: music.title, hash: music.hash }]
+              })
+              if (playlist_tracks_add.status !== ApiInvokeStatus.Success) {
+                notify.error('添加失败')
+                return
               }
+
+              notify.success('添加成功')
+              // 如果是添加到我喜欢,同步列表
+              if (list.is_def === 2) listStore.addLikeList(music.id)
+            } catch (error) {
+              console.error(error)
+              notify.error('添加失败')
             }
           }
         }))
       },
-      { label: '下载', prefixIcon: 'Download', disabled: true, onClick: () => 'TODO: 下载' },
+      { label: '下载', prefixIcon: 'Download', disabled: true, onClick: download },
       { divider: true },
-      {
-        label: '歌曲详情',
-        prefixIcon: 'Info',
-        disabled: !!music.hash,
-        onClick: () => (musicDetailVisible.value = true)
-      },
-      {
-        label: '歌曲设置',
-        prefixIcon: 'Setting',
-        disabled: true,
-        onClick: () => '歌曲设置'
-      },
-      {
-        label: '打开文件目录',
-        prefixIcon: 'Folder',
-        disabled: !!music.hash,
-        onClick: async () => {
-          if (!music.path) return
-
-          try {
-            await invoke('system_path_file_open', { path: music.path })
-          } catch (error) {
-            console.error(error)
-            notify.error('打开文件目录失败')
-          }
-        }
-      },
-      { label: '从列表中删除', prefixIcon: 'Bin', onClick: () => (removeVisible.value = true) }
+      { label: '歌曲详情', prefixIcon: 'Info', disabled: !!music.hash, onClick: showMusicDetail },
+      { label: '歌曲设置', prefixIcon: 'Setting', disabled: true, onClick: setMusicInfo },
+      { label: '打开文件目录', prefixIcon: 'Folder', disabled: !!music.hash, onClick: openPath },
+      { label: '从列表中删除', prefixIcon: 'Bin', onClick: showRemove }
     ]
   })
 }
@@ -154,22 +165,40 @@ const handlePlay = (music: ListMusic) => {
 }
 
 const handleLike = async (music: ListMusic) => {
-  if (isLike(music.id)) {
+  try {
+    const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+      listId: listStore.like.info.id,
+      musicList: [{ name: music.title, hash: music.hash }]
+    })
+    if (playlist_tracks_add.status !== ApiInvokeStatus.Success) {
+      notify.error('收藏失败')
+      return
+    }
+
+    notify.success('收藏成功')
+    listStore.addLikeList(music.id)
+  } catch (error) {
+    console.error(error)
+    notify.error('收藏失败')
+  }
+}
+
+const handleUnlike = async (music: ListMusic) => {
+  try {
     const playlist_tracks_del = await invoke('api_playlist_tracks_del', {
       listId: listStore.show.info.id,
       fileIds: [music.id]
     })
-    if (playlist_tracks_del?.status !== 1) return
+    if (playlist_tracks_del.status !== ApiInvokeStatus.Success) {
+      notify.error('取消收藏失败')
+      return
+    }
 
+    notify.success('取消收藏成功')
     listStore.removeLikeList(music.id)
-  } else {
-    const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-      listId: +listStore.like.info.id,
-      musicList: [{ name: music.title, hash: music.hash }]
-    })
-    if (playlist_tracks_add?.status !== 1) return
-
-    listStore.addLikeList(music.id)
+  } catch (error) {
+    console.error(error)
+    notify.error('取消收藏失败')
   }
 }
 
@@ -248,13 +277,16 @@ onUnmounted(() => listStore.clearSearch())
           @dblclick.stop
           @contextmenu.stop>
           <SvgIcon class="action-icon" name="Play" @click="handlePlay(row)" />
-          <SvgIcon
-            v-if="userStore.userinfo && row.hash"
-            class="action-icon"
-            :class="isLike(row.id) ? 'text-error' : ''"
-            :name="isLike(row.id) ? 'HeartBold' : 'Heart'"
-            size="18"
-            @click="handleLike(row)" />
+
+          <template v-if="userStore.userinfo && row.hash">
+            <SvgIcon
+              v-if="isLike(row.id)"
+              class="action-icon text-error"
+              name="HeartBold"
+              @click="handleUnlike(row)" />
+            <SvgIcon v-else class="action-icon" name="Heart" @click="handleLike(row)" />
+          </template>
+
           <SvgIcon class="action-icon" name="More" @click="handleContextMenu($event, row)" />
         </div>
       </div>

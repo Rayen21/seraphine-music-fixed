@@ -7,6 +7,7 @@ import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { getFullName } from '@/utils/music'
 import { invoke } from '@/utils/tools'
+import { ref, watch } from 'vue'
 
 const visible = defineModel({ required: true, default: false })
 
@@ -87,7 +88,6 @@ watch(visible, (visible) => visible && handleReset(true))
             v-if="searchQuery"
             class="absolute right-0 top-0 bottom-0 px-3 hover:text-error flex items-center justify-center cursor-pointer"
             name="Close"
-            size="12"
             @click="searchQuery = ''" />
         </div>
 
@@ -116,7 +116,7 @@ watch(visible, (visible) => visible && handleReset(true))
             <div class="w-28 truncate">{{ lyric.product_from }}</div>
             <div class="w-14 truncate">{{ lyric.score }} 分</div>
             <div class="w-8">
-              <SvgIcon v-if="lyricStore.lyric?.id === lyric.id" name="Unread" size="20" />
+              <SvgIcon v-if="lyricStore.lyric?.id === lyric.id" name="Unread" />
             </div>
           </div>
         </template>

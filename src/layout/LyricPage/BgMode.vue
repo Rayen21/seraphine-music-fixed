@@ -1,9 +1,10 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { LyricPageMode } from '@/utils/params'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, ref } from 'vue'
 
 const lyricStore = useLyricStore()
 

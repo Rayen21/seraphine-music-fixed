@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import Carousel from '@/components/Carousel.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
@@ -6,6 +6,7 @@ import { useMusicStore } from '@/stores/music'
 import { getFullName, getOrigin, getPic } from '@/utils/music'
 import { ApiInvokeStatus, ListType, PicSize } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { onMounted, ref } from 'vue'
 
 const musciStore = useMusicStore()
 const listStore = useListStore()
@@ -164,7 +165,7 @@ onMounted(() => {
             v-else
             class="size-full flex justify-center items-center"
             name="Music"
-            :size="36" />
+            size="32" />
 
           <SvgIcon
             class="absolute inset-0 bg-black/30 text-neutral-50 transition-opacity opacity-0 group-hover:opacity-100"

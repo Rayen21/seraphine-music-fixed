@@ -12,6 +12,8 @@ import {
 import { getRandomNumber, invoke, setAppTitle } from '@/utils/tools'
 import { Channel } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
 
 export const useMusicStore = defineStore(
   'music',
@@ -35,8 +37,8 @@ export const useMusicStore = defineStore(
 
     const MAX_RETRY_COUNT = 3 // 最大重试次数
 
-    let waitNextTimer: number | null = null
-    let waitDownloadTimer: number | null = null
+    let waitNextTimer: ReturnType<typeof setTimeout> | null = null
+    let waitDownloadTimer: ReturnType<typeof setTimeout> | null = null
     let playChannel: Channel<number> | null = null
     let downloadChannel: Channel<number> | null = null
 

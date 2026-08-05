@@ -11,7 +11,7 @@ use crate::{
   },
   http::{config, mode},
   music::{file, lyric as music_lyric, player, scan},
-  system::{path, setting, update},
+  system::{path, setting},
 };
 
 mod api;
@@ -22,14 +22,22 @@ mod utils;
 
 pub fn run() {
   tauri::Builder::default()
-    .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
-    .plugin(tauri_plugin_global_shortcut::Builder::new().build())
     .plugin(tauri_plugin_autostart::Builder::new().build())
+    .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+    .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app| {
       let app_handle = app.app_handle();
+
+      // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
+      #[cfg(desktop)]
+      {
+        app_handle.plugin(tauri_plugin_updater::Builder::new().build())?;
+        app_handle.plugin(tauri_plugin_process::init())?;
+      }
 
       create_tray_icon(&app_handle)?;
 
@@ -47,9 +55,7 @@ pub fn run() {
       config::http_config_clear,
       setting::system_setting_restore_window,
       path::system_path_all,
-      path::system_path_file_open,
-      path::system_path_dir_open,
-      path::system_path_dir_clear,
+      path::system_path_clear,
       scan::music_scan_dir,
       scan::music_scan_type,
       scan::music_scan_file,
@@ -116,10 +122,7 @@ pub fn run() {
       user::api_user_detail,
       youth::api_youth_union_vip,
       youth::api_youth_day_vip,
-      youth::api_youth_day_upgrade,
-      update::check_update,
-      update::download_update,
-      update::install_update
+      youth::api_youth_day_upgrade
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

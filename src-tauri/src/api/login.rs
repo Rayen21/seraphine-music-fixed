@@ -5,15 +5,16 @@ use tauri::AppHandle;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::{
+  api::libs::{
     ApiResult, LoginCellphone, LoginOpenplat, LoginQrCheck, LoginWxCheck, OpAccessToken, WxConnect,
     WxTicket, WxToken,
   },
   http::{
     client::{HttpRequest, HttpRequestOptions},
     config::HttpConfig,
+    libs::BASE_URL,
     mode::{HttpMode, Mode},
-    server::{request, EncryptType, RequestOptions, Response, BASE_URL},
+    server::{request, EncryptType, RequestOptions, Response},
   },
   utils::{
     crypto::{decrypt_aes, encrypt_aes, encrypt_md5, encrypt_rsa_unpad, encrypt_sha1},
@@ -640,4 +641,105 @@ pub async fn api_login_device_kick() -> ApiResult<HashMap<String, Value>> {
 /// 登出账号
 pub fn api_login_out(app_handle: AppHandle) -> Result<(), String> {
   HttpConfig::clear_kg_cookies(&app_handle, BASE_URL).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === 加密常量 ===
+
+  #[test]
+  fn test_lite_t2_key_constant() {
+    assert_eq!(LITE_T2_KEY, "fd14b35e3f81af3817a20ae7adae7020");
+  }
+
+  #[test]
+  fn test_lite_t2_iv_constant() {
+    assert_eq!(LITE_T2_IV, "17a20ae7adae7020");
+  }
+
+  #[test]
+  fn test_lite_t1_key_constant() {
+    assert_eq!(LITE_T1_KEY, "5e4ef500e9597fe004bd09a46d8add98");
+  }
+
+  #[test]
+  fn test_lite_t1_iv_constant() {
+    assert_eq!(LITE_T1_IV, "04bd09a46d8add98");
+  }
+
+  #[test]
+  fn test_lite_t2_key_is_32_hex_chars() {
+    assert_eq!(LITE_T2_KEY.len(), 32);
+    assert!(LITE_T2_KEY.chars().all(|c| c.is_ascii_hexdigit()));
+  }
+
+  #[test]
+  fn test_lite_t1_key_is_32_hex_chars() {
+    assert_eq!(LITE_T1_KEY.len(), 32);
+    assert!(LITE_T1_KEY.chars().all(|c| c.is_ascii_hexdigit()));
+  }
+
+  #[test]
+  fn test_lite_iv_is_16_hex_chars() {
+    // AES-128 IV 长度 16 字节 = 32 hex chars？此处实际为 16 hex chars = 8 字节
+    // 注意：实际 IV 长度由 encrypt_aes 内部处理，此处仅校验字符串长度一致
+    assert_eq!(LITE_T2_IV.len(), 16);
+    assert_eq!(LITE_T1_IV.len(), 16);
+  }
+
+  // === api_login_qr_create 纯函数 ===
+
+  #[test]
+  fn test_api_login_qr_create_basic() {
+    let url = api_login_qr_create("mykey123");
+    assert_eq!(
+      url,
+      "https://h5.kugou.com/apps/loginQRCode/html/index.html?qrcode=mykey123"
+    );
+  }
+
+  #[test]
+  fn test_api_login_qr_create_empty_key() {
+    let url = api_login_qr_create("");
+    assert_eq!(
+      url,
+      "https://h5.kugou.com/apps/loginQRCode/html/index.html?qrcode="
+    );
+  }
+
+  #[test]
+  fn test_api_login_qr_create_with_special_chars() {
+    // 特殊字符不做 URL 编码（源码使用 format! 直接拼接）
+    let url = api_login_qr_create("key with spaces&special");
+    assert!(url.ends_with("qrcode=key with spaces&special"));
+  }
+
+  #[test]
+  fn test_api_login_qr_create_url_starts_with_https() {
+    let url = api_login_qr_create("k");
+    assert!(url.starts_with("https://"));
+  }
+
+  #[test]
+  fn test_api_login_qr_create_url_contains_qrcode_param() {
+    let url = api_login_qr_create("abc");
+    assert!(url.contains("qrcode=abc"));
+  }
+
+  // === 命令签名约束（编译期校验，防止意外修改）===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    // 仅校验命令函数符号存在；具体执行依赖 AppHandle / 网络，单测环境不调用
+    let _ = api_login_qr_key;
+    let _ = api_login_qr_create as fn(&str) -> String;
+    let _ = api_login_wx_create;
+    let _ = api_login_wx_check;
+    let _ = api_login_captcha;
+    let _ = api_login_token;
+    let _ = api_login_device;
+    let _ = api_login_device_kick;
+  }
 }

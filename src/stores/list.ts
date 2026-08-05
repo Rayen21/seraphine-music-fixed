@@ -1,4 +1,6 @@
 import { ListType, SortOrder, SortType } from '@/utils/params'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useListStore = defineStore(
   'list',

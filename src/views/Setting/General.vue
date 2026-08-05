@@ -5,6 +5,7 @@ import { useSettingStore } from '@/stores/setting'
 import { AutoStartMode } from '@/utils/params'
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, onMounted, ref } from 'vue'
 
 const settingStore = useSettingStore()
 

@@ -1,10 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, onMounted, ref } from 'vue'
 
 const settingStore = useSettingStore()
 const musicStore = useMusicStore()
@@ -69,12 +70,12 @@ onMounted(async () => {
   <div class="flex items-center text-base">
     <div class="font-bold w-40">音频输出设备:</div>
 
-    <div>
+    <div class="space-y-3">
       <div class="relative text-sm" v-on-click-outside="() => (deviceVisible = false)">
         <div
           class="flex cursor-pointer items-center whitespace-nowrap font-bold"
           @click="deviceVisible = !deviceVisible">
-          <div>{{ deviceSelection?.label }}</div>
+          <div>{{ deviceSelection?.label || '默认设备 ' }}</div>
           <SvgIcon
             class="transition-transform"
             :class="deviceVisible ? 'rotate-180' : ''"

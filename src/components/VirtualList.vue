@@ -2,6 +2,7 @@
 import SvgIcon from '@/components/SvgIcon.vue'
 import { Interval } from '@/utils/params'
 import { useEventListener, useThrottleFn } from '@vueuse/core'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
 type Key = keyof T
 
@@ -185,7 +186,7 @@ defineExpose({ scrollToTarget, scrollToIndex, scrollToTop })
     <div
       v-else-if="!list.length"
       class="flex items-center justify-center size-full flex-col text-minor">
-      <SvgIcon name="Empty" size="56" />
+      <SvgIcon name="Empty" size="64" />
       <div class="text-xl font-bold">列表为空</div>
     </div>
 

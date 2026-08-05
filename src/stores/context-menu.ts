@@ -1,3 +1,6 @@
+import { defineStore } from 'pinia'
+import { nextTick, ref } from 'vue'
+
 interface ShowOptions {
   x: number
   y: number

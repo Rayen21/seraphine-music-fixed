@@ -1,5 +1,6 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import { cn } from '@/utils/tools'
+import { computed } from 'vue'
 
 interface Props {
   loadingProgress?: number // 加载进度

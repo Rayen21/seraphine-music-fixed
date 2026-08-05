@@ -2,7 +2,7 @@ pub mod artist;
 // pub mod images;
 pub mod album;
 pub mod audio;
-pub mod lib;
+pub mod libs;
 pub mod login;
 pub mod lyric;
 pub mod music;

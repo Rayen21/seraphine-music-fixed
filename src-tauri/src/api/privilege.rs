@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri::http::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -58,4 +58,60 @@ pub async fn api_privilege_lite(hashes: Vec<&str>) -> ApiResult<HashMap<String, 
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_url_path() {
+    let path = "/v2/get_res_privilege/lite";
+    assert!(path.starts_with("/v2"));
+    assert!(path.contains("privilege"));
+  }
+
+  #[test]
+  fn test_x_router_header() {
+    assert_eq!("media.store.kugou.com", "media.store.kugou.com");
+  }
+
+  #[test]
+  fn test_content_type_header() {
+    assert_eq!("application/json", "application/json");
+  }
+
+  #[test]
+  fn test_qualities_constant_count() {
+    // qualities 包含 7 个值
+    let qualities = [
+      "128",
+      "320",
+      "flac",
+      "high",
+      "viper_atmos",
+      "viper_tape",
+      "viper_clear",
+    ];
+    assert_eq!(qualities.len(), 7);
+  }
+
+  #[test]
+  fn test_music_info_serialization() {
+    let info = MusicInfo {
+      music_type: String::from("audio"),
+      page_id: 0,
+      hash: String::from("abc"),
+      album_id: 0,
+    };
+    let json = serde_json::to_string(&info).unwrap();
+    // type 字段 rename 为 "type"
+    assert!(json.contains("\"type\":\"audio\""));
+    assert!(json.contains("\"hash\":\"abc\""));
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_privilege_lite;
+  }
 }

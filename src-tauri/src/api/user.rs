@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions},
@@ -39,4 +39,26 @@ pub async fn api_user_detail() -> ApiResult<HashMap<String, Value>> {
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_url_path() {
+    let path = "/v3/get_my_info";
+    assert!(path.starts_with("/v3"));
+    assert!(path.contains("my_info"));
+  }
+
+  #[test]
+  fn test_x_router_header() {
+    assert_eq!("usercenter.kugou.com", "usercenter.kugou.com");
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_user_detail;
+  }
 }

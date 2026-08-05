@@ -6,6 +6,7 @@ import { useSettingStore } from '@/stores/setting'
 import { getPic } from '@/utils/music'
 import { PicSize, PlayingOrigin } from '@/utils/params'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { computed, nextTick, ref, watch } from 'vue'
 
 const musicStore = useMusicStore()
 const settingStore = useSettingStore()

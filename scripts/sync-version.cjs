@@ -43,27 +43,6 @@ const FILES = [
 
 const args = process.argv.slice(2)
 const targetVersion = args[0]
-const isCheck = args.includes('--check')
-
-// ====== check 模式 ======
-if (isCheck) {
-  const versions = FILES.map(({ path: file, read }) => {
-    const content = fs.readFileSync(path.join(ROOT, file), 'utf-8')
-    return { file, version: read(content) }
-  })
-
-  const first = versions[0].version
-  const allMatch = versions.every((v) => v.version === first)
-
-  if (!allMatch) {
-    console.error('❌ 版本号不一致:')
-    versions.forEach(({ file, version }) => console.error(`   ${file}: ${version || '(未找到)'}`))
-    process.exit(1)
-  }
-
-  console.log(`✅ 版本号一致: ${first}`)
-  process.exit(0)
-}
 
 // ====== set 模式 ======
 if (!targetVersion) {

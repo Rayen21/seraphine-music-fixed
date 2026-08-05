@@ -1,6 +1,4 @@
 import vue from '@vitejs/plugin-vue'
-import AutoImport from 'unplugin-auto-import/vite'
-import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import Icons from 'unplugin-icons/vite'
 import { defineConfig } from 'vite'
 
@@ -11,23 +9,27 @@ export default defineConfig({
   resolve: {
     alias: { '@': '/src' }
   },
-  plugins: [
-    vue(),
-    Icons({
-      customCollections: { 'custom-icons': FileSystemIconLoader('./src/assets/svgs') }
-    }),
-    AutoImport({
-      imports: ['vue', 'pinia', 'vue-router'],
-      dts: './auto-imports.d.ts',
-      eslintrc: { enabled: true, filepath: './.eslintrc-auto-import.json' }
-    })
-  ],
+  plugins: [vue(), Icons()],
   build: {
+    minify: 'oxc',
     rolldownOptions: {
       input: {
         main: './index.html',
         desktopLyric: './desktop-lyric.html',
         miniPlayer: './mini-player.html'
+      },
+      output: {
+        minify: {
+          compress: { dropConsole: true }
+        },
+        codeSplitting: {
+          groups: [
+            { test: /node_modules\/vue/, name: 'vue' },
+            { test: /node_modules\/vue-router/, name: 'vue-router' },
+            { test: /node_modules\/pinia/, name: 'pinia' },
+            { test: /node_modules\/@vueuse/, name: 'vueuse' }
+          ]
+        }
       }
     }
   },

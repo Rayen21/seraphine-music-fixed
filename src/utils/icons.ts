@@ -1,9 +1,9 @@
-import Close from '~icons/custom-icons/Close'
-import Maximize from '~icons/custom-icons/Maximize'
-import Minimize from '~icons/custom-icons/Minimize'
-import Restore from '~icons/custom-icons/Restore'
+import Add from '~icons/material-symbols/add-rounded'
+import Restore from '~icons/material-symbols/chrome-restore-outline-rounded'
+import Close from '~icons/material-symbols/close-rounded'
+import Remove from '~icons/material-symbols/remove-rounded'
+import Square from '~icons/material-symbols/square-outline-rounded'
 import AddFolder from '~icons/solar/add-folder-linear'
-import Add from '~icons/solar/add-square-linear'
 import AlignLeft from '~icons/solar/align-left-linear'
 import AlignRight from '~icons/solar/align-right-linear'
 import AlignCenter from '~icons/solar/align-vertical-spacing-linear'
@@ -78,17 +78,13 @@ import VolumeLoud from '~icons/solar/volume-loud-linear'
 import VolumeSmall from '~icons/solar/volume-small-linear'
 import Ring from '~icons/svg-spinners/ring-resize'
 
-// 图标名称类型
-export type IconName = keyof typeof IconMap
-
-// 图标映射对象
 export const IconMap = {
-  Close,
-  Maximize,
-  Minimize,
-  Restore,
-  AddFolder,
   Add,
+  Restore,
+  Close,
+  Remove,
+  Square,
+  AddFolder,
   AlignLeft,
   AlignRight,
   AlignCenter,
@@ -121,8 +117,8 @@ export const IconMap = {
   ZoomIn,
   ZoomOut,
   Moon,
-  ForwardRight,
   ForwardLeft,
+  ForwardRight,
   MusicLibrary,
   Music,
   Empty,
@@ -162,4 +158,6 @@ export const IconMap = {
   VolumeLoud,
   VolumeSmall,
   Ring
-}
+} as const
+
+export type IconName = keyof typeof IconMap

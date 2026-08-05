@@ -4,11 +4,12 @@ import Modal from '@/components/Modal.vue'
 import { notify } from '@/components/Notification.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
-import { useListContext } from '@/utils/hooks'
+import { useListStore } from '@/stores/list'
 import { getFullName } from '@/utils/music'
-import { ScanStatus } from '@/utils/params'
+import { ListType, ScanStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
-import { OpenDialogOptions, open } from '@tauri-apps/plugin-dialog'
+import { open } from '@tauri-apps/plugin-dialog'
+import { computed, inject, ref, watch } from 'vue'
 
 interface Props {
   scanTypes: string[]
@@ -22,13 +23,22 @@ const visible = defineModel({ required: true, default: false })
 const { scanTypes: musicTypes } = defineProps<Props>()
 const emits = defineEmits<Emits>()
 
-const { listStore, listType, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const listStore = useListStore()
+
+const tableColumns = [
+  { key: 'index', slot: true, width: '2.5rem', padding: 0 },
+  { key: 'info', slot: true, width: 'auto' },
+  { key: 'action', slot: true, width: '2.5rem', padding: 0 }
+]
 
 const scanTypes = ref<string[]>([]) // 扫描类型
 const scanPaths = ref<string[]>([]) // 扫描路径
 const scanStatus = ref(ScanStatus.Ready) // 扫描状态
 const scanList = ref<ListMusic[]>([]) // 扫描结果
 
+const list = computed(() => listStore[listType])
 // 扫描状态文本
 const scanStatusText = computed(() => {
   switch (scanStatus.value) {
@@ -45,13 +55,6 @@ const scanStatusText = computed(() => {
   }
 })
 
-const dialogOptions: OpenDialogOptions = { directory: true, multiple: true, title: '选择扫描目录' }
-const tableColumns = [
-  { key: 'index', slot: true, width: '2.5rem', padding: 0 },
-  { key: 'info', slot: true, width: 'auto' },
-  { key: 'action', slot: true, width: '2.5rem', padding: 0 }
-]
-
 const selectAllType = () => {
   scanTypes.value = scanTypes.value.includes('all') ? [] : ['all', ...musicTypes]
 }
@@ -63,7 +66,7 @@ const selectType = (type: string) => {
 }
 
 const addPath = async () => {
-  const dirPaths = (await open(dialogOptions)) as string[] | null
+  const dirPaths = await open({ directory: true, multiple: true, title: '选择扫描目录' })
   if (!dirPaths) return
 
   scanPaths.value.push(...dirPaths)
@@ -168,7 +171,7 @@ watch(
         <ul class="card mt-3 h-56 overflow-auto p-2">
           <div
             v-if="!scanPaths.length"
-            class="flex items-center justify-center size-full flex-col text-minor">
+            class="flex flex-col items-center justify-center size-full text-minor">
             <SvgIcon name="Empty" size="56" />
             <div class="text-xl font-bold">列表为空</div>
           </div>
@@ -187,7 +190,6 @@ watch(
               <SvgIcon
                 class="action-icon w-10 hover:text-error"
                 name="Close"
-                size="10"
                 @click="removePath(index)" />
             </li>
           </template>
@@ -249,7 +251,6 @@ watch(
             <SvgIcon
               class="action-icon hover:text-error"
               name="Close"
-              size="10"
               @click="removeMusic(row.index)" />
           </template>
         </VirtualList>

@@ -1,10 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import { useUserStore } from '@/stores/user'
 import { ApiInvokeStatus, QrcodeStatus, QrcodeType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import Qrcode from 'qrcode.vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 interface Emits {
   close: []
@@ -24,8 +25,8 @@ const POLL_INTERVAL = 1 * 1000 // 轮询间隔时间 1s
 const POLL_TIMEOUT = 60 * 1000 // 轮询超时时间 60s
 
 let qrcodeKey = '' // 二维码 key
-let pollInterval: number | null = null // 轮询定时器
-let pollTimeout: number | null = null // 轮询超时定时器
+let pollInterval: ReturnType<typeof setTimeout> | null = null // 轮询定时器
+let pollTimeout: ReturnType<typeof setTimeout> | null = null // 轮询超时定时器
 
 const qrcodeSelection = ref(qrcodeOptions[0])
 const qrcodeLoading = ref(false) // 二维码加载中

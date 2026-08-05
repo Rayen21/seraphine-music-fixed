@@ -21,7 +21,7 @@ export const notify = {
 
 <script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 
 defineOptions({ name: 'NotificationContainer' })
 
@@ -33,7 +33,7 @@ const typeTheme = {
 }
 
 const notifications = ref<Notify.Info[]>([])
-const timers = new Map<number, number>()
+const timers = new Map<number, ReturnType<typeof setTimeout>>()
 
 const remove = (id: number) => {
   const index = notifications.value.findIndex((n) => n.id === id)
@@ -73,13 +73,13 @@ onBeforeUnmount(() => {
         :key="notification.id"
         class="pointer-events-auto mb-4 flex w-56 items-center gap-3 overflow-hidden rounded-lg border p-4 shadow-lg shadow-shadow"
         :class="typeTheme[notification.type]">
-        <div class="line-clamp-5 min-w-0 flex-1 font-bold">
+        <div class="line-clamp-3 min-w-0 flex-1 font-bold">
           {{ notification.message }}
         </div>
         <SvgIcon
-          class="size-5 flex-shrink-0 cursor-pointer"
+          class="size-5 shrink-0 cursor-pointer"
           name="Close"
-          :size="10"
+          :size="20"
           @click="remove(notification.id)" />
       </li>
     </TransitionGroup>

@@ -1,4 +1,4 @@
-﻿import { useLyricStore } from '@/stores/lyric'
+import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
 import { DesktopLyricEmit, Interval, WindowEvent, WindowTarget } from '@/utils/params'
@@ -6,6 +6,7 @@ import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PhysicalPosition, getCurrentWindow } from '@tauri-apps/api/window'
 import { watchThrottled } from '@vueuse/core'
+import { type Ref, watch } from 'vue'
 
 export function useDesktopLyricBridge(lyricWindow: Ref<WebviewWindow | undefined>) {
   const musicStore = useMusicStore()

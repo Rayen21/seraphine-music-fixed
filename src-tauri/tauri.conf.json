@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "seraphine-music",
-  "version": "0.1.6",
-  "identifier": "com.administrator.seraphine-music",
+  "version": "0.1.7",
+  "identifier": "com.tauri.seraphine-music",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -21,17 +21,11 @@
       }
     ],
     "security": {
-      "capabilities": [
-        "desktop-capability",
-        "desktop-lyric-capability",
-        "mini-player-capability"
-      ],
+      "capabilities": ["main-capability", "desktop-lyric-capability", "mini-player-capability"],
       "csp": "default-src 'self'; img-src 'self' asset: http: https:; connect-src 'self' http: https:;style-src 'self' 'unsafe-inline';",
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "**"
-        ]
+        "scope": ["**"]
       }
     }
   },
@@ -42,6 +36,7 @@
     "copyright": "Copyright © 2026 bunre_lee",
     "category": "Music",
     "shortDescription": "Seraphine 音乐播放器",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/16x16.png",
       "icons/24x24.png",
@@ -61,18 +56,13 @@
       },
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "languages": [
-          "SimpChinese"
-        ],
+        "languages": ["SimpChinese"],
         "displayLanguageSelector": true
       }
     },
     "linux": {
       "deb": {
-        "depends": [
-          "libgtk-3-0",
-          "libayatana-appindicator3-1"
-        ]
+        "depends": ["libgtk-3-0", "libayatana-appindicator3-1"]
       },
       "appimage": {
         "bundleMediaFramework": false
@@ -81,6 +71,17 @@
     "macOS": {
       "minimumSystemVersion": "10.15",
       "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE2NEQ2QTNDQTMwM0M2RjMKUldUenhnT2pQR3BOcGtJeWI5cUplTjBCNnhJWDBIUkRUSm02cEJNMWxwa2RKSm5WQkFKTU1kUHcK",
+      "endpoints": [
+        "https://github.com/burenLee/seraphine-music/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

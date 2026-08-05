@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import { useDesktopLyricStore } from './stores/desktop-lyric'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
@@ -19,6 +19,7 @@ import { emitTo, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { vOnClickOutside } from '@vueuse/components'
 import { useThrottleFn } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 const lyricWindow = getCurrentWindow()
 
@@ -277,7 +278,6 @@ listen<{ type: DesktopLyricEmit; data: unknown }>(WindowEvent.DesktopLyric, (e) 
       <SvgIcon
         class="action-icon hover:text-error"
         name="Close"
-        size="12"
         @click="handleSend(DesktopLyricEmit.Close)" />
     </div>
 

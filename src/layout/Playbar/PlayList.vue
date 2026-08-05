@@ -11,6 +11,7 @@ import { getFullName, getOrigin } from '@/utils/music'
 import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
+import { provide, ref } from 'vue'
 
 provide('listType', ListType.Play)
 
@@ -86,33 +87,46 @@ const handlePlay = async (music: ListMusic) => {
 
 const handleLike = async (music: ListMusic) => {
   try {
-    if (isLike(music.id)) {
-      const api_playlist_tracks_del = await invoke('api_playlist_tracks_del', {
-        listId: listStore.show.info.id,
-        fileIds: [music.id]
-      })
-      if (api_playlist_tracks_del.status !== ApiInvokeStatus.Success) return
-
-      listStore.removeLikeList(music.id)
-    } else {
-      const api_playlist_tracks_add = await invoke('api_playlist_tracks_add', {
-        listId: listStore.like.info.id,
-        musicList: [{ name: music.title, hash: music.hash }]
-      })
-      if (api_playlist_tracks_add.status !== ApiInvokeStatus.Success) return
-
-      listStore.addLikeList(music.id)
+    const playlist_tracks_add = await invoke('api_playlist_tracks_add', {
+      listId: listStore.like.info.id,
+      musicList: [{ name: music.title, hash: music.hash }]
+    })
+    if (playlist_tracks_add.status !== ApiInvokeStatus.Success) {
+      notify.error('收藏失败')
+      return
     }
+
+    notify.success('收藏成功')
+    listStore.addLikeList(music.id)
   } catch (error) {
     console.error(error)
-    notify.error('操作失败')
+    notify.error('收藏失败')
+  }
+}
+
+const handleUnlike = async (music: ListMusic) => {
+  try {
+    const playlist_tracks_del = await invoke('api_playlist_tracks_del', {
+      listId: listStore.show.info.id,
+      fileIds: [music.id]
+    })
+    if (playlist_tracks_del.status !== ApiInvokeStatus.Success) {
+      notify.error('取消收藏失败')
+      return
+    }
+
+    notify.success('取消收藏成功')
+    listStore.removeLikeList(music.id)
+  } catch (error) {
+    console.error(error)
+    notify.error('取消收藏失败')
   }
 }
 </script>
 
 <template>
   <div v-on-click-outside="() => (listVisible = false)">
-    <SvgIcon class="action-icon" name="Playlist" size="20" @click="listVisible = !listVisible" />
+    <SvgIcon class="action-icon" name="Playlist" @click="listVisible = !listVisible" />
 
     <Transition name="slide-page-left">
       <div
@@ -171,13 +185,16 @@ const handleLike = async (music: ListMusic) => {
                 @dblclick.stop
                 @contextmenu.stop>
                 <SvgIcon class="action-icon" name="Play" @click="handlePlay(row)" />
-                <SvgIcon
-                  v-if="userStore.userinfo && row.hash"
-                  class="action-icon"
-                  :class="isLike(row.id) ? 'text-error' : ''"
-                  :name="isLike(row.id) ? 'HeartBold' : 'Heart'"
-                  size="18"
-                  @click="handleLike(row)" />
+
+                <template v-if="userStore.userinfo && row.hash">
+                  <SvgIcon
+                    v-if="isLike(row.id)"
+                    class="action-icon text-error"
+                    name="HeartBold"
+                    @click="handleUnlike(row)" />
+                  <SvgIcon v-else class="action-icon" name="Heart" @click="handleLike(row)" />
+                </template>
+
                 <SvgIcon class="action-icon" name="More" @click="handleContextMenu($event, row)" />
               </div>
             </div>

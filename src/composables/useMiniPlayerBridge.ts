@@ -1,4 +1,4 @@
-﻿import { useListStore } from '@/stores/list'
+import { useListStore } from '@/stores/list'
 import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
@@ -8,6 +8,7 @@ import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { PhysicalPosition, Window } from '@tauri-apps/api/window'
 import { watchThrottled } from '@vueuse/core'
+import { type Ref, computed, watch } from 'vue'
 
 const FORWARD_DURATION = 150 // 歌词提前滚动时间 (ms)
 

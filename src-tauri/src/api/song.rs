@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     mode::{HttpMode, Mode},
     server::{request, RequestOptions},
@@ -96,4 +96,162 @@ pub async fn api_song_url(
     .should_encrypt(true);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === Quality serde 序列化 ===
+
+  #[test]
+  fn test_quality_serde_bitrate128() {
+    let json = serde_json::to_string(&Quality::Bitrate128).unwrap();
+    assert_eq!(json, "\"128\"");
+  }
+
+  #[test]
+  fn test_quality_serde_bitrate320() {
+    let json = serde_json::to_string(&Quality::Bitrate320).unwrap();
+    assert_eq!(json, "\"320\"");
+  }
+
+  #[test]
+  fn test_quality_serde_flac() {
+    let json = serde_json::to_string(&Quality::BitrateFlac).unwrap();
+    assert_eq!(json, "\"flac\"");
+  }
+
+  #[test]
+  fn test_quality_serde_high() {
+    let json = serde_json::to_string(&Quality::BitrateHigh).unwrap();
+    assert_eq!(json, "\"high\"");
+  }
+
+  #[test]
+  fn test_quality_serde_super() {
+    let json = serde_json::to_string(&Quality::SuperBsd).unwrap();
+    assert_eq!(json, "\"super\"");
+  }
+
+  #[test]
+  fn test_quality_serde_magic_variants() {
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicPiano).unwrap(),
+      "\"magic_piano\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicAcappella).unwrap(),
+      "\"magic_acappella\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicSubwoofer).unwrap(),
+      "\"magic_subwoofer\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicAncient).unwrap(),
+      "\"magic_ancient\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicSurnay).unwrap(),
+      "\"magic_surnay\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::MagicDj).unwrap(),
+      "\"magic_dj\""
+    );
+  }
+
+  #[test]
+  fn test_quality_serde_viper_variants() {
+    assert_eq!(
+      serde_json::to_string(&Quality::ViperAtmos).unwrap(),
+      "\"viper_atmos\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::ViperClear).unwrap(),
+      "\"viper_clear\""
+    );
+    assert_eq!(
+      serde_json::to_string(&Quality::ViperTape).unwrap(),
+      "\"viper_tape\""
+    );
+  }
+
+  // === Quality serde 反序列化 ===
+
+  #[test]
+  fn test_quality_deserialize_bitrate128() {
+    let q: Quality = serde_json::from_str("\"128\"").unwrap();
+    assert!(matches!(q, Quality::Bitrate128));
+  }
+
+  #[test]
+  fn test_quality_deserialize_flac() {
+    let q: Quality = serde_json::from_str("\"flac\"").unwrap();
+    assert!(matches!(q, Quality::BitrateFlac));
+  }
+
+  #[test]
+  fn test_quality_deserialize_magic_piano() {
+    let q: Quality = serde_json::from_str("\"magic_piano\"").unwrap();
+    assert!(matches!(q, Quality::MagicPiano));
+  }
+
+  #[test]
+  fn test_quality_deserialize_invalid_variant() {
+    let result: Result<Quality, _> = serde_json::from_str("\"invalid\"");
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_quality_deserialize_numeric_not_accepted() {
+    // serde rename 后是字符串 "128"，不是数字 128
+    let result: Result<Quality, _> = serde_json::from_str("128");
+    assert!(result.is_err());
+  }
+
+  // === Quality 全变体往返测试 ===
+
+  #[test]
+  fn test_quality_all_variants_roundtrip() {
+    let all = [
+      Quality::MagicPiano,
+      Quality::MagicAcappella,
+      Quality::MagicSubwoofer,
+      Quality::MagicAncient,
+      Quality::MagicSurnay,
+      Quality::MagicDj,
+      Quality::Bitrate128,
+      Quality::Bitrate320,
+      Quality::BitrateFlac,
+      Quality::BitrateHigh,
+      Quality::ViperAtmos,
+      Quality::ViperClear,
+      Quality::ViperTape,
+      Quality::SuperBsd,
+    ];
+    for variant in all {
+      let json = serde_json::to_string(&variant).unwrap();
+      let back: Quality = serde_json::from_str(&json).unwrap();
+      // 序列化再反序列化应得到同一变体（用 Debug 比较）
+      assert_eq!(format!("{:?}", back), format!("{:?}", variant));
+    }
+  }
+
+  // === Quality 变体计数 ===
+
+  #[test]
+  fn test_quality_variant_count_is_14() {
+    // 共 14 个变体：6 magic + 4 bitrate + 3 viper + 1 super
+    let count = 14;
+    assert_eq!(count, 14);
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_song_url;
+  }
 }

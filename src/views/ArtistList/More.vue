@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Image from '@/components/Image.vue'
 import ToTop from '@/components/PageActions/ToTop.vue'
@@ -7,6 +7,8 @@ import VirtualList from '@/components/VirtualList.vue'
 import { getPic } from '@/utils/music'
 import { ApiInvokeStatus, AreaTypes, PageSize, SexTypes } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { onMounted, ref, useTemplateRef } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 

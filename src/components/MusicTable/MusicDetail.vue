@@ -6,6 +6,8 @@ import { notify } from '@/components/Notification.vue'
 import { formatFileSize, invoke } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
+import { revealItemInDir } from '@tauri-apps/plugin-opener'
+import { ref, watch } from 'vue'
 
 interface Props {
   path: string
@@ -36,10 +38,9 @@ const handleView = async () => {
   if (!musicDetail.value) return
 
   try {
-    await invoke('system_path_file_open', { path: musicDetail.value.path })
+    await revealItemInDir(musicDetail.value.path)
   } catch (error) {
     console.error(error)
-
     notify.error('打开文件失败')
   }
 }

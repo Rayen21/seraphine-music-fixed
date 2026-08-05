@@ -317,7 +317,12 @@ declare global {
     }
     system_path_all: {
       args: undefined
-      return: { temp: string; lyric: string; cover: string }
+      return: {
+        current_dir: string
+        temp_dir: string
+        lyric_dir: string
+        cover_dir: string
+      }
     }
     music_scan_type: {
       args: undefined
@@ -339,15 +344,7 @@ declare global {
       args: { filePath: string }
       return: MusicDetail
     }
-    system_path_file_open: {
-      args: { path: string }
-      return: undefined
-    }
-    system_path_dir_open: {
-      args: { path: string }
-      return: undefined
-    }
-    system_path_dir_clear: {
+    system_path_clear: {
       args: { dirPath: string }
       return: undefined
     }
@@ -751,24 +748,6 @@ declare global {
     api_youth_day_upgrade: {
       args: undefined
       return: ApiResponse
-    }
-    check_update: {
-      args: undefined
-      return: {
-        has_update: boolean
-        current_version: string
-        latest_version: string
-        download_url: string | null
-        file_size: number | null
-      }
-    }
-    download_update: {
-      args: { downloadUrl: string }
-      return: string
-    }
-    install_update: {
-      args: { savePath: string }
-      return: undefined
     }
   }
 

@@ -9,6 +9,8 @@ import { MenuAction } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
@@ -84,7 +86,7 @@ const handleUpdateCancel = () => {
 
 <template>
   <div class="relative" v-on-click-outside="() => (menuVisible = false)">
-    <SvgIcon class="action-icon" name="Menu" size="22" @click="menuVisible = !menuVisible" />
+    <SvgIcon class="action-icon" name="Menu" size="20" @click="menuVisible = !menuVisible" />
 
     <SelectModal
       class="absolute left-1/2 -translate-x-1/2 top-full"
@@ -107,14 +109,6 @@ const handleUpdateCancel = () => {
           <span class="text-green-500 font-bold">
             {{ updaterStore.updateInfo?.latest_version }}
           </span>
-        </p>
-        <p class="text-gray-500 text-sm mt-1" v-if="updaterStore.updateInfo?.file_size">
-          大小:
-          {{
-            updaterStore.updateInfo.file_size > 1048576
-              ? (updaterStore.updateInfo.file_size / 1048576).toFixed(1) + ' MB'
-              : (updaterStore.updateInfo.file_size / 1024).toFixed(0) + ' KB'
-          }}
         </p>
       </div>
     </Modal>

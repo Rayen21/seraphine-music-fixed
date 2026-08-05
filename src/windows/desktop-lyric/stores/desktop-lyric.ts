@@ -1,10 +1,12 @@
-﻿import {
+import {
   LyricAccentColor,
   LyricBaseColor,
   LyricFontSize,
   LyricOffset,
   LyricTransMode
 } from '@/utils/params'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useDesktopLyricStore = defineStore(
   'desktop-lyric',

@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
@@ -6,6 +6,7 @@ import { useSettingStore } from '@/stores/setting'
 import { LyricFormat, LyricTransMode } from '@/utils/params'
 import { formatDuration } from '@/utils/tools'
 import { useEventListener } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
 interface Emits {
   lyricSearchShow: []
@@ -20,7 +21,7 @@ const settingStore = useSettingStore()
 const lyricRef = useTemplateRef('lyricRef')
 
 const FORWARD_DURATION = 100 // 歌词提前滚动时间 (ms)
-let wheelTimer: number | null = null // 滚轮定时器
+let wheelTimer: ReturnType<typeof setTimeout> | null = null // 滚轮定时器
 
 const lyricPadding = ref(0) // 歌词容器内边距
 const isWheelling = ref(false) // 鼠标滚轮是否正在滚动

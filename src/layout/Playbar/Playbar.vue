@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import DesktopLyric from './DesktopLyric.vue'
 import PlayList from './PlayList.vue'
 import PlayMode from './PlayMode.vue'
@@ -15,6 +15,7 @@ import { Interval, PlayingOrigin } from '@/utils/params'
 import { formatDuration } from '@/utils/tools'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { watchThrottled } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 const musicStore = useMusicStore()
 const lyricStore = useLyricStore()
@@ -59,7 +60,7 @@ watchThrottled(
             v-if="lyricStore.pageVisible"
             class="size-full text-minor"
             name="DoubleDown"
-            size="42" />
+            size="32" />
 
           <div v-else class="relative size-full">
             <Image class="size-full" :img="cover" />
@@ -67,7 +68,7 @@ watchThrottled(
             <SvgIcon
               class="absolute left-0 top-0 size-full rounded-lg bg-actived text-background opacity-0 transition-opacity group-hover/cover:opacity-100"
               name="DoubleUp"
-              size="42" />
+              size="32" />
           </div>
         </Transition>
       </div>

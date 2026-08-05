@@ -3,22 +3,27 @@ import AddModal from './AddModal.vue'
 import { notify } from '@/components/Notification.vue'
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useListContext } from '@/utils/hooks'
-import { AddMusicType } from '@/utils/params'
+import { useListStore } from '@/stores/list.ts'
+import { AddMusicType, ListType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { open } from '@tauri-apps/plugin-dialog'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, inject, onMounted, ref } from 'vue'
 
-const { listStore, listType, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
 
-const scanTypes = ref<string[]>([])
-const addVisible = ref(false)
-const addModalVisible = ref(false)
+const listStore = useListStore()
 
 const addOptions: Array<SelectOption<AddMusicType>> = [
   { label: '添加歌曲', value: AddMusicType.Add, prefixIcon: 'MusicLibrary' },
   { label: '扫描歌曲', value: AddMusicType.Scan, prefixIcon: 'AddFolder' }
 ]
+
+const scanTypes = ref<string[]>([])
+const addVisible = ref(false)
+const addModalVisible = ref(false)
+
+const list = computed(() => listStore[listType])
 
 const handleAddSelect = async (addType: AddMusicType) => {
   addVisible.value = false

@@ -1,10 +1,11 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import Login from './Login/Login.vue'
 import Menu from './Menu/Menu.vue'
 import Search from './Search.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import SystemActions from '@/components/SystemActions.vue'
 import { useRefreshStore } from '@/stores/refresh'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const refreshStore = useRefreshStore()

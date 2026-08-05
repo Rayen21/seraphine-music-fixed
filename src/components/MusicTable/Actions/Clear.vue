@@ -1,11 +1,17 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
-import { useListContext } from '@/utils/hooks'
+import { useListStore } from '@/stores/list'
+import { ListType } from '@/utils/params'
+import { computed, inject, ref } from 'vue'
 
-const { listStore, listType, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const listStore = useListStore()
 
 const visible = ref(false)
+
+const list = computed(() => listStore[listType])
 
 const handleCancel = () => {
   visible.value = false

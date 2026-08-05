@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { useCountdown } from '@vueuse/core'
+import { ref } from 'vue'
 
 interface Emits {
   close: []

@@ -1,10 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
 import { getPic } from '@/utils/music'
 import { PicSize, PlayingOrigin } from '@/utils/params'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { computed } from 'vue'
 
 const musicStore = useMusicStore()
 const settingStore = useSettingStore()

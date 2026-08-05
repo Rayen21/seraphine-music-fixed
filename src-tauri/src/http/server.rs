@@ -11,23 +11,24 @@ use crate::{
   http::{
     client::{HttpRequest, HttpRequestOptions},
     config::HttpConfig,
+    libs::BASE_URL,
   },
   utils::helper::{sign_key, sign_params_android, sign_params_register, sign_params_web},
 };
 
-pub const BASE_URL: &str = "https://gateway.kugou.com";
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ResponseType {
   Json,
+  #[allow(dead_code)]
   Text,
   Bytes,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum EncryptType {
   Web,
   Android,
+  #[allow(dead_code)]
   Register,
 }
 
@@ -85,6 +86,7 @@ impl RequestOptions {
     self
   }
 
+  #[allow(dead_code)]
   pub fn header(mut self, header: HeaderMap) -> Self {
     self.header = header;
     self
@@ -108,6 +110,7 @@ impl RequestOptions {
     self
   }
 
+  #[allow(dead_code)]
   pub fn add_param(mut self, key: impl Into<String>, value: Value) -> Self {
     self.params.insert(key.into(), value);
     self
@@ -128,6 +131,7 @@ impl RequestOptions {
     self
   }
 
+  #[allow(dead_code)]
   pub fn should_signature(mut self, should_sign: bool) -> Self {
     self.should_signature = should_sign;
     self
@@ -317,4 +321,246 @@ where
   };
 
   Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use serde_json::{json, Map, Value};
+  use tauri_plugin_http::reqwest::{
+    header::{HeaderMap, HeaderValue},
+    Method,
+  };
+
+  // === BASE_URL ===
+
+  #[test]
+  fn test_base_url_is_kugou_gateway() {
+    assert_eq!(BASE_URL, "https://gateway.kugou.com");
+  }
+
+  // === ResponseType / EncryptType Debug ===
+
+  #[test]
+  fn test_response_type_debug_contains_name() {
+    assert!(format!("{:?}", ResponseType::Json).contains("Json"));
+    assert!(format!("{:?}", ResponseType::Text).contains("Text"));
+    assert!(format!("{:?}", ResponseType::Bytes).contains("Bytes"));
+  }
+
+  #[test]
+  fn test_encrypt_type_debug_contains_name() {
+    assert!(format!("{:?}", EncryptType::Web).contains("Web"));
+    assert!(format!("{:?}", EncryptType::Android).contains("Android"));
+    assert!(format!("{:?}", EncryptType::Register).contains("Register"));
+  }
+
+  // === RequestOptions 默认值 ===
+
+  #[test]
+  fn test_request_options_defaults() {
+    let opts = RequestOptions::default();
+    assert_eq!(opts.base_url, BASE_URL);
+    assert_eq!(opts.url, "");
+    assert_eq!(opts.method.as_str(), "GET");
+    assert!(opts.header.is_empty());
+    assert!(opts.params.is_empty());
+    assert!(opts.data.is_null());
+    assert!(matches!(opts.response_type, ResponseType::Json));
+    assert!(!opts.should_clear_params);
+    assert!(opts.should_signature);
+    assert!(!opts.should_encrypt);
+    assert!(matches!(opts.encrypt_type, EncryptType::Android));
+  }
+
+  #[test]
+  fn test_request_options_new_same_as_default() {
+    let a = RequestOptions::new();
+    let b = RequestOptions::default();
+    assert_eq!(a.base_url, b.base_url);
+    assert_eq!(a.url, b.url);
+    assert_eq!(a.method, b.method);
+    assert_eq!(a.should_signature, b.should_signature);
+  }
+
+  // === RequestOptions builders ===
+
+  #[test]
+  fn test_request_options_base_url_builder() {
+    let opts = RequestOptions::new().base_url("https://example.com");
+    assert_eq!(opts.base_url, "https://example.com");
+  }
+
+  #[test]
+  fn test_request_options_url_builder() {
+    let opts = RequestOptions::new().url("/v1/search");
+    assert_eq!(opts.url, "/v1/search");
+  }
+
+  #[test]
+  fn test_request_options_method_builder() {
+    let opts = RequestOptions::new().method(Method::POST);
+    assert_eq!(opts.method.as_str(), "POST");
+    let opts = RequestOptions::new().method(Method::DELETE);
+    assert_eq!(opts.method.as_str(), "DELETE");
+  }
+
+  #[test]
+  fn test_request_options_add_header_valid() {
+    let opts = RequestOptions::new()
+      .add_header("X-Custom", "abc")
+      .add_header("Accept", "application/json");
+    assert_eq!(opts.header.len(), 2);
+    assert_eq!(opts.header.get("X-Custom").unwrap(), "abc");
+    assert_eq!(opts.header.get("Accept").unwrap(), "application/json");
+  }
+
+  #[test]
+  fn test_request_options_add_header_invalid_name_is_ignored() {
+    // HeaderName 不允许空格等字符，非法名称应被忽略
+    let opts = RequestOptions::new().add_header("bad name with space", "val");
+    assert!(opts.header.is_empty());
+  }
+
+  #[test]
+  fn test_request_options_add_header_invalid_value_is_ignored() {
+    // HeaderValue 不允许包含 \n 控制字符
+    let opts = RequestOptions::new().add_header("X", "bad\nvalue");
+    assert!(opts.header.is_empty());
+  }
+
+  #[test]
+  fn test_request_options_header_replace_same_key() {
+    let opts = RequestOptions::new()
+      .add_header("X-One", "a")
+      .add_header("X-One", "b");
+    assert_eq!(opts.header.get("X-One").unwrap(), "b");
+    assert_eq!(opts.header.len(), 1);
+  }
+
+  #[test]
+  fn test_request_options_header_setter_overrides() {
+    let a = HeaderMap::new();
+    let mut b = HeaderMap::new();
+    b.insert("X-Other", HeaderValue::from_static("v"));
+    let opts = RequestOptions::new().header(a).header(b);
+    assert!(opts.header.contains_key("X-Other"));
+    assert!(!opts.header.contains_key("X-Empty"));
+  }
+
+  #[test]
+  fn test_request_options_add_param_inserts() {
+    let opts = RequestOptions::new()
+      .add_param("k1", json!("v1"))
+      .add_param("k2", json!(42));
+    assert_eq!(opts.params.len(), 2);
+    assert_eq!(opts.params.get("k1").unwrap(), &json!("v1"));
+    assert_eq!(opts.params.get("k2").unwrap(), &json!(42));
+  }
+
+  #[test]
+  fn test_request_options_add_param_overrides_same_key() {
+    let opts = RequestOptions::new()
+      .add_param("x", json!("old"))
+      .add_param("x", json!("new"));
+    assert_eq!(opts.params.len(), 1);
+    assert_eq!(opts.params.get("x").unwrap(), &json!("new"));
+  }
+
+  #[test]
+  fn test_request_options_params_setter_overrides() {
+    let mut m1 = Map::new();
+    m1.insert("a".into(), json!(1));
+    let mut m2 = Map::new();
+    m2.insert("b".into(), json!(2));
+    let opts = RequestOptions::new().params(m1).params(m2);
+    assert_eq!(opts.params.len(), 1);
+    assert_eq!(opts.params.get("b").unwrap(), &json!(2));
+  }
+
+  #[test]
+  fn test_request_options_data_builder_string() {
+    let opts = RequestOptions::new().data(Value::String("body".into()));
+    assert!(opts.data.is_string());
+    assert_eq!(opts.data.as_str(), Some("body"));
+  }
+
+  #[test]
+  fn test_request_options_data_builder_object() {
+    let opts = RequestOptions::new().data(json!({"k":"v"}));
+    assert!(opts.data.is_object());
+    assert_eq!(opts.data["k"], json!("v"));
+  }
+
+  #[test]
+  fn test_request_options_data_builder_null() {
+    let opts = RequestOptions::new().data(Value::Null);
+    assert!(opts.data.is_null());
+  }
+
+  #[test]
+  fn test_request_options_response_type_all_variants() {
+    for rt in [ResponseType::Json, ResponseType::Text, ResponseType::Bytes] {
+      let opts = RequestOptions::new().response_type(rt);
+      match opts.response_type {
+        ResponseType::Json => assert!(matches!(rt, ResponseType::Json)),
+        ResponseType::Text => assert!(matches!(rt, ResponseType::Text)),
+        ResponseType::Bytes => assert!(matches!(rt, ResponseType::Bytes)),
+      }
+    }
+  }
+
+  #[test]
+  fn test_request_options_flags_builders() {
+    let opts = RequestOptions::new()
+      .should_clear_params(true)
+      .should_signature(false)
+      .should_encrypt(true);
+    assert!(opts.should_clear_params);
+    assert!(!opts.should_signature);
+    assert!(opts.should_encrypt);
+  }
+
+  #[test]
+  fn test_request_options_encrypt_type_all_variants() {
+    assert!(matches!(
+      RequestOptions::new()
+        .encrypt_type(EncryptType::Web)
+        .encrypt_type,
+      EncryptType::Web
+    ));
+    assert!(matches!(
+      RequestOptions::new()
+        .encrypt_type(EncryptType::Android)
+        .encrypt_type,
+      EncryptType::Android
+    ));
+    assert!(matches!(
+      RequestOptions::new()
+        .encrypt_type(EncryptType::Register)
+        .encrypt_type,
+      EncryptType::Register
+    ));
+  }
+
+  #[test]
+  fn test_request_options_builder_chaining_order_independent() {
+    let a = RequestOptions::new()
+      .url("u1")
+      .method(Method::POST)
+      .add_param("p", json!(1));
+    let b = RequestOptions::new()
+      .add_param("p", json!(1))
+      .method(Method::POST)
+      .url("u1");
+    assert_eq!(a.url, b.url);
+    assert_eq!(a.method, b.method);
+    assert_eq!(a.params, b.params);
+  }
+
+  #[test]
+  fn test_request_options_debug_format() {
+    let s = format!("{:?}", RequestOptions::new());
+    assert!(s.contains("RequestOptions"));
+  }
 }

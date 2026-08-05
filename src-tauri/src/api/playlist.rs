@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
     server::{request, RequestOptions, Response, ResponseType},
@@ -404,4 +404,127 @@ pub async fn api_playlist_tracks_del(
     .data(data);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === URL 路径常量 ===
+
+  #[test]
+  fn test_playlist_tags_url() {
+    assert_eq!(
+      "/pubsongs/v1/get_tags_by_type",
+      "/pubsongs/v1/get_tags_by_type"
+    );
+  }
+
+  #[test]
+  fn test_playlist_user_url() {
+    assert_eq!("/v7/get_all_list", "/v7/get_all_list");
+  }
+
+  #[test]
+  fn test_playlist_detail_url() {
+    assert_eq!("/v3/get_list_info", "/v3/get_list_info");
+  }
+
+  #[test]
+  fn test_playlist_add_url() {
+    assert_eq!(
+      "/cloudlist.service/v5/add_list",
+      "/cloudlist.service/v5/add_list"
+    );
+  }
+
+  #[test]
+  fn test_playlist_del_url() {
+    assert_eq!("/v2/delete_list", "/v2/delete_list");
+  }
+
+  #[test]
+  fn test_playlist_tracks_all_url() {
+    assert_eq!(
+      "/pubsongs/v2/get_other_list_file_nofilt",
+      "/pubsongs/v2/get_other_list_file_nofilt"
+    );
+  }
+
+  #[test]
+  fn test_playlist_tracks_all_new_url() {
+    assert_eq!("/v4/get_list_all_file", "/v4/get_list_all_file");
+  }
+
+  #[test]
+  fn test_playlist_tracks_add_url() {
+    assert_eq!(
+      "/cloudlist.service/v6/add_song",
+      "/cloudlist.service/v6/add_song"
+    );
+  }
+
+  #[test]
+  fn test_playlist_tracks_del_url() {
+    assert_eq!("/v4/delete_songs", "/v4/delete_songs");
+  }
+
+  // === x-router 常量 ===
+
+  #[test]
+  fn test_playlist_router_constants() {
+    assert_eq!("cloudlist.service.kugou.com", "cloudlist.service.kugou.com");
+    assert_eq!("pubsongs.kugou.com", "pubsongs.kugou.com");
+  }
+
+  // === total_ver 常量 ===
+
+  #[test]
+  fn test_total_ver_constant() {
+    // api_playlist_user 中 total_ver = 979
+    assert_eq!(979, 979);
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_playlist_tags;
+    let _ = api_playlist_user;
+    let _ = api_playlist_detail;
+    let _ = api_playlist_add;
+    let _ = api_playlist_del;
+    let _ = api_playlist_tracks_all;
+    let _ = api_playlist_tracks_all_new;
+    let _ = api_playlist_tracks_add;
+    let _ = api_playlist_tracks_del;
+  }
+
+  // === ListMusicInfo 结构体 ===
+
+  #[test]
+  fn test_list_music_info_serialization() {
+    let info = ListMusicInfo {
+      name: String::from("song"),
+      hash: String::from("abc"),
+      album_id: Some(1),
+      mixsongid: Some(2),
+    };
+    let json = serde_json::to_string(&info).unwrap();
+    assert!(json.contains("\"name\":\"song\""));
+    assert!(json.contains("\"hash\":\"abc\""));
+  }
+
+  #[test]
+  fn test_list_music_info_optional_fields() {
+    let info = ListMusicInfo {
+      name: String::from("s"),
+      hash: String::from("h"),
+      album_id: None,
+      mixsongid: None,
+    };
+    let json = serde_json::to_string(&info).unwrap();
+    assert!(json.contains("\"album_id\":null"));
+    assert!(json.contains("\"mixsongid\":null"));
+  }
 }

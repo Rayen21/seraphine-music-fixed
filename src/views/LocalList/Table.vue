@@ -1,9 +1,10 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import MusicActions from '@/components/MusicTable/MusicActions.vue'
 import MusicHeader from '@/components/MusicTable/MusicHeader.vue'
 import MusicTable from '@/components/MusicTable/MusicTable.vue'
 import { useListStore } from '@/stores/list'
 import { ListType } from '@/utils/params'
+import { onMounted, onUnmounted, provide } from 'vue'
 
 provide('listType', ListType.Local)
 

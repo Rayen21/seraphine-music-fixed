@@ -8,11 +8,20 @@ export default defineConfigWithVueTs(
     name: 'app/files-to-lint',
     files: ['**/*.{ts,mts,tsx,vue}']
   },
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores([
+    '**/node_modules/**',
+    '**/dist/**',
+    '**/src-tauri/**',
+    '**/.agents/**',
+    '**/.claude/**',
+    '**/.github/**',
+    '**/.vscode/**',
+    '**/.idea/**',
+    '**/.env*'
+  ]),
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
-  { ignores: ['node_modules', 'dist', 'src-tauri', '.env', '.vscode', '.idea'] },
   {
     rules: {
       'vue/multi-word-component-names': 'off',

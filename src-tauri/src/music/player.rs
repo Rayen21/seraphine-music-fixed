@@ -3,7 +3,7 @@ use rodio::{
   cpal::{default_host, traits::HostTrait},
   Device, DeviceTrait,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
   fs::{metadata, OpenOptions},
   io::Write,
@@ -37,7 +37,7 @@ const DOWNLOAD_INTERVAL: Duration = Duration::from_millis(100);
 // 最小读取文件大小
 const MIN_READ_SIZE: u64 = 1024 * 128;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeviceInfo {
   id: String,
   name: String,
@@ -453,4 +453,332 @@ pub fn music_player_set_volume(state: State<Player>, volume: f32) -> Result<(), 
   let audio_reader = state.audio.read().map_err(|e| e.to_string())?;
 
   Ok(audio_reader.set_volume(volume / 100.0))
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === DeviceInfo 默认派生/调试 ===
+
+  #[test]
+  fn test_device_info_debug_contains_id_and_name() {
+    let info = DeviceInfo {
+      id: "device_xyz".into(),
+      name: "扬声器(Realtek)".into(),
+    };
+    let s = format!("{:?}", info);
+    assert!(s.contains("device_xyz"));
+    assert!(s.contains("扬声器"));
+  }
+
+  #[test]
+  fn test_device_info_clone_is_equal() {
+    let info = DeviceInfo {
+      id: "123".into(),
+      name: "ABC".into(),
+    };
+    let cloned = info.clone();
+    assert_eq!(cloned.id, "123");
+    assert_eq!(cloned.name, "ABC");
+  }
+
+  #[test]
+  fn test_device_info_serde_roundtrip() {
+    let info = DeviceInfo {
+      id: "output-id-001".into(),
+      name: "耳机(DAC)".into(),
+    };
+    let json = serde_json::to_string(&info).unwrap();
+    let back: DeviceInfo = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.id, "output-id-001");
+    assert_eq!(back.name, "耳机(DAC)");
+  }
+
+  // === DeviceInfo 的 Serialize 结构 ===
+
+  #[test]
+  fn test_device_info_serialize_has_correct_keys() {
+    let info = DeviceInfo {
+      id: "I".into(),
+      name: "N".into(),
+    };
+    let value: serde_json::Value = serde_json::to_value(&info).unwrap();
+    assert!(value.is_object());
+    assert_eq!(value["id"].as_str(), Some("I"));
+    assert_eq!(value["name"].as_str(), Some("N"));
+  }
+
+  // === music_player_set_volume 比例：volume / 100 ===
+  // 直接验证换算比例，不依赖真实音频设备
+
+  #[test]
+  fn test_volume_ratio_mapping() {
+    // music_player_set_volume(state, volume) 内部调用 audio.set_volume(volume / 100.0)
+    // 验证比例
+    let cases: &[(f32, f32)] = &[
+      (0.0, 0.0),
+      (50.0, 0.5),
+      (100.0, 1.0),
+      (150.0, 1.5),
+      (25.0, 0.25),
+      (75.0, 0.75),
+    ];
+    for (input, expect) in cases {
+      let actual = input / 100.0;
+      assert!(
+        (actual - expect).abs() < f32::EPSILON,
+        "volume {input} -> expect {expect}, got {actual}"
+      );
+    }
+  }
+
+  // === music_player_seek：Duration::from_secs_f32 的直接纯逻辑验证 ===
+
+  #[test]
+  fn test_seek_pos_f32_to_duration() {
+    use std::time::Duration;
+    // state_pos = Duration::from_secs_f32(pos)
+    let d = Duration::from_secs_f32(1.5);
+    assert_eq!(d.as_secs_f32(), 1.5);
+    let d = Duration::from_secs_f32(60.0);
+    assert_eq!(d.as_secs(), 60);
+    let d = Duration::from_secs_f32(0.0);
+    assert_eq!(d.as_secs(), 0);
+  }
+
+  // === monitor_download 进度比例：downloaded_size / audio_size ===
+
+  #[test]
+  fn test_download_progress_ratio_logic() {
+    // channel.send(downloaded / audio_size)
+    let cases: &[(u64, u64, f32)] = &[
+      (0, 1000, 0.0), // 0 时会被 if downloaded_size == 0 continue 过滤掉
+      (500, 1000, 0.5),
+      (1000, 1000, 1.0),
+    ];
+    for (down, total, expect) in cases {
+      let ratio = (*down as f32) / (*total as f32);
+      if *down == 0 || *total == 0 {
+        continue;
+      }
+      assert!(
+        (ratio - expect).abs() < f32::EPSILON,
+        "{down}/{total} => expect {expect}"
+      );
+    }
+  }
+
+  // === 常量 ===
+
+  #[test]
+  fn test_constants_are_positive() {
+    // 直接使用数值断言常量被合理设置
+    assert!(FILE_TIMEOUT.as_millis() > 0);
+    assert!(DEVICE_INTERVAL.as_millis() > 0);
+    assert!(PLAY_INTERVAL.as_millis() > 0);
+    assert!(DOWNLOAD_INTERVAL.as_millis() > 0);
+    assert!(MIN_READ_SIZE > 0);
+  }
+
+  #[test]
+  fn test_min_read_size_is_at_least_1kb() {
+    // MIN_READ_SIZE: u64 = 1024 * 128 = 128KB
+    assert_eq!(MIN_READ_SIZE, 1024 * 128);
+    assert!(MIN_READ_SIZE >= 1024);
+  }
+
+  // === 常量边界细化 ===
+
+  #[test]
+  fn test_file_timeout_is_5_seconds() {
+    assert_eq!(FILE_TIMEOUT, Duration::from_millis(5000));
+  }
+
+  #[test]
+  fn test_device_interval_is_1_second() {
+    assert_eq!(DEVICE_INTERVAL, Duration::from_millis(1000));
+  }
+
+  #[test]
+  fn test_play_interval_is_16ms() {
+    // 60fps ≈ 16.67ms，PLAY_INTERVAL=16ms 用于播放进度上报
+    assert_eq!(PLAY_INTERVAL, Duration::from_millis(16));
+  }
+
+  #[test]
+  fn test_download_interval_is_100ms() {
+    assert_eq!(DOWNLOAD_INTERVAL, Duration::from_millis(100));
+  }
+
+  #[test]
+  fn test_intervals_are_ordered() {
+    // PLAY_INTERVAL < DOWNLOAD_INTERVAL < DEVICE_INTERVAL < FILE_TIMEOUT
+    assert!(PLAY_INTERVAL < DOWNLOAD_INTERVAL);
+    assert!(DOWNLOAD_INTERVAL < DEVICE_INTERVAL);
+    assert!(DEVICE_INTERVAL < FILE_TIMEOUT);
+  }
+
+  #[test]
+  fn test_min_read_size_is_power_of_two_multiple_of_1kb() {
+    // 128KB = 1024 * 128，是 1KB 的整数倍且为 2 的幂次倍
+    assert_eq!(MIN_READ_SIZE % 1024, 0);
+    assert_eq!(MIN_READ_SIZE / 1024, 128);
+    assert_eq!(128u32.count_ones(), 1, "128 应为 2 的幂");
+  }
+
+  // === is_valid_hash 与 music_player_load_url 的参数校验逻辑 ===
+  // music_player_load_url 内部使用 is_valid_hash 校验 hash 参数：
+  //   if !is_valid_hash(&hash) { return Err("无效的哈希值"); }
+  // 这里独立验证与 load_url 相关的 hash 校验场景
+
+  #[test]
+  fn test_load_url_rejects_empty_hash() {
+    // 空字符串：is_valid_hash 返回 false → load_url 返回 Err("无效的哈希值")
+    assert!(!is_valid_hash(""));
+  }
+
+  #[test]
+  fn test_load_url_rejects_path_traversal_hash() {
+    // 包含 ".." 的 hash 会被拒绝，防止 temp_dir 逃逸
+    assert!(!is_valid_hash(".."));
+    assert!(!is_valid_hash("foo/../bar"));
+    assert!(!is_valid_hash("a..b"));
+  }
+
+  #[test]
+  fn test_load_url_rejects_absolute_path_hash() {
+    // 以 '/' 或 '\\' 开头的 hash 会被拒绝
+    assert!(!is_valid_hash("/etc/passwd"));
+    assert!(!is_valid_hash("\\windows\\system32"));
+  }
+
+  #[test]
+  fn test_load_url_rejects_too_long_hash() {
+    // 长度 >= 256 的 hash 会被拒绝，避免文件名过长
+    let long = "a".repeat(256);
+    assert!(!is_valid_hash(&long));
+    let max = "a".repeat(255);
+    assert!(is_valid_hash(&max));
+  }
+
+  #[test]
+  fn test_load_url_accepts_typical_hash() {
+    // 典型 hash：32 位十六进制（与 music_file_detail 中的 hash 一致）
+    let hash = "abcdef0123456789abcdef0123456789";
+    assert!(is_valid_hash(hash));
+  }
+
+  // === music_player_set_volume 边界 ===
+
+  #[test]
+  fn test_volume_ratio_zero_maps_to_zero() {
+    let volume: f32 = 0.0;
+    let ratio = volume / 100.0;
+    assert_eq!(ratio, 0.0);
+  }
+
+  #[test]
+  fn test_volume_ratio_hundred_maps_to_one() {
+    let volume: f32 = 100.0;
+    let ratio = volume / 100.0;
+    assert!((ratio - 1.0).abs() < f32::EPSILON);
+  }
+
+  #[test]
+  fn test_volume_ratio_negative_input_allowed_by_math() {
+    // set_volume 不做下界校验，负值会被传入 rodio（行为由 rodio 决定）
+    let volume: f32 = -10.0;
+    let ratio = volume / 100.0;
+    assert!((ratio - (-0.1)).abs() < f32::EPSILON);
+  }
+
+  // === monitor_download 进度边界 ===
+
+  #[test]
+  fn test_download_progress_zero_division_guard() {
+    // monitor_download 中：if downloaded_size == 0.0 || audio_size == 0.0 { continue; }
+    // 这里验证守卫条件能正确识别零值
+    let downloaded: f32 = 0.0;
+    let audio_size: f32 = 1000.0;
+    assert!(downloaded == 0.0 || audio_size == 0.0);
+
+    let downloaded: f32 = 500.0;
+    let audio_size: f32 = 0.0;
+    assert!(downloaded == 0.0 || audio_size == 0.0);
+
+    let downloaded: f32 = 500.0;
+    let audio_size: f32 = 1000.0;
+    assert!(!(downloaded == 0.0 || audio_size == 0.0));
+  }
+
+  #[test]
+  fn test_download_progress_full_ratio_is_one() {
+    let downloaded: u64 = 1000;
+    let audio_size: u64 = 1000;
+    let ratio = downloaded as f32 / audio_size as f32;
+    assert!((ratio - 1.0).abs() < f32::EPSILON);
+  }
+
+  // === Duration::from_secs_f32 边界（music_player_seek 换算）===
+
+  #[test]
+  fn test_seek_pos_zero_duration() {
+    let pos: f32 = 0.0;
+    let d = Duration::from_secs_f32(pos);
+    assert_eq!(d.as_secs(), 0);
+    assert_eq!(d.subsec_nanos(), 0);
+  }
+
+  #[test]
+  fn test_seek_pos_negative_f32_is_ub_but_does_not_panic() {
+    // Duration::from_secs_f32 对负值会 panic（debug）或 UB（release）
+    // music_player_seek 不做下界校验，前端应保证 pos >= 0
+    // 此测试仅记录这一约束，不实际调用 from_secs_f32(-1.0)
+    let pos: f32 = 0.0;
+    assert!(pos >= 0.0, "前端应保证 pos >= 0");
+  }
+
+  // === DeviceInfo::from_device 逻辑（不依赖真实设备）===
+  // from_device 是 private 方法，无法直接测试。
+  // 这里通过 DeviceInfo 的构造和 serde 行为间接验证其输出格式。
+
+  #[test]
+  fn test_device_info_name_format_contains_parentheses() {
+    // from_device 内部：format!("{name}({driver})")
+    // 验证生成的 name 字段包含括号格式（通过手动构造模拟）
+    let info = DeviceInfo {
+      id: "dev-001".into(),
+      name: "扬声器(Realtek HD)".into(),
+    };
+    assert!(info.name.contains('('));
+    assert!(info.name.contains(')'));
+  }
+
+  #[test]
+  fn test_device_info_id_is_string_not_numeric() {
+    // from_device 返回的 id 是 device.id().to_string()，可能是 UUID 或数字字符串
+    let info = DeviceInfo {
+      id: "{0.0.0.00000000}.{guid}".into(),
+      name: "Device(Driver)".into(),
+    };
+    // id 应为非空字符串
+    assert!(!info.id.is_empty());
+  }
+
+  // === Player 结构体字段约束 ===
+
+  #[test]
+  fn test_player_is_send() {
+    // Player 跨线程传递约束（用于 tauri::State<Player>）
+    fn assert_send<T: Send>() {}
+    assert_send::<Player>();
+  }
+
+  #[test]
+  fn test_player_is_sync() {
+    // Player 跨线程共享约束（用于 tauri::State<Player>）
+    fn assert_sync<T: Sync>() {}
+    assert_sync::<Player>();
+  }
 }

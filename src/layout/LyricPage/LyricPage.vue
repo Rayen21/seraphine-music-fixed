@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import AlignBtn from './Actions/AlignBtn.vue'
 import ColorBtn from './Actions/ColorBtn.vue'
 import FontFamilyBtn from './Actions/FontFamilyBtn.vue'
@@ -18,6 +18,7 @@ import { useLyricStore } from '@/stores/lyric'
 import { useMusicStore } from '@/stores/music'
 import { useSettingStore } from '@/stores/setting'
 import { LyricPageMode } from '@/utils/params'
+import { ref } from 'vue'
 
 const settingStore = useSettingStore()
 const lyricStore = useLyricStore()
@@ -79,7 +80,7 @@ const handleContextMenu = (e: MouseEvent) => {
             v-if="!settingStore.isFullscreen"
             class="action-icon"
             name="Down"
-            size="28"
+            size="24"
             title="收起"
             @click="lyricStore.togglePageVisible" />
         </div>

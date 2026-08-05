@@ -3,10 +3,10 @@ use serde_json::{json, Value};
 use std::{collections::HashMap, fmt};
 
 use crate::{
-  api::lib::ApiResult,
+  api::libs::ApiResult,
   http::{
     config::HttpConfig,
-    lib::KgCookies,
+    libs::KgCookies,
     server::{request, RequestOptions},
   },
 };
@@ -118,4 +118,107 @@ pub async fn api_search_complex(
     .params(params);
 
   request(opts).await.map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // === SearchType Display ===
+
+  #[test]
+  fn test_search_type_display_song() {
+    assert_eq!(SearchType::Song.to_string(), "song");
+  }
+
+  #[test]
+  fn test_search_type_display_album() {
+    assert_eq!(SearchType::Album.to_string(), "album");
+  }
+
+  #[test]
+  fn test_search_type_display_author() {
+    assert_eq!(SearchType::Author.to_string(), "author");
+  }
+
+  #[test]
+  fn test_search_type_display_mv() {
+    assert_eq!(SearchType::Mv.to_string(), "mv");
+  }
+
+  #[test]
+  fn test_search_type_display_lyric() {
+    assert_eq!(SearchType::Lyric.to_string(), "lyric");
+  }
+
+  #[test]
+  fn test_search_type_display_special() {
+    assert_eq!(SearchType::Special.to_string(), "special");
+  }
+
+  #[test]
+  fn test_search_type_display_collect() {
+    assert_eq!(SearchType::Collect.to_string(), "collect");
+  }
+
+  // === SearchType serde ===
+
+  #[test]
+  fn test_search_type_serde_lowercase() {
+    // #[serde(rename_all = "lowercase")]
+    let json = serde_json::to_string(&SearchType::Song).unwrap();
+    assert_eq!(json, "\"song\"");
+
+    let json = serde_json::to_string(&SearchType::Mv).unwrap();
+    assert_eq!(json, "\"mv\"");
+  }
+
+  #[test]
+  fn test_search_type_serde_deserialize() {
+    let st: SearchType = serde_json::from_str("\"album\"").unwrap();
+    assert!(matches!(st, SearchType::Album));
+
+    let st: SearchType = serde_json::from_str("\"lyric\"").unwrap();
+    assert!(matches!(st, SearchType::Lyric));
+  }
+
+  #[test]
+  fn test_search_type_serde_invalid_variant() {
+    // 不存在的变体应反序列化失败
+    let result: Result<SearchType, _> = serde_json::from_str("\"invalid\"");
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn test_search_type_serde_case_sensitive() {
+    // lowercase rename 不接受大写
+    let result: Result<SearchType, _> = serde_json::from_str("\"Song\"");
+    assert!(result.is_err());
+  }
+
+  // === SearchType 全变体覆盖 ===
+
+  #[test]
+  fn test_search_type_all_variants_display() {
+    let all = [
+      ("song", SearchType::Song),
+      ("album", SearchType::Album),
+      ("author", SearchType::Author),
+      ("mv", SearchType::Mv),
+      ("lyric", SearchType::Lyric),
+      ("special", SearchType::Special),
+      ("collect", SearchType::Collect),
+    ];
+    for (expected, variant) in all {
+      assert_eq!(variant.to_string(), expected);
+    }
+  }
+
+  // === 命令签名约束 ===
+
+  #[test]
+  fn test_command_signatures_exist() {
+    let _ = api_search;
+    let _ = api_search_complex;
+  }
 }

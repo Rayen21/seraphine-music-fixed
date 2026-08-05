@@ -1,13 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Card from './Card.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useListStore } from '@/stores/list'
-import { useMusicStore } from '@/stores/music'
 import { useObserver } from '@/utils/hooks'
-import { getOrigin } from '@/utils/music.ts'
-import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
+import { BreakPoint, ColCount, Interval } from '@/utils/params'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 
 interface Props {
   /** 列表加载中 */
@@ -29,10 +27,7 @@ interface IEmits {
 const { data, loading, rows = 3, notMore } = defineProps<Props>()
 const emits = defineEmits<IEmits>()
 
-const router = useRouter()
 const { width: windowWidth } = useWindowSize()
-const musicStore = useMusicStore()
-const listStore = useListStore()
 const listRef = useTemplateRef('listRef')
 
 const TotalHeight = 4.825 + 4.5 * rows
@@ -47,23 +42,10 @@ const cols = computed(() => {
 const visibleList = computed(() => data.list.slice(0, cols.value))
 
 const handleRefresh = useThrottleFn(() => emits('refresh'), Interval.Sec, true)
-const handleMore = () => !notMore && emits('more', data)
 
-const handleClick = (info: CardInfo, index: number) => {
-  if (info.musicInfo) {
-    const list = data.list[index]
-    const playList: ListMusic[] = []
-    list.list.forEach((item) => item.musicInfo && playList.push(item.musicInfo))
-
-    listStore.setList(ListType.Play, { info: list.info, list: playList })
-    musicStore.setMusic(info.musicInfo, { origin: getOrigin(info.musicInfo) })
-  } else if (info.artistInfo) {
-    const { id, cover, name } = info.artistInfo
-    router.push({ path: '/artist-list-table', query: { id, cover, name } })
-  } else if (info.playlistInfo) {
-    const { id, cover, title } = info.playlistInfo
-    router.push({ path: '/top-playlist-table', query: { id, cover, title } })
-  }
+const handleMore = () => {
+  if (notMore) return
+  emits('more', data)
 }
 
 const { unobserve } = useObserver(listRef, (entry) => {
@@ -152,14 +134,15 @@ const { unobserve } = useObserver(listRef, (entry) => {
     </div>
 
     <div class="mt-3 flex gap-3">
-      <div v-for="(item, index) in visibleList" :key="index" class="card space-y-2 flex-1 p-2">
-        <div class="text-center font-bold truncate text-base">{{ item.info.title }}</div>
+      <div v-for="(list, index) in visibleList" :key="index" class="card space-y-2 flex-1 p-2">
+        <div class="text-center font-bold truncate text-base">{{ list.info.title }}</div>
 
         <Card
-          v-for="(childItem, childIndex) in item.list.slice(0, rows)"
+          v-for="(item, childIndex) in list.list.slice(0, rows)"
           :key="childIndex"
-          :data="childItem"
-          @click="handleClick(childItem, index)" />
+          :data="item"
+          :info="list.info"
+          :list="list.list.slice(0, rows)" />
       </div>
     </div>
   </div>

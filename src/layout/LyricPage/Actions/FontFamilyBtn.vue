@@ -3,6 +3,7 @@ import SelectModal from '@/components/SelectModal.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { useSettingStore } from '@/stores/setting'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, ref } from 'vue'
 
 const lyricStore = useLyricStore()
 const settingStore = useSettingStore()

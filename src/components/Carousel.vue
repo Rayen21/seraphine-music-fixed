@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useEventListener } from '@vueuse/core'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
 
 interface Props {
   content: string

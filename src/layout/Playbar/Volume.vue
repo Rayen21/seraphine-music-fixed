@@ -1,8 +1,9 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ProgressRange from '@/components/ProgressRange.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useMusicStore } from '@/stores/music'
 import { IconName } from '@/utils/icons'
+import { computed } from 'vue'
 
 const musicStore = useMusicStore()
 
@@ -16,7 +17,6 @@ const volumnIcon = computed<IconName>(() =>
     <SvgIcon
       class="action-icon"
       :name="volumnIcon"
-      size="18"
       @click="musicStore.setVolume(musicStore.volume ? 0 : musicStore.lastVolumn)" />
 
     <div

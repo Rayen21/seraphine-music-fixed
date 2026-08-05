@@ -1,13 +1,11 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Card from './Card.vue'
 import ActionButton from '@/components/ActionButton.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useListStore } from '@/stores/list'
-import { useMusicStore } from '@/stores/music'
 import { useObserver } from '@/utils/hooks'
-import { getOrigin } from '@/utils/music.ts'
-import { BreakPoint, ColCount, Interval, ListType } from '@/utils/params'
+import { BreakPoint, ColCount, Interval } from '@/utils/params'
 import { useThrottleFn, useWindowSize } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 
 interface Props {
   /** 列表加载中 */
@@ -29,10 +27,7 @@ interface IEmits {
 const { data, loading, rows = 3, notMore } = defineProps<Props>()
 const emits = defineEmits<IEmits>()
 
-const router = useRouter()
 const { width: windowWidth } = useWindowSize()
-const musicStore = useMusicStore()
-const listStore = useListStore()
 const listRef = useTemplateRef('listRef')
 
 const TotalHeight = 1.5 + 4.75 * rows
@@ -48,25 +43,11 @@ const cols = computed(() => {
 // 可见数据数
 const visibleList = computed(() => data.list.slice(0, rows * cols.value))
 
-// 刷新
 const handleRefresh = useThrottleFn(() => emits('refresh'), Interval.Sec, true)
-// 更多
-const handleMore = () => !notMore && emits('more', data)
 
-const handleClick = (info: CardInfo) => {
-  if (info.musicInfo) {
-    const list: ListMusic[] = []
-    data.list.forEach((item) => item.musicInfo && list.push(item.musicInfo))
-
-    listStore.setList(ListType.Play, { info: data.info, list })
-    musicStore.setMusic(info.musicInfo, { origin: getOrigin(info.musicInfo) })
-  } else if (info.artistInfo) {
-    const { id, cover, name } = info.artistInfo
-    router.push({ path: '/artist-list-table', query: { id, cover, name } })
-  } else if (info.playlistInfo) {
-    const { id, cover, title } = info.playlistInfo
-    router.push({ path: '/top-playlist-table', query: { id, cover, title } })
-  }
+const handleMore = () => {
+  if (notMore) return
+  emits('more', data)
 }
 
 const { unobserve } = useObserver(listRef, (entry) => {
@@ -93,7 +74,7 @@ const { unobserve } = useObserver(listRef, (entry) => {
         <div class="h-full w-24 rounded bg-card"></div>
       </div>
 
-      <SvgIcon class="action-icon size-6" name="Refresh" size="18" @click="handleRefresh" />
+      <SvgIcon class="action-icon size-6" name="Refresh" @click="handleRefresh" />
     </div>
 
     <div class="mt-3 grid gap-3" :style="{ gridTemplateColumns: `repeat(${cols}, 1fr)` }">
@@ -149,7 +130,12 @@ const { unobserve } = useObserver(listRef, (entry) => {
     </div>
 
     <div class="mt-3 grid gap-3" :style="{ gridTemplateColumns: `repeat(${cols}, 1fr)` }">
-      <Card v-for="item in visibleList" :key="item.id" :data="item" @click="handleClick(item)" />
+      <Card
+        v-for="item in visibleList"
+        :key="item.id"
+        :data="item"
+        :info="data.info"
+        :list="data.list" />
     </div>
   </div>
 </template>

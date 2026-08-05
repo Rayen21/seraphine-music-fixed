@@ -1,6 +1,8 @@
 import { notify } from '@/components/Notification.vue'
 import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
 
 export const useUserStore = defineStore(
   'user',

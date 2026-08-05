@@ -5,10 +5,10 @@ use lofty::{
   tag::Accessor,
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
   collections::HashSet,
-  fs::{metadata, read_dir},
+  fs,
   path::{Path, PathBuf},
   sync::atomic::{AtomicBool, Ordering},
 };
@@ -25,7 +25,7 @@ const MAX_DEPTH: usize = 8;
 // 扫描取消标志
 static SCAN_CANCELLED: AtomicBool = AtomicBool::new(false);
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ListMusic {
   id: String,             // 路径的md5值
   hash: Option<String>,   // hash, 本地音频一般为 Null
@@ -123,7 +123,7 @@ impl MusicScan {
     dir_paths.sort_by_key(|path| path.components().count());
 
     for dir_path in dir_paths {
-      let Ok(metadata) = metadata(&dir_path) else {
+      let Ok(metadata) = fs::metadata(&dir_path) else {
         continue;
       };
 
@@ -158,7 +158,7 @@ impl MusicScan {
       .filter_map(|file_path| {
         let path = PathBuf::from(file_path);
 
-        let Ok(metadata) = metadata(&path) else {
+        let Ok(metadata) = fs::metadata(&path) else {
           return None;
         };
 
@@ -196,13 +196,13 @@ impl MusicScan {
     let mut dir_paths = Vec::new();
     let mut file_paths = Vec::new();
 
-    for entry in read_dir(path)? {
+    for entry in fs::read_dir(path)? {
       if SCAN_CANCELLED.load(Ordering::Relaxed) {
         return Ok(());
       }
 
       let path = entry?.path();
-      let metadata = metadata(&path)?;
+      let metadata = fs::metadata(&path)?;
 
       if metadata.is_symlink() {
         // 跳过符号链接
@@ -320,4 +320,264 @@ pub async fn music_scan_file(
 /// 取消扫描
 pub fn music_scan_cancel() {
   SCAN_CANCELLED.store(true, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::fs::{create_dir_all, File};
+  use tempfile::tempdir;
+
+  // === 常量：music_scan_type() ===
+
+  #[test]
+  fn test_music_scan_type_count_and_elements() {
+    let types = music_scan_type();
+    assert_eq!(types.len(), 12);
+    for expect in [
+      "flac", "mp3", "wav", "ogg", "aac", "m4a", "m4b", "aiff", "aif", "aifc", "alac", "mka",
+    ] {
+      assert!(types.iter().any(|t| t == expect), "缺少扩展名: {expect}");
+    }
+  }
+
+  // === ListMusic 默认值 ===
+
+  #[test]
+  fn test_list_music_default_values() {
+    let m = ListMusic::default();
+    assert_eq!(m.id, "");
+    assert!(m.hash.is_none());
+    assert_eq!(m.path, "");
+    assert!(m.cover.is_none());
+    assert_eq!(m.title, "");
+    assert!(m.artist.is_none());
+    assert!(m.album.is_none());
+    assert_eq!(m.duration, 0.0);
+    assert_eq!(m.sort, 0);
+  }
+
+  #[test]
+  fn test_list_music_serde_roundtrip_with_fields() {
+    let m = ListMusic {
+      id: "abcdef".into(),
+      hash: Some("H".into()),
+      path: "/a/b/c.mp3".into(),
+      cover: Some("/cover/abc.png".into()),
+      title: "The Song".into(),
+      artist: Some("Singer".into()),
+      album: Some("Greatest".into()),
+      duration: 123.45,
+      sort: 5,
+    };
+    let json = serde_json::to_string(&m).unwrap();
+    let back: ListMusic = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.id, "abcdef");
+    assert_eq!(back.hash.as_deref(), Some("H"));
+    assert_eq!(back.path, "/a/b/c.mp3");
+    assert_eq!(back.cover.as_deref(), Some("/cover/abc.png"));
+    assert_eq!(back.title, "The Song");
+    assert_eq!(back.artist.as_deref(), Some("Singer"));
+    assert_eq!(back.album.as_deref(), Some("Greatest"));
+    assert!((back.duration - 123.45).abs() < f64::EPSILON);
+    assert_eq!(back.sort, 5);
+  }
+
+  #[test]
+  fn test_list_music_serde_default_roundtrip() {
+    let a = ListMusic::default();
+    let json = serde_json::to_string(&a).unwrap();
+    let back: ListMusic = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.id, "");
+    assert!(back.hash.is_none());
+    assert!(back.cover.is_none());
+    assert!(back.artist.is_none());
+  }
+
+  // === MusicScan::new ===
+
+  #[test]
+  fn test_music_scan_new_stores_types() {
+    let types = vec!["mp3".into(), "wav".into()];
+    let scan = MusicScan::new(types.clone());
+    assert_eq!(scan.scan_types, types);
+    // app_path 也初始化了
+    assert!(scan.app_path.temp_dir().exists());
+  }
+
+  // === filter_dir_path 纯逻辑 ===
+
+  #[test]
+  fn test_filter_dir_path_duplicates_removed() {
+    // HashSet 去重 + HashSet -> Vec 的顺序可能不同，但数量正确
+    let dir = tempdir().unwrap();
+    let a = dir.path().join("a").to_string_lossy().into_owned();
+    create_dir_all(&a).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec![a.clone(), a.clone(), a]);
+    assert_eq!(res.len(), 1);
+  }
+
+  #[test]
+  fn test_filter_dir_path_skips_nonexistent_paths() {
+    let dir = tempdir().unwrap();
+    let exist = dir.path().join("exist").to_string_lossy().into_owned();
+    create_dir_all(&exist).unwrap();
+    let nonexistent = dir
+      .path()
+      .join("nonexistent_xyz")
+      .to_string_lossy()
+      .into_owned();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec![exist.clone(), nonexistent]);
+    assert_eq!(res.len(), 1);
+    assert!(res[0].ends_with("exist"));
+  }
+
+  #[test]
+  fn test_filter_dir_path_sorts_by_depth() {
+    // 构造 A 和 A/B（独立分支不满足）——改为 A 和 B/C 两个独立路径：
+    // /tmpdir/A     (depth = base_depth + 1)
+    // /tmpdir/B/C   (depth = base_depth + 2)
+    let dir = tempdir().unwrap();
+    let shallow = dir.path().join("A");
+    let deep = dir.path().join("B").join("C");
+    create_dir_all(&shallow).unwrap();
+    create_dir_all(&deep).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    // 先传 deep 再传 shallow
+    let res = scan.filter_dir_path(vec![
+      deep.to_string_lossy().into_owned(),
+      shallow.to_string_lossy().into_owned(),
+    ]);
+    // 两者都不是对方的前缀，因此都保留
+    assert_eq!(res.len(), 2, "两个独立路径应都被保留: {:?}", res);
+    // 输出应保持浅目录在深目录之前（按 components 数排序）
+    assert!(res[0].components().count() <= res[1].components().count());
+  }
+
+  #[test]
+  fn test_filter_dir_path_eliminates_subdirs() {
+    // 若存在 /root 和 /root/child，只应保留 /root
+    let dir = tempdir().unwrap();
+    let root = dir.path().join("root");
+    let child = root.join("child");
+    create_dir_all(&child).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec![
+      child.to_string_lossy().into_owned(),
+      root.to_string_lossy().into_owned(),
+    ]);
+
+    assert_eq!(res.len(), 1, "子目录应被父目录吸收: {:?}", res);
+    assert_eq!(res[0], root);
+  }
+
+  #[test]
+  fn test_filter_dir_path_sibling_both_kept() {
+    let dir = tempdir().unwrap();
+    let a = dir.path().join("a");
+    let b = dir.path().join("b");
+    create_dir_all(&a).unwrap();
+    create_dir_all(&b).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec![
+      a.to_string_lossy().into_owned(),
+      b.to_string_lossy().into_owned(),
+    ]);
+    assert_eq!(res.len(), 2);
+  }
+
+  #[test]
+  fn test_filter_dir_path_skips_relative_paths() {
+    // "some_dir" 不是绝对路径，被跳过
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec!["relative_path_never_exists_xyz".into()]);
+    // 若该相对路径实际上不存在（通常不存在），则过滤结果为 0
+    assert_eq!(res.len(), 0);
+  }
+
+  #[test]
+  fn test_filter_dir_path_detects_file_path_skips_it() {
+    let dir = tempdir().unwrap();
+    let file = dir.path().join("plain.txt");
+    File::create(&file).unwrap();
+
+    let real = dir.path().join("real_dir");
+    create_dir_all(&real).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_dir_path(vec![
+      file.to_string_lossy().into_owned(),
+      real.to_string_lossy().into_owned(),
+    ]);
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0], real);
+  }
+
+  // === filter_file_path 纯逻辑 ===
+
+  #[test]
+  fn test_filter_file_path_removes_duplicates() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("a.txt");
+    File::create(&f).unwrap();
+    let s = f.to_string_lossy().into_owned();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_file_path(vec![s.clone(), s.clone(), s]);
+    assert_eq!(res.len(), 1);
+  }
+
+  #[test]
+  fn test_filter_file_path_skips_nonexistent() {
+    let dir = tempdir().unwrap();
+    let exist = dir.path().join("exist.mp3");
+    File::create(&exist).unwrap();
+    let not = dir.path().join("not.flac");
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_file_path(vec![
+      exist.to_string_lossy().into_owned(),
+      not.to_string_lossy().into_owned(),
+    ]);
+    assert_eq!(res.len(), 1);
+    assert!(res[0].file_name().unwrap() == "exist.mp3");
+  }
+
+  #[test]
+  fn test_filter_file_path_skips_directories() {
+    let dir = tempdir().unwrap();
+    let sub = dir.path().join("subdir");
+    create_dir_all(&sub).unwrap();
+    let real = dir.path().join("real.mp3");
+    File::create(&real).unwrap();
+
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_file_path(vec![
+      sub.to_string_lossy().into_owned(),
+      real.to_string_lossy().into_owned(),
+    ]);
+    assert_eq!(res.len(), 1);
+    assert_eq!(res[0], real);
+  }
+
+  #[test]
+  fn test_filter_file_path_skips_relative_paths() {
+    let scan = MusicScan::new(vec![]);
+    let res = scan.filter_file_path(vec!["relative_nonexistent_xyz.txt".into()]);
+    assert_eq!(res.len(), 0);
+  }
+
+  // === MAX_DEPTH 常量边界：scan_recursion 本身测试依赖真实音频文件，跳过。===
+
+  #[test]
+  fn test_max_depth_at_least_5() {
+    assert!(MAX_DEPTH >= 5);
+  }
 }

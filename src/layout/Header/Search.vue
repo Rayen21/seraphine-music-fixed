@@ -7,6 +7,8 @@ import { ApiInvokeStatus, Interval, SearchType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
+import { ref, useTemplateRef } from 'vue'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 
@@ -124,7 +126,6 @@ watchThrottled(searchQuery, handleSearch, { throttle: Interval.Sec })
     <div class="relative" :data-disabled="!userStore.userinfo">
       <SvgIcon
         class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2"
-        size="14"
         :name="!isSearching ? 'Search' : 'Ring'" />
       <input
         ref="searchInputRef"
@@ -137,7 +138,6 @@ watchThrottled(searchQuery, handleSearch, { throttle: Interval.Sec })
         v-if="searchQuery"
         class="action-icon absolute right-1 top-1/2 size-6 -translate-y-1/2 cursor-pointer"
         name="Close"
-        size="10"
         @click="handleClear" />
     </div>
 

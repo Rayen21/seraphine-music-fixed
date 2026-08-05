@@ -1,11 +1,14 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useListContext } from '@/utils/hooks'
-import { Interval } from '@/utils/params'
+import { useListStore } from '@/stores/list'
+import { Interval, ListType } from '@/utils/params'
 import { vOnClickOutside } from '@vueuse/components'
 import { watchThrottled } from '@vueuse/core'
+import { inject, ref, useTemplateRef } from 'vue'
 
-const { listStore, listType } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const { handleSearch } = useListStore()
 
 const searchInputRef = useTemplateRef('searchInputRef')
 
@@ -28,9 +31,7 @@ const clearSearch = () => {
   searchInputRef.value?.focus()
 }
 
-watchThrottled(searchQuery, (query) => listStore.handleSearch(listType, query), {
-  throttle: Interval.Long
-})
+watchThrottled(searchQuery, (query) => handleSearch(listType, query), { throttle: Interval.Long })
 </script>
 
 <template>
@@ -46,13 +47,11 @@ watchThrottled(searchQuery, (query) => listStore.handleSearch(listType, query), 
       v-if="searchQuery"
       class="action-icon card-hover transition-colors rounded-lg hover:text-foreground"
       name="Close"
-      :size="10"
       @click="clearSearch" />
     <SvgIcon
       v-else
       class="action-icon card-hover transition-colors rounded-lg hover:text-foreground"
       name="Search"
-      :size="14"
       @click="toggleSearch" />
   </div>
 </template>

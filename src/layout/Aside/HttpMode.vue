@@ -4,6 +4,7 @@ import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
+import { onMounted, ref } from 'vue'
 
 const modeVisible = ref(false)
 const modeOptions = ref<SelectOption[]>([])

@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import { useUpdaterStore } from '@/stores/updater'
 import { formatFileSize } from '@/utils/tools'
@@ -39,12 +39,13 @@ const handleInstall = () => {
       <div v-if="!updaterStore.updateInfo?.has_update" class="text-gray-400">已是最新版本</div>
       <!-- 发现新版本 -->
       <div v-else-if="!updaterStore.isDownloaded" class="space-y-2">
-        <p class="text-green-500">
-          发现新版本 {{ updaterStore.updateInfo.latest_version }}
-          <span class="text-gray-400 text-sm">
-            ({{ formatFileSize(updaterStore.updateInfo.file_size ?? 0) }})
-          </span>
-        </p>
+        <p class="text-green-500">发现新版本 {{ updaterStore.updateInfo.latest_version }}</p>
+
+        <!-- Changelog（latest.json 的 notes 字段，GitHub 自动生成的 Release Notes） -->
+        <pre
+          v-if="updaterStore.updateInfo?.body"
+          class="max-h-60 overflow-auto p-3 text-sm text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-md whitespace-pre-wrap break-words"
+          >{{ updaterStore.updateInfo.body }}</pre>
 
         <!-- 未开始下载时显示下载按钮 -->
         <ActionButton v-if="!updaterStore.isDownloading" theme="success" @click="handleDownload">
@@ -80,7 +81,7 @@ const handleInstall = () => {
 
       <!-- 下载完成 -->
       <div v-if="updaterStore.isDownloaded" class="space-y-2">
-        <p class="text-success">下载完成，可安装更新</p>
+        <p class="text-success">下载完成，安装后将自动重启应用</p>
         <ActionButton theme="success" @click="handleInstall"> 安装更新 </ActionButton>
       </div>
     </div>

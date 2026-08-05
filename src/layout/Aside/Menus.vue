@@ -1,6 +1,7 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
 import { IconName } from '@/utils/icons'
+import { useRoute, useRouter } from 'vue-router'
 
 interface Menu {
   path: string

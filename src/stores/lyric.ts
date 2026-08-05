@@ -1,4 +1,4 @@
-﻿import { getFullName, parseKrcLyric, parseLrcLyric } from '@/utils/music'
+import { getFullName, parseKrcLyric, parseLrcLyric } from '@/utils/music'
 import {
   LyricBaseColor,
   LyricFontSize,
@@ -9,6 +9,8 @@ import {
   LyricTransMode
 } from '@/utils/params'
 import { invoke } from '@/utils/tools'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 type MatchedMap = Record<ID, { id: string; fmt: LyricFormat }>
 type OffsetMap = Record<ID, number>

@@ -1,13 +1,18 @@
 ﻿<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
+import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
-import { useListContext } from '@/utils/hooks'
 import { getOrigin } from '@/utils/music'
 import { ListType } from '@/utils/params'
+import { computed, inject } from 'vue'
 
-const { listStore, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const listStore = useListStore()
 
 const musicStore = useMusicStore()
+
+const list = computed(() => listStore[listType])
 
 const handlePlay = () => {
   if (musicStore.isPlaying || list.value.list.length === 0) return

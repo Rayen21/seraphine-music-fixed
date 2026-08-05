@@ -1,4 +1,4 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import Image from '@/components/Image.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import VirtualList from '@/components/VirtualList.vue'
@@ -16,6 +16,7 @@ import { LogicalSize } from '@tauri-apps/api/dpi'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useColorMode, useThrottleFn } from '@vueuse/core'
+import { computed, ref } from 'vue'
 
 // 同步主题
 useColorMode()
@@ -119,14 +120,13 @@ listen<{ type: MiniPlayerEmit; data: unknown }>(WindowEvent.MiniPlayer, (e) => {
             <SvgIcon
               class="action-icon"
               name="Playlist"
-              title="展开播放列表"
+              title="播放列表"
               size="20"
               @click="showPlaylist" />
             <SvgIcon
               class="action-icon shrink-0 hover:text-error"
               name="Close"
-              title="关闭迷你播放器"
-              size="14"
+              size="20"
               @click="handleSend(MiniPlayerEmit.Close)" />
           </div>
         </div>
@@ -153,7 +153,10 @@ listen<{ type: MiniPlayerEmit; data: unknown }>(WindowEvent.MiniPlayer, (e) => {
             {{ getFullName(row) }}
           </div>
 
-          <div class="hidden items-center pl-2 group-hover/line:flex" @dblclick.stop>
+          <div
+            class="hidden items-center pl-2 group-hover/line:flex"
+            @dblclick.stop
+            @contextmenu.stop>
             <SvgIcon class="action-icon" name="Play" @click="handleSend(MiniPlayerEmit.Set, row)" />
           </div>
         </div>

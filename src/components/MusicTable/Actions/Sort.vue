@@ -1,11 +1,14 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SelectModal from '@/components/SelectModal.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
-import { useListContext } from '@/utils/hooks'
-import { SortOrder, SortType } from '@/utils/params'
+import { useListStore } from '@/stores/list'
+import { ListType, SortOrder, SortType } from '@/utils/params'
 import { vOnClickOutside } from '@vueuse/components'
+import { computed, inject, ref, watch } from 'vue'
 
-const { listStore, listType, list } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const listStore = useListStore()
 
 const sortVisible = ref(false)
 const sortOptions = ref<Array<SelectOption<SortType>>>([
@@ -16,6 +19,7 @@ const sortOptions = ref<Array<SelectOption<SortType>>>([
   { label: '时长', value: SortType.Duration, prefixIcon: 'Timer' }
 ])
 
+const list = computed(() => listStore[listType])
 const listSort = computed<SortInfo | undefined>(() => listStore.sortMap[list.value.info.id])
 const sortSelection = computed(
   () =>

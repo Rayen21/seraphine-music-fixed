@@ -1,8 +1,9 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useLyricStore } from '@/stores/lyric'
 import { IconName } from '@/utils/icons'
 import { LyricTextAlign } from '@/utils/params'
+import { ref } from 'vue'
 
 const lyricStore = useLyricStore()
 
@@ -40,6 +41,6 @@ const handleClick = () => {
   <SvgIcon
     class="action-icon card"
     :name="iconName"
-    :title="Align_Titles[lyricStore.textAlign as LyricTextAlign]"
+    :title="Align_Titles[lyricStore.textAlign]"
     @click="handleClick" />
 </template>

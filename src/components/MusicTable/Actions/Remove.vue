@@ -1,9 +1,13 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 import ActionButton from '@/components/ActionButton.vue'
 import Modal from '@/components/Modal.vue'
-import { useListContext } from '@/utils/hooks'
+import { useListStore } from '@/stores/list'
+import { ListType } from '@/utils/params'
+import { inject, ref } from 'vue'
 
-const { listStore, listType } = useListContext()
+const listType = inject<ListType>('listType', ListType.Show)
+
+const listStore = useListStore()
 
 const visible = ref(false)
 

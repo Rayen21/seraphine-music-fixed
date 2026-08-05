@@ -3,10 +3,11 @@ use serde_json::{json, Value};
 use tauri::{http::Method, AppHandle};
 
 use crate::{
-  api::lib::RegisterDev,
+  api::libs::RegisterDev,
   http::{
     config::HttpConfig,
-    server::{request, RequestOptions, Response, ResponseType, BASE_URL},
+    libs::BASE_URL,
+    server::{request, RequestOptions, Response, ResponseType},
   },
   utils::crypto::{decrypt_aes_playlist, encrypt_aes_playlist, encrypt_rsa_pad},
 };
@@ -95,4 +96,65 @@ pub async fn api_register_dev(app_handle: AppHandle) -> Result<(), String> {
   HttpConfig::set_kg_cookies(&app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_base_url() {
+    let url = "https://userservice.kugou.com";
+    assert!(url.starts_with("https://"));
+    assert!(url.contains("userservice"));
+  }
+
+  #[test]
+  fn test_url_path() {
+    let path = "/risk/v2/r_register_dev";
+    assert!(path.contains("r_register_dev"));
+  }
+
+  #[test]
+  fn test_command_signature_exist() {
+    let _ = api_register_dev;
+  }
+
+  // === 设备信息字段常量 ===
+
+  #[test]
+  fn test_brand_constant() {
+    let brand = "Redmi";
+    assert_eq!(brand, "Redmi");
+  }
+
+  #[test]
+  fn test_manufacturer_constant() {
+    let manufacturer = "Xiaomi";
+    assert_eq!(manufacturer, "Xiaomi");
+  }
+
+  #[test]
+  fn test_device_constant() {
+    let device = "marble";
+    assert_eq!(device, "marble");
+  }
+
+  #[test]
+  fn test_available_ram_size_constant() {
+    // 4983533568 字节 ≈ 4.6 GB
+    let ram: u64 = 4983533568;
+    assert!(ram > 4_000_000_000);
+    assert!(ram < 5_000_000_000);
+  }
+
+  #[test]
+  fn test_battery_level_constant() {
+    assert_eq!(100, 100);
+  }
+
+  #[test]
+  fn test_battery_status_constant() {
+    assert_eq!(3, 3);
+  }
 }

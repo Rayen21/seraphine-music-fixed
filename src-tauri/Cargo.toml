@@ -1,6 +1,6 @@
 [package]
 name = "seraphine-music"
-version = "0.1.6"
+version = "0.1.7"
 description = "音乐播放器"
 authors = ["buren_lee"]
 edition = "2021"
@@ -14,13 +14,16 @@ edition = "2021"
 name = "seraphine_music_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
+[dev-dependencies]
+tempfile = "3"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = { version = "2", features = [] }
 tauri-plugin-global-shortcut = { version = "2", features = [] }
 tauri-plugin-single-instance = { version = "2", features = [] }
+# updater 仅在桌面端启用；process 用于安装后 relaunch
+tauri-plugin-process = { version = "2", features = [] }
+tauri-plugin-updater = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
@@ -29,15 +32,17 @@ tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 #   "protocol-asset",
 #   "devtools",
 # ] }
-tauri-plugin-dialog = { version = "2", features = [] }
-tauri-plugin-store = { version = "2", features = [] }
-tauri-plugin-clipboard-manager = { version = "2", features = [] }
 tauri-plugin-http = { version = "2", features = [
   "cookies",
   "gzip",
   "json",
   "stream",
 ] }
+tauri-plugin-clipboard-manager = { version = "2", features = [] }
+tauri-plugin-dialog = { version = "2", features = [] }
+tauri-plugin-opener = { version = "2", features = [] }
+tauri-plugin-store = { version = "2", features = [] }
+
 aes = "0.8"
 base64 = "0.22"
 cbc = { version = "0.1", features = ["block-padding", "alloc"] }
@@ -46,21 +51,22 @@ md-5 = "0.11"
 rsa = { version = "0.9", features = ["hazmat"] }
 sha1 = "0.11"
 uuid = { version = "1.23", features = ["v4"] }
-crossbeam-channel = "0.5"
 rayon = "1.11"
 tokio = "1.51"
 tokio-stream = "0.1"
 flate2 = "1.1"
 lofty = "0.24"
-rodio = { version = "0.22", features = ["crossbeam-channel"] }
+rodio = "0.22"
 rand = "0.10"
-semver = "1"
 serde = "1.0"
-serde_json = { version = "1", features = ["preserve_order"] }
+serde_json = "1.0"
 anyhow = "1.0"
 thiserror = "2.0"
 bytes = "1.11"
 chrono = "0.4"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
 
 [profile.dev]
 incremental = true # 以较小的步骤编译您的二进制文件。

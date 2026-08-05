@@ -1,11 +1,8 @@
 use std::{
-  env,
-  fs::{self, read_dir, remove_file},
+  collections::HashMap,
+  env, fs,
   path::{Path, PathBuf},
-  process::Command,
 };
-
-use serde::{Deserialize, Serialize};
 
 pub struct AppPath {
   current_dir: PathBuf,
@@ -33,167 +30,108 @@ impl AppPath {
     env::current_dir().unwrap_or_else(|_| env::home_dir().unwrap_or_else(|| env::temp_dir()))
   }
 
-  fn get_temp_dir(current_dir: &Path) -> PathBuf {
+  fn get_temp_dir(current_dir: &PathBuf) -> PathBuf {
     let temp_dir = current_dir.join("Temp");
 
     if !temp_dir.exists() {
       if let Err(_) = fs::create_dir_all(&temp_dir) {
-        return env::temp_dir();
+        return current_dir.clone();
       }
     }
 
     temp_dir
   }
 
-  fn get_lyric_dir(temp_dir: &Path) -> PathBuf {
+  fn get_lyric_dir(temp_dir: &PathBuf) -> PathBuf {
     let lyric_dir = temp_dir.join("lyrics");
 
     if !lyric_dir.exists() {
       if let Err(_) = fs::create_dir_all(&lyric_dir) {
-        return temp_dir.to_path_buf();
+        return temp_dir.clone();
       }
     }
 
     lyric_dir
   }
 
-  fn get_cover_dir(temp_dir: &Path) -> PathBuf {
+  fn get_cover_dir(temp_dir: &PathBuf) -> PathBuf {
     let cover_dir = temp_dir.join("covers");
 
     if !cover_dir.exists() {
       if let Err(_) = fs::create_dir_all(&cover_dir) {
-        return temp_dir.to_path_buf();
+        return temp_dir.clone();
       }
     }
 
     cover_dir
   }
 
+  pub fn to_hashmap(&self) -> HashMap<String, String> {
+    HashMap::from_iter([
+      (
+        String::from("current_dir"),
+        self.current_dir.to_string_lossy().to_string(),
+      ),
+      (
+        String::from("temp_dir"),
+        self.temp_dir.to_string_lossy().to_string(),
+      ),
+      (
+        String::from("lyric_dir"),
+        self.lyric_dir.to_string_lossy().to_string(),
+      ),
+      (
+        String::from("cover_dir"),
+        self.cover_dir.to_string_lossy().to_string(),
+      ),
+    ])
+  }
+
+  // pub fn current_dir(&self) -> &Path {
+  //   self.current_dir.as_ref()
+  // }
+
   pub fn temp_dir(&self) -> &Path {
-    &self.temp_dir
+    self.temp_dir.as_ref()
   }
 
   pub fn lyric_dir(&self) -> &Path {
-    &self.lyric_dir
+    self.lyric_dir.as_ref()
   }
 
   pub fn cover_dir(&self) -> &Path {
-    &self.cover_dir
+    self.cover_dir.as_ref()
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AppPathMap {
-  temp: String,
-  lyric: String,
-  cover: String,
-}
-
 #[tauri::command]
-pub async fn system_path_all() -> Result<AppPathMap, String> {
-  let app_path = AppPath::new();
-
-  Ok(AppPathMap {
-    temp: app_path.temp_dir().to_string_lossy().to_string(),
-    lyric: app_path.lyric_dir().to_string_lossy().to_string(),
-    cover: app_path.cover_dir().to_string_lossy().to_string(),
-  })
-}
-
-#[tauri::command]
-/// 打开文件所在位置
-pub fn system_path_file_open(path: &str) -> Result<(), String> {
-  if path.trim().is_empty() {
-    return Err(String::from("文件路径不能为空"));
-  }
-
-  #[cfg(target_os = "windows")]
-  {
-    Command::new("explorer")
-      .args(["/select,", path])
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  #[cfg(target_os = "macos")]
-  {
-    Command::new("open")
-      .arg("-R")
-      .arg(path)
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  #[cfg(target_os = "linux")]
-  {
-    let parent = Path::new(path)
-      .parent()
-      .ok_or_else(|| String::from("打开失败"))?;
-    Command::new("xdg-open")
-      .arg(parent)
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  Ok(())
-}
-
-#[tauri::command]
-/// 打开目录
-pub fn system_path_dir_open(path: &str) -> Result<(), String> {
-  if path.trim().is_empty() {
-    return Err(String::from("目录路径不能为空"));
-  }
-
-  #[cfg(target_os = "windows")]
-  {
-    Command::new("explorer")
-      .arg(path)
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  #[cfg(target_os = "macos")]
-  {
-    Command::new("open")
-      .arg(path)
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  #[cfg(target_os = "linux")]
-  {
-    Command::new("xdg-open")
-      .arg(path)
-      .spawn()
-      .map_err(|_| String::from("打开失败"))?;
-  };
-
-  Ok(())
+/// 获取所有目录路径
+pub fn system_path_all() -> HashMap<String, String> {
+  AppPath::new().to_hashmap()
 }
 
 #[tauri::command]
 /// 清理目录下的文件
-pub fn system_path_dir_clear(dir_path: &str) -> Result<(), String> {
+pub fn system_path_clear(dir_path: &str) -> Result<(), String> {
   if dir_path.trim().is_empty() {
     return Err(String::from("目录路径不能为空"));
   }
 
-  let dir = Path::new(dir_path);
-  if !dir.exists() {
+  let path = Path::new(dir_path);
+  if !path.exists() {
     return Err(String::from("目录不存在"));
   }
-  if !dir.is_dir() {
+  if !path.is_dir() {
     return Err(String::from("不是目录路径"));
   }
 
-  let entries = read_dir(dir).map_err(|_| String::from("读取目录失败"))?;
+  let entries = fs::read_dir(path).map_err(|_| String::from("读取目录失败"))?;
   for entry in entries {
     let entry = entry.map_err(|_| String::from("读取目录项失败"))?;
     let path = entry.path();
     // 仅删除文件
     if path.is_file() {
-      remove_file(&path).map_err(|_| format!("删除文件失败: {}", path.display()))?;
+      fs::remove_file(&path).map_err(|_| format!("删除文件失败: {}", path.display()))?;
     }
   }
 
