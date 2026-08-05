@@ -19,10 +19,14 @@ export default defineConfig({
         miniPlayer: './mini-player.html'
       },
       output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         minify: {
           compress: { dropConsole: true }
         },
         codeSplitting: {
+          minSize: 10 * 1024,
           groups: [
             { test: /node_modules\/vue/, name: 'vue' },
             { test: /node_modules\/vue-router/, name: 'vue-router' },

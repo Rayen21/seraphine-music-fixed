@@ -21,11 +21,17 @@
       }
     ],
     "security": {
-      "capabilities": ["main-capability", "desktop-lyric-capability", "mini-player-capability"],
+      "capabilities": [
+        "main-capability",
+        "desktop-lyric-capability",
+        "mini-player-capability"
+      ],
       "csp": "default-src 'self'; img-src 'self' asset: http: https:; connect-src 'self' http: https:;style-src 'self' 'unsafe-inline';",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },
@@ -56,13 +62,17 @@
       },
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "languages": ["SimpChinese"],
-        "displayLanguageSelector": true
+        "languages": [
+          "SimpChinese"
+        ]
       }
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-3-0", "libayatana-appindicator3-1"]
+        "depends": [
+          "libgtk-3-0",
+          "libayatana-appindicator3-1"
+        ]
       },
       "appimage": {
         "bundleMediaFramework": false
@@ -75,13 +85,10 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE2NEQ2QTNDQTMwM0M2RjMKUldUenhnT2pQR3BOcGtJeWI5cUplTjBCNnhJWDBIUkRUSm02cEJNMWxwa2RKSm5WQkFKTU1kUHcK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY3NzZBNjJBMTgwNkQ0Q0EKUldUSzFBWVlLcVoyOTMyUTQ5dEM0eGo4V0pvRjVjZzV2b21MbCtGS2FhY1JxM01CcUZPVmNlVjYK",
       "endpoints": [
         "https://github.com/burenLee/seraphine-music/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
+      ]
     }
   }
 }

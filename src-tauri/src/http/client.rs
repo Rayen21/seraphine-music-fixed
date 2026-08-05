@@ -81,7 +81,7 @@ impl HttpRequestOptions {
 pub struct HttpRequest;
 
 impl HttpRequest {
-  pub fn get_client() -> &'static Client {
+  fn client() -> &'static Client {
     HTTP_CLIENT.get_or_init(|| {
       let cookie_jar = COOKIE_JAR.clone();
 
@@ -94,7 +94,7 @@ impl HttpRequest {
   }
 
   pub async fn request(opts: HttpRequestOptions) -> anyhow::Result<Response> {
-    let mut request_builder = Self::get_client().request(opts.method, &opts.url);
+    let mut request_builder = Self::client().request(opts.method, &opts.url);
 
     if !opts.header.is_empty() {
       request_builder = request_builder.headers(opts.header);
@@ -116,7 +116,7 @@ impl HttpRequest {
   }
 
   pub async fn get(url: String) -> anyhow::Result<Response> {
-    let resp = Self::get_client().get(url).send().await?;
+    let resp = Self::client().get(url).send().await?;
 
     Ok(resp)
   }
@@ -125,7 +125,7 @@ impl HttpRequest {
   where
     T: for<'de> Deserialize<'de>,
   {
-    let resp = Self::get_client().get(url).send().await?;
+    let resp = Self::client().get(url).send().await?;
     let res_json = resp.json::<T>().await?;
 
     Ok(res_json)
@@ -139,7 +139,6 @@ impl HttpRequest {
 
     COOKIE_JAR.cookies(&url)
   }
-
   #[allow(dead_code)]
   pub fn add_cookie(url: &str, key: &str, value: &str) {
     let url = url
@@ -347,16 +346,6 @@ mod tests {
   fn test_http_request_options_debug_format() {
     let s = format!("{:?}", HttpRequestOptions::new());
     assert!(s.contains("HttpRequestOptions"));
-  }
-
-  // === HttpRequest::get_client 不会 panic ===
-
-  #[test]
-  fn test_get_client_returns_singleton() {
-    let a = HttpRequest::get_client();
-    let b = HttpRequest::get_client();
-    // OnceLock 返回同一个引用
-    assert!(std::ptr::eq(a, b));
   }
 
   // === KgCookies::to_hashmap 与 set_cookies 输入参数格式兼容 ===

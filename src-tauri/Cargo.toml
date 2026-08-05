@@ -18,11 +18,15 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tempfile = "3"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+# 自动启动
 tauri-plugin-autostart = { version = "2", features = [] }
+# 全局快捷方式
 tauri-plugin-global-shortcut = { version = "2", features = [] }
+# 单例
 tauri-plugin-single-instance = { version = "2", features = [] }
-# updater 仅在桌面端启用；process 用于安装后 relaunch
+# 进程
 tauri-plugin-process = { version = "2", features = [] }
+# 更新
 tauri-plugin-updater = { version = "2", features = [] }
 
 [dependencies]
@@ -32,15 +36,20 @@ tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 #   "protocol-asset",
 #   "devtools",
 # ] }
+# HTTP 客户端
 tauri-plugin-http = { version = "2", features = [
   "cookies",
   "gzip",
   "json",
   "stream",
 ] }
+# 剪贴板
 tauri-plugin-clipboard-manager = { version = "2", features = [] }
+# 对话框
 tauri-plugin-dialog = { version = "2", features = [] }
+# 指定打开应用
 tauri-plugin-opener = { version = "2", features = [] }
+# Store
 tauri-plugin-store = { version = "2", features = [] }
 
 aes = "0.8"

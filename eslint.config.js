@@ -15,6 +15,10 @@ export default defineConfigWithVueTs(
     '**/.agents/**',
     '**/.claude/**',
     '**/.github/**',
+    '**/.qoder/**',
+    '**/.scratch/**',
+    '**/.tauri/**',
+    '**/.scratch/**',
     '**/.vscode/**',
     '**/.idea/**',
     '**/.env*'

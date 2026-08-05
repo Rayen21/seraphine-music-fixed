@@ -1,21 +1,19 @@
 import { notify } from '@/components/Notification.vue'
 import { getVersion } from '@tauri-apps/api/app'
 import { relaunch } from '@tauri-apps/plugin-process'
-import { type DownloadEvent, type Update, check } from '@tauri-apps/plugin-updater'
+import { Update, check as tauriCheck } from '@tauri-apps/plugin-updater'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
-/** check() 返回的 Update 元数据快照（响应式暴露给 UI） */
 interface UpdateInfo {
-  has_update: boolean
-  current_version: string
-  latest_version: string
+  hasUpdate: boolean
+  currentVersion: string
+  latestVersion: string
   body?: string
   date?: string
 }
 
-/** 下载进度（前端聚合后推送，UI 用于展示进度条/速度） */
-interface DownloadProgress {
+interface DownloadInfo {
   downloaded: number
   total: number
   speed: number
@@ -24,75 +22,55 @@ interface DownloadProgress {
 export const useUpdaterStore = defineStore(
   'updater',
   () => {
-    // ========== 状态 ==========
     const isHydrated = ref(false) // store 持久化的水合状态
 
     const isChecking = ref(false)
-    const updateInfo = ref<UpdateInfo>()
     const isDownloading = ref(false)
     const isDownloaded = ref(false)
-    const downloadProgress = ref<DownloadProgress>()
-    const progressPercent = computed(() => {
-      if (!downloadProgress.value || downloadProgress.value.total === 0) return 0
-      return Math.round((downloadProgress.value.downloaded / downloadProgress.value.total) * 100)
-    })
+    const updateInfo = ref<UpdateInfo | null>(null)
+    const downloadInfo = ref<DownloadInfo | null>(null)
 
-    // 插件返回的 Update 实例（非响应式；跨渲染周期持有以供后续 download/install 调用）
-    let pendingUpdate: Update | null = null
-    // 下载进度聚合用的内部变量（避免每个 chunk 都触发响应式更新）
-    let downloadStartTime = 0
-    let lastEmitTime = 0
-    let downloadedBytes = 0
-    let totalBytes = 0
-
-    // ========== 方法 ==========
+    let updater: Update | null = null
 
     watch(
       isHydrated,
       () => {
-        checkUpdate()
+        check()
       },
       { once: true }
     )
 
-    /** 检查更新（通过 tauri-plugin-updater 的 check()） */
-    const checkUpdate = async () => {
+    const check = async () => {
       if (isChecking.value || isDownloading.value) return
       isChecking.value = true
       notify.info('检查更新中...')
 
       try {
-        const currentVersion = await getVersion()
-        const update = await check()
+        await updater?.close()
+        const update = await tauriCheck()
 
-        // 无论是否拿到新 Update，都先清理上一轮的下载状态
-        isDownloaded.value = false
-        downloadProgress.value = undefined
+        if (!update) {
+          updater = null
 
-        if (update) {
-          // 释放上一轮的 Update 资源后再持有新的
-          pendingUpdate?.close().catch(() => {})
-          pendingUpdate = update
-
+          const currentVersion = await getVersion()
           updateInfo.value = {
-            has_update: true,
-            current_version: `v${update.currentVersion}`,
-            latest_version: `v${update.version}`,
+            hasUpdate: false,
+            currentVersion: `v${currentVersion}`,
+            latestVersion: `v${currentVersion}`
+          }
+
+          notify.success('已是最新版本')
+        } else {
+          updater = update
+          updateInfo.value = {
+            hasUpdate: true,
+            currentVersion: `v${update.currentVersion}`,
+            latestVersion: `v${update.version}`,
             body: update.body,
             date: update.date
           }
-          notify.success(`发现新版本 ${update.version}`)
-        } else {
-          // check() 返回 null：当前版本已是最新
-          pendingUpdate?.close().catch(() => {})
-          pendingUpdate = null
 
-          updateInfo.value = {
-            has_update: false,
-            current_version: `v${currentVersion}`,
-            latest_version: `v${currentVersion}`
-          }
-          notify.success('已是最新版本')
+          notify.success(`发现新版本 ${update.version}`)
         }
       } catch (error) {
         console.error(error)
@@ -102,41 +80,46 @@ export const useUpdaterStore = defineStore(
       }
     }
 
-    /** 下载更新包（通过插件 Update.download，progress 回调推送进度） */
-    const startDownload = async () => {
-      if (!pendingUpdate || isDownloading.value) return
+    const download = async () => {
+      if (!updater || isDownloading.value) return
 
       isDownloading.value = true
       isDownloaded.value = false
-      downloadProgress.value = undefined
-      downloadedBytes = 0
-      totalBytes = 0
-      downloadStartTime = performance.now()
-      lastEmitTime = downloadStartTime
+      downloadInfo.value = null
 
       try {
-        await pendingUpdate.download((event: DownloadEvent) => {
-          switch (event.event) {
+        let start = performance.now()
+        // 记录上一次进度回调的时间
+        let lastProgressTime = start
+
+        await updater.download((e) => {
+          if (!downloadInfo.value) downloadInfo.value = { downloaded: 0, total: 0, speed: 0 }
+
+          switch (e.event) {
             case 'Started':
-              totalBytes = event.data.contentLength ?? 0
-              emitProgress(true)
+              start = performance.now()
+              lastProgressTime = start
+              downloadInfo.value = { total: e.data.contentLength ?? 0, downloaded: 0, speed: 0 }
               break
-            case 'Progress':
-              downloadedBytes += event.data.chunkLength
-              emitProgress(false)
+            case 'Progress': {
+              const now = performance.now()
+              const chunkBytes = e.data.chunkLength
+              downloadInfo.value.downloaded += chunkBytes
+
+              const deltaSec = (now - lastProgressTime) / 1000
+              if (deltaSec > 0) downloadInfo.value.speed = chunkBytes / deltaSec
+
+              lastProgressTime = now
               break
+            }
             case 'Finished':
-              // 最终确保 100% 进度（避免节流导致最后一段未推送）
-              if (totalBytes > 0) {
-                downloadedBytes = totalBytes
-              }
-              emitProgress(true)
+              isDownloaded.value = true
+              downloadInfo.value.speed = 0
               break
           }
         })
 
-        isDownloaded.value = true
-        notify.success('下载完成，可在设置页安装更新')
+        await relaunch()
       } catch (error) {
         console.error(error)
         notify.error('下载失败')
@@ -145,28 +128,11 @@ export const useUpdaterStore = defineStore(
       }
     }
 
-    /** 节流推送下载进度（首次和末次强制推送，中间 100ms 节流） */
-    const emitProgress = (force: boolean) => {
-      const now = performance.now()
-      if (!force && now - lastEmitTime < 100) return
-
-      const elapsed = (now - downloadStartTime) / 1000
-      const speed = elapsed > 0 ? downloadedBytes / elapsed : 0
-      downloadProgress.value = {
-        downloaded: downloadedBytes,
-        total: totalBytes,
-        speed
-      }
-      lastEmitTime = now
-    }
-
-    /** 安装已下载的更新并重启应用 */
-    const installUpdate = async () => {
-      if (!pendingUpdate || !isDownloaded.value) return
+    const install = async () => {
+      if (!updater || !isDownloaded.value) return
 
       try {
-        await pendingUpdate.install()
-        // 安装完成后重启应用以应用更新
+        await updater.install()
         await relaunch()
       } catch (error) {
         console.error(error)
@@ -174,27 +140,23 @@ export const useUpdaterStore = defineStore(
       }
     }
 
-    /** 重置下载状态（保留 pendingUpdate 以便重新检查/下载） */
     const reset = () => {
       isDownloading.value = false
       isDownloaded.value = false
-      downloadProgress.value = undefined
-      downloadedBytes = 0
-      totalBytes = 0
+      downloadInfo.value = null
     }
 
     return {
       isHydrated,
       isChecking,
-      updateInfo,
       isDownloading,
       isDownloaded,
-      downloadProgress,
-      progressPercent,
+      updateInfo,
+      downloadInfo,
 
-      checkUpdate,
-      startDownload,
-      installUpdate,
+      check,
+      download,
+      install,
       reset
     }
   },

@@ -1,6 +1,10 @@
 .agents/
 .claude/
 .github/
+.qoder/
+.scratch/
+.tauri/
+.vscode/
 
 src-tauri/target
 src-tauri/gen

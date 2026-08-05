@@ -44,7 +44,7 @@ const handleSelect = async (action: MenuAction) => {
       }
       break
     case MenuAction.Update:
-      handleCheckUpdate()
+      handleCheck()
       break
     case MenuAction.Setting:
       router.push('/setting')
@@ -60,25 +60,19 @@ const handleSelect = async (action: MenuAction) => {
   menuVisible.value = false
 }
 
-/** 从菜单触发的更新检查 */
-const handleCheckUpdate = async () => {
-  await updaterStore.checkUpdate() // 静默检查，我们自己处理 UI
+const handleCheck = async () => {
+  await updaterStore.check()
 
-  if (!updaterStore.updateInfo) return
-
-  if (updaterStore.updateInfo.has_update) {
-    updateModalVisible.value = true
-  }
+  if (updaterStore.updateInfo?.hasUpdate) updateModalVisible.value = true
 }
 
-/** 确认更新：开始下载并跳转设置页 */
 const handleUpdateConfirm = () => {
   updateModalVisible.value = false
-  updaterStore.startDownload() // 不 await，后台下载
   router.push('/setting')
+
+  updaterStore.download()
 }
 
-/** 取消更新 */
 const handleUpdateCancel = () => {
   updateModalVisible.value = false
 }
@@ -94,23 +88,20 @@ const handleUpdateCancel = () => {
       :visible="menuVisible"
       :options="menuOptions"
       @select="handleSelect" />
-
-    <!-- 更新确认弹窗 -->
-    <Modal
-      class="w-80"
-      v-model="updateModalVisible"
-      title="版本更新"
-      :confirm-label="'下载更新'"
-      @confirm="handleUpdateConfirm"
-      @cancel="handleUpdateCancel">
-      <div class="px-4">
-        <p>
-          发现新版本
-          <span class="text-green-500 font-bold">
-            {{ updaterStore.updateInfo?.latest_version }}
-          </span>
-        </p>
-      </div>
-    </Modal>
   </div>
+
+  <Modal
+    class="w-80"
+    v-model="updateModalVisible"
+    title="版本更新"
+    confirm-label="下载更新"
+    @confirm="handleUpdateConfirm"
+    @cancel="handleUpdateCancel">
+    <div class="px-4">
+      发现新版本
+      <span class="text-info font-bold">
+        {{ updaterStore.updateInfo?.latestVersion }}
+      </span>
+    </div>
+  </Modal>
 </template>
