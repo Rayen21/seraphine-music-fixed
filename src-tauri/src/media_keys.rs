@@ -2,7 +2,7 @@ use tauri::Emitter;
 
 #[cfg(target_os = "macos")]
 pub fn init(app_handle: &tauri::AppHandle) {
-    use cocoa::base::{id, nil};
+    use cocoa::base::id;
     use std::sync::Mutex;
     use std::sync::Arc;
 
