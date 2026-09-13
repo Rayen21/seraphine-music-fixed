@@ -48,7 +48,6 @@ pub fn init(app_handle: &tauri::AppHandle) {
         _tap: id,
         _type_: u32,
         event: EventRef,
-        user_data: *mut libc::c_void,
     ) -> EventRef {
         let data = unsafe { &*(user_data as *const HotKeyEventData) };
         if let Some(app_handle) = data.app_handle.lock().unwrap().as_ref() {
@@ -71,7 +70,7 @@ pub fn init(app_handle: &tauri::AppHandle) {
             0, // kCGEventTapOptionDefault
             (1 << kVK_PlayPause) | (1 << kVK_NextTrack) | (1 << kVK_PreviousTrack),
             Some(hot_key_callback),
-            user_data_ptr as *mut _,
+            std::ptr::null_mut(),
         );
 
         if tap != nil {
