@@ -455,19 +455,18 @@ pub fn music_player_set_volume(state: State<Player>, volume: f32) -> Result<(), 
   Ok(audio_reader.set_volume(volume / 100.0))
 }
 
-#[tauri::command]
-pub fn music_player_next(state: State<Player>) -> Result<(), String> {
-  let audio_reader = state.audio.read().map_err(|e| e.to_string())?;
+// TODO: rodio::Player 没有 next/prev，需要自行实现播放列表切换逻辑
+// #[tauri::command]
+// pub fn music_player_next(state: State<Player>) -> Result<(), String> {
+//   let audio_reader = state.audio.read().map_err(|e| e.to_string())?;
+//   Ok(audio_reader.next())
+// }
 
-  Ok(audio_reader.next())
-}
-
-#[tauri::command]
-pub fn music_player_prev(state: State<Player>) -> Result<(), String> {
-  let audio_reader = state.audio.read().map_err(|e| e.to_string())?;
-
-  Ok(audio_reader.prev())
-}
+// #[tauri::command]
+// pub fn music_player_prev(state: State<Player>) -> Result<(), String> {
+//   let audio_reader = state.audio.read().map_err(|e| e.to_string())?;
+//   Ok(audio_reader.prev())
+// }
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,7 @@
 use tauri::Emitter;
 
 #[cfg(target_os = "macos")]
-mod macos {
+pub fn init(app_handle: &tauri::AppHandle) {
     use cocoa::base::{id, nil};
     use std::sync::Mutex;
     use std::sync::Arc;
@@ -59,59 +59,51 @@ mod macos {
         0
     }
 
-    pub fn init(app_handle: &tauri::AppHandle) {
-        use tauri::Emitter;
+    // Store app handle for callback access
+    let data = HotKeyEventData {
+        app_handle: Arc::new(Mutex::new(Some(app_handle.clone()))),
+    };
+    let user_data_ptr = Box::into_raw(Box::new(data));
 
-        // Store app handle for callback access
-        let data = HotKeyEventData {
-            app_handle: Arc::new(Mutex::new(Some(app_handle.clone()))),
-        };
-        let user_data_ptr = Box::into_raw(Box::new(data));
+    // Create EventHotKeyID (signature, eventKind)
+    let play_pause_id: EventHotKeyID = 1 << 16 | kVK_PlayPause as u32;
+    let next_track_id: EventHotKeyID = 1 << 16 | kVK_NextTrack as u32;
+    let prev_track_id: EventHotKeyID = 1 << 16 | kVK_PreviousTrack as u32;
 
-        // Create EventHotKeyID (signature, eventKind)
-        let play_pause_id: EventHotKeyID = 1 << 16 | kVK_PlayPause as u32;
-        let next_track_id: EventHotKeyID = 1 << 16 | kVK_NextTrack as u32;
-        let prev_track_id: EventHotKeyID = 1 << 16 | kVK_PreviousTrack as u32;
+    // Get the default event dispatcher target
+    let target = unsafe { GetEventDispatcherTarget() };
 
-        // Get the default event dispatcher target
-        let target = unsafe { GetEventDispatcherTarget() };
+    // Register hotkeys for play/pause, next, previous
+    unsafe {
+        RegisterEventHotKey(
+            play_pause_id,
+            0,
+            hot_key_callback as EventHandlerRef,
+            target,
+            std::ptr::null_mut(),
+        );
+        RegisterEventHotKey(
+            next_track_id,
+            0,
+            hot_key_callback as EventHandlerRef,
+            target,
+            std::ptr::null_mut(),
+        );
+        RegisterEventHotKey(
+            prev_track_id,
+            0,
+            hot_key_callback as EventHandlerRef,
+            target,
+            std::ptr::null_mut(),
+        );
 
-        // Register hotkeys for play/pause, next, previous
-        unsafe {
-            RegisterEventHotKey(
-                play_pause_id,
-                0,
-                hot_key_callback as EventHandlerRef,
-                target,
-                std::ptr::null_mut(),
-            );
-            RegisterEventHotKey(
-                next_track_id,
-                0,
-                hot_key_callback as EventHandlerRef,
-                target,
-                std::ptr::null_mut(),
-            );
-            RegisterEventHotKey(
-                prev_track_id,
-                0,
-                hot_key_callback as EventHandlerRef,
-                target,
-                std::ptr::null_mut(),
-            );
-
-            // Set up the event handler
-            SetEventHandler(target, hot_key_callback as EventHandlerRef);
-        }
-
-        // Leak the user_data pointer so it lives for the app lifetime
-        std::mem::forget(user_data_ptr);
+        // Set up the event handler
+        SetEventHandler(target, hot_key_callback as EventHandlerRef);
     }
+
+    // Leak the user_data pointer so it lives for the app lifetime
+    std::mem::forget(user_data_ptr);
 }
 
 #[cfg(not(target_os = "macos"))]
-mod other {
-    pub fn init(_app_handle: &tauri::AppHandle) {}
-}
-
-pub use macos as media_keys;
+pub fn init(_app_handle: &tauri::AppHandle) {}

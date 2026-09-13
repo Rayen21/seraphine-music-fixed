@@ -131,15 +131,9 @@ impl Audio {
     self.player.try_seek(pos)
   }
 
-  /// 下一首
-  pub fn next(&self) {
-    self.player.next();
-  }
-
-  /// 上一首
-  pub fn prev(&self) {
-    self.player.prev();
-  }
+  // TODO: rodio::Player 没有 next/prev，需要自行实现播放列表切换逻辑
+  // pub fn next(&self) {}
+  // pub fn prev(&self) {}
 }
 
 #[cfg(test)]
