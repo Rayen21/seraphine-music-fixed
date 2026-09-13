@@ -74,9 +74,10 @@ pub fn init(app_handle: &tauri::AppHandle) {
         );
 
         if tap != nil {
-            let runloop = cocoa::foundation::NSRunLoop_mainRunLoop();
+            use cocoa::foundation::{NSRunLoop, NSString};
+            let runloop = NSRunLoop::main_loop();
             let source = CFMachPortCreateRunLoopSource(nil, tap, 0);
-            let mode = cocoa::foundation::NSString stringWithString: "kCFRunLoopDefaultMode" as *const _;
+            let mode = NSString::alloc(nil).init_str!("kCFRunLoopDefaultMode");
             CFRunLoopAddSource(runloop, source, mode);
         }
 
