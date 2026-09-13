@@ -1,6 +1,7 @@
 use tauri::Emitter;
 
 #[cfg(target_os = "macos")]
+#[allow(deprecated)]
 pub fn init(app_handle: &tauri::AppHandle) {
     use cocoa::base::id;
     use std::sync::Mutex;
