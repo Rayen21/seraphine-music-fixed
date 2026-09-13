@@ -53,6 +53,7 @@ export const useMusicStore = defineStore(
         if (import.meta.env.DEV) await pause()
 
         monitorDevice()
+        monitorMediaKeys()
         monitorPlay()
         monitorDownload()
 
@@ -378,6 +379,17 @@ export const useMusicStore = defineStore(
           })
           await seek(lastProgress)
         })
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
+
+    // 监听媒体按键事件（上一首/下一首）
+    const monitorMediaKeys = async () => {
+      try {
+        await listen('music:next', () => playPrevOrNext('next'))
+        await listen('music:prev', () => playPrevOrNext('prev'))
       } catch (error) {
         console.error(error)
       }

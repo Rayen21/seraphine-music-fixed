@@ -19,6 +19,7 @@ mod http;
 mod music;
 mod system;
 mod utils;
+mod media_keys;
 
 pub fn run() {
   tauri::Builder::default()
@@ -48,6 +49,7 @@ pub fn run() {
       let player = player::Player::new(app_handle)?;
 
       app.manage(player);
+      media_keys::init(app_handle);
 
       Ok(())
     })
@@ -73,6 +75,8 @@ pub fn run() {
       player::music_player_stop,
       player::music_player_seek,
       player::music_player_set_volume,
+      player::music_player_next,
+      player::music_player_prev,
       music_lyric::music_lyric_get,
       mode::http_mode_list,
       mode::http_mode_get,

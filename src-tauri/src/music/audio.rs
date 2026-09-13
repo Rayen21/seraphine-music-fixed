@@ -130,6 +130,16 @@ impl Audio {
   pub fn try_seek(&self, pos: Duration) -> Result<(), SeekError> {
     self.player.try_seek(pos)
   }
+
+  /// 下一首
+  pub fn next(&self) {
+    self.player.next();
+  }
+
+  /// 上一首
+  pub fn prev(&self) {
+    self.player.prev();
+  }
 }
 
 #[cfg(test)]
