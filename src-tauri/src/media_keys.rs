@@ -5,10 +5,10 @@ pub fn init(app_handle: &tauri::AppHandle) {
     use std::sync::Mutex;
     use std::sync::Arc;
 
-    // Key codes for multimedia keys (macOS)
-    const kVK_PlayPause: u8 = 0xFD;
-    const kVK_NextTrack: u8 = 0xF9;
-    const kVK_PreviousTrack: u8 = 0xF6;
+    // Key codes for multimedia keys (macOS) - 使用位掩码而非位移
+    const kVK_PlayPause: u64 = 0x010000000000;
+    const kVK_NextTrack: u64 = 0x008000000000;
+    const kVK_PreviousTrack: u64 = 0x004000000000;
 
     type EventHandlerCallRef = *mut libc::c_void;
     type EventRef = *mut std::ffi::c_void;
@@ -69,7 +69,7 @@ pub fn init(app_handle: &tauri::AppHandle) {
             1, // kCGSessionEventTap
             2, // kCGHeadInsertEventTap
             0, // kCGEventTapOptionDefault
-            (1 << kVK_PlayPause) | (1 << kVK_NextTrack) | (1 << kVK_PreviousTrack),
+            (kVK_PlayPause | kVK_NextTrack | kVK_PreviousTrack),
             Some(hot_key_callback),
             std::ptr::null_mut(),
         );
