@@ -66,17 +66,17 @@ pub fn init(app_handle: &tauri::AppHandle) {
 
                 match keycode {
                     kVK_PlayPause => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()) {
+                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
                             app_handle.emit("media-key", "playpause").ok();
                         }
                     }
                     kVK_NextTrack => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()) {
+                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
                             app_handle.emit("media-key", "nexttrack").ok();
                         }
                     }
                     kVK_PreviousTrack => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()) {
+                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
                             app_handle.emit("media-key", "previoustrack").ok();
                         }
                     }
