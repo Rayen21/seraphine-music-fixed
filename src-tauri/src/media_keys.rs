@@ -49,11 +49,7 @@ pub fn init(app_handle: &tauri::AppHandle) {
         _type_: u32,
         event: EventRef,
     ) -> EventRef {
-        let data = unsafe { &*(user_data as *const HotKeyEventData) };
-        if let Some(app_handle) = data.app_handle.lock().unwrap().as_ref() {
-            let _ = app_handle.emit("media-key", ());
-        }
-        event
+        0
     }
 
     // Store app handle for callback access
@@ -77,7 +73,7 @@ pub fn init(app_handle: &tauri::AppHandle) {
             use cocoa::foundation::{NSRunLoop, NSString};
             let runloop = NSRunLoop::main_loop();
             let source = CFMachPortCreateRunLoopSource(nil, tap, 0);
-            let mode = NSString::alloc(nil).init_str!("kCFRunLoopDefaultMode");
+            let mode = NSString::alloc(nil).init_str_("kCFRunLoopDefaultMode");
             CFRunLoopAddSource(runloop, source, mode);
         }
 
