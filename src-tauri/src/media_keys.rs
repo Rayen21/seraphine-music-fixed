@@ -2,113 +2,41 @@ use tauri::Emitter;
 
 #[cfg(target_os = "macos")]
 pub fn init(app_handle: &tauri::AppHandle) {
-    use std::sync::{Mutex, Arc};
+    use souvlaki::{MediaControlEvent, MediaControls, PlatformConfig};
 
-    // macOS virtual key codes for media keys (0xFD/0xFE/0xFF range)
-    const kVK_PlayPause: u16 = 0xFD;   // 253
-    const kVK_NextTrack: u16 = 0xFE;   // 254
-    const kVK_PreviousTrack: u16 = 0xFF; // 255
+    let config = PlatformConfig {
+        dbus_name: "seraphine-music",
+        display_name: "Seraphine Music",
+        hwnd: None, // macOS 不需要 HWND
+    };
 
-    type EventRef = *mut std::ffi::c_void;
+    if let Ok(mut controls) = MediaControls::new(config) {
+        // 设置 Now Playing 状态，macOS 才会把媒体按键路由给当前应用
+        if let Err(e) = controls.set_metadata(souvlaki::MediaMetadata {
+            title: Some("Seraphine Music"),
+            artist: Some("“爱悩乐园”"),
+            ..Default::default()
+        }) {
+            eprintln!("Failed to set metadata: {}", e);
+        }
 
-    extern "C" {
-        fn CGEventTapCreate(
-            tap: u32,
-            place: u32,
-            options: u32,
-            eventsOfInterest: u64,
-            callback: Option<unsafe extern "C" fn(*mut std::ffi::c_void, u32, EventRef) -> EventRef>,
-            userInfo: *mut std::ffi::c_void,
-        ) -> *mut std::ffi::c_void;
-
-        fn CGEventPost(tap: u32, event: EventRef);
-
-        fn CFMachPortCreateRunLoopSource(
-            allocator: *mut std::ffi::c_void,
-            tap: *mut std::ffi::c_void,
-            order: i32,
-        ) -> *mut std::ffi::c_void;
-
-        fn CFRunLoopAddSource(
-            runloop: *mut std::ffi::c_void,
-            source: *mut std::ffi::c_void,
-            mode: *const std::ffi::c_char,
-        );
-
-        fn CFRunLoopRun();
-
-        fn CFRunLoopGetMain() -> *mut std::ffi::c_void;
-
-        // Extract keycode from CGEvent
-        fn CGEventGetIntegerValueField(event: EventRef, field: u32) -> libc::c_long;
-    }
-
-    const kCGSessionEventTap: u32 = 4;
-    const kCGHeadInsertEventTap: u32 = 2;
-    const kCGEventTapOptionDefault: u32 = 0;
-
-    // Event type flags for CGEventTapCreate (not key codes!)
-    const kCGEventKeyDown: u64 = 1 << 20;
-    const kCGEventSystemDefined: u64 = 1 << 30;
-
-    static mut EVENT_DATA: Option<Arc<Mutex<Option<tauri::AppHandle>>>> = None;
-
-    extern "C" fn hot_key_callback(
-        _tap: *mut std::ffi::c_void,
-        _type_: u32,
-        event: EventRef,
-    ) -> EventRef {
-        unsafe {
-            let field = 0x100; // kCGKeyboardEventKeycode
-
-            if _type_ == kCGEventSystemDefined as u32 {
-                let keycode = CGEventGetIntegerValueField(event, field) as u16;
-
-                match keycode {
-                    kVK_PlayPause => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
-                            app_handle.emit("media-key", "playpause").ok();
-                        }
-                    }
-                    kVK_NextTrack => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
-                            app_handle.emit("media-key", "nexttrack").ok();
-                        }
-                    }
-                    kVK_PreviousTrack => {
-                        if let Some(app_handle) = EVENT_DATA.as_ref().and_then(|d| d.lock().ok()).map(|g| g.clone()).flatten() {
-                            app_handle.emit("media-key", "previoustrack").ok();
-                        }
-                    }
-                    _ => {}
-                }
+        // 监听媒体按键事件
+        if let Err(e) = controls.attach(move |event| match event {
+            MediaControlEvent::Toggle => {
+                app_handle.emit("media-key", "playpause").ok();
             }
+            MediaControlEvent::Next => {
+                app_handle.emit("media-key", "nexttrack").ok();
+            }
+            MediaControlEvent::Previous => {
+                app_handle.emit("media-key", "previoustrack").ok();
+            }
+            _ => {}
+        }) {
+            eprintln!("Failed to attach media controls: {}", e);
         }
-
-        std::ptr::null_mut()
-    }
-
-    let data = Arc::new(Mutex::new(Some(app_handle.clone())));
-    unsafe { EVENT_DATA = Some(data.clone()); }
-
-    unsafe {
-        let tap = CGEventTapCreate(
-            kCGSessionEventTap,
-            kCGHeadInsertEventTap,
-            kCGEventTapOptionDefault,
-            kCGEventKeyDown | kCGEventSystemDefined,
-            Some(hot_key_callback),
-            std::ptr::null_mut(),
-        );
-
-        if !tap.is_null() {
-            let runloop = CFRunLoopGetMain();
-            let source = CFMachPortCreateRunLoopSource(std::ptr::null_mut(), tap, 0);
-            let mode = b"kCFRunLoopDefaultMode\0".as_ptr() as *const std::ffi::c_char;
-            CFRunLoopAddSource(runloop, source, mode);
-        }
-
-        CGEventPost(kCGSessionEventTap, std::ptr::null_mut());
+    } else {
+        eprintln!("Failed to initialize MediaControls");
     }
 }
 

@@ -1,0 +1,4 @@
+fix: use home_dir instead of app_data_dir for macOS path resolution
+
+- Rewrite src-tauri/src/system/path.rs to use env::home_dir() as base directory
+- This avoids 'Read-only file system (os error 30)' when running from /Applications/Seraphine.app/Contents/MacOS
