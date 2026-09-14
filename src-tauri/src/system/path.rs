@@ -27,11 +27,13 @@ impl AppPath {
   }
 
   fn get_current_dir() -> PathBuf {
-    env::current_dir().unwrap_or_else(|_| env::home_dir().unwrap_or_else(|| env::temp_dir()))
+    // macOS App Bundle 下 current_dir 指向 /Applications/xxx.app/Contents/MacOS（只读）
+    // 改用 home_dir 作为基础目录，避免写入失败
+    env::home_dir().unwrap_or_else(|| env::temp_dir())
   }
 
   fn get_temp_dir(current_dir: &PathBuf) -> PathBuf {
-    let temp_dir = current_dir.join("Temp");
+    let temp_dir = current_dir.join("SeraphineMusic");
 
     if !temp_dir.exists() {
       if let Err(_) = fs::create_dir_all(&temp_dir) {
@@ -86,10 +88,6 @@ impl AppPath {
       ),
     ])
   }
-
-  // pub fn current_dir(&self) -> &Path {
-  //   self.current_dir.as_ref()
-  // }
 
   pub fn temp_dir(&self) -> &Path {
     self.temp_dir.as_ref()

@@ -32,6 +32,7 @@ pub fn run() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app| {
       let app_handle = app.app_handle();
+      
 
       // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
       #[cfg(desktop)]
