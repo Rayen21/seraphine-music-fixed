@@ -11,30 +11,36 @@ pub fn init(app_handle: &tauri::AppHandle) {
     const kVK_PreviousTrack: u8 = 0xF6;
 
     type EventHandlerCallRef = *mut libc::c_void;
-    type EventRef = *mut objc2_foundation::NSObject;
+    type EventRef = *mut std::ffi::c_void;
 
     // CGEventTapCreate from CoreFoundation.framework
     extern "C" {
         fn CFMachPortCreateRunLoopSource(
-            allocator: *mut objc2_foundation::NSObject,
-            tap: *mut objc2_foundation::NSObject,
+            allocator: *mut std::ffi::c_void,
+            tap: *mut std::ffi::c_void,
             order: i32,
-        ) -> *mut objc2_foundation::NSObject;
+        ) -> *mut std::ffi::c_void;
 
-        fn CFRunLoopAddSource(runloop: *mut objc2_foundation::NSObject, source: *mut objc2_foundation::NSObject, mode: *mut objc2_foundation::NSString);
+        fn CFRunLoopAddSource(
+            runloop: *mut std::ffi::c_void,
+            source: *mut std::ffi::c_void,
+            mode: *const std::ffi::c_char,
+        );
 
         fn CGEventTapCreate(
             tap: u32,
             place: u32,
             options: u32,
             eventsOfInterest: u64,
-            callback: Option<unsafe extern "C" fn(*mut objc2_foundation::NSObject, u32, EventRef) -> EventRef>,
-            userInfo: *mut libc::c_void,
-        ) -> *mut objc2_foundation::NSObject;
+            callback: Option<unsafe extern "C" fn(*mut std::ffi::c_void, u32, EventRef) -> EventRef>,
+            userInfo: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
 
         fn CGEventPost(tap: u32, event: EventRef);
 
         fn CFRunLoopRun();
+        
+        fn CFRunLoopGetMain() -> *mut std::ffi::c_void;
     }
 
     #[repr(C)]
@@ -44,7 +50,7 @@ pub fn init(app_handle: &tauri::AppHandle) {
 
     // Callback function for media key events
     extern "C" fn hot_key_callback(
-        _tap: *mut objc2_foundation::NSObject,
+        _tap: *mut std::ffi::c_void,
         _type_: u32,
         event: EventRef,
     ) -> EventRef {
@@ -69,11 +75,10 @@ pub fn init(app_handle: &tauri::AppHandle) {
         );
 
         if !tap.is_null() {
-            use objc2_foundation::{NSRunLoop, NSString};
-            let runloop = NSRunLoop::main_loop();
+            let runloop = CFRunLoopGetMain();
             let source = CFMachPortCreateRunLoopSource(std::ptr::null_mut(), tap, 0);
-            let mode = NSString::alloc().init_with_c_str("kCFRunLoopDefaultMode");
-            CFRunLoopAddSource(runloop, source, mode.as_ref());
+            let mode = b"kCFRunLoopDefaultMode\0".as_ptr() as *const std::ffi::c_char;
+            CFRunLoopAddSource(runloop, source, mode);
         }
 
         // Leak the user_data pointer so it lives for the app lifetime

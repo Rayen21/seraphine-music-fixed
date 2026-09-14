@@ -75,7 +75,6 @@ bytes = "1.11"
 chrono = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2-foundation = "0.2"
 libc = "0.2"
 
 [build-dependencies]
