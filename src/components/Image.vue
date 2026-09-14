@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import SvgIcon from '@/components/SvgIcon.vue'
 import { IconName } from '@/utils/icons'
-import { cn, invoke } from '@/utils/tools'
+import { cn } from '@/utils/tools'
 import { ref, useAttrs, watch } from 'vue'
 
 interface Props {
@@ -14,31 +14,22 @@ const { img, icon = 'Music', iconSize = 20 } = defineProps<Props>()
 
 const attrs = useAttrs()
 const isLoaded = ref(false)
-const resolvedSrc = ref('')
 
-// 通过后端代理加载外部图片（使用 Cookie）
-const handlePreload = async (img: string) => {
+const handlePreload = (img: string) => {
   isLoaded.value = false
   if (!img) return
 
-  // 如果是本地文件路径，直接使用 convertFileSrc
-  if (img.startsWith('asset:') || img.startsWith('file:')) {
-    resolvedSrc.value = img
+  const image = new Image()
+  image.src = img
+  
+  // 检查缓存中的图片 - 在注册事件监听前检查
+  if (image.complete) {
     isLoaded.value = true
-    return
+    return  // ← 关键！直接返回，避免后续事件监听
   }
 
-  try {
-    const base64 = await invoke<string>('api_download_image', { url: img })
-    resolvedSrc.value = `data:image/jpeg;base64,${base64}`
-    isLoaded.value = true
-  } catch {
-    // 代理失败时回退到直接加载
-    const image = new Image()
-    image.src = img
-    image.onload = () => (isLoaded.value = true)
-    image.onerror = () => (isLoaded.value = false)
-  }
+  image.onload = () => (isLoaded.value = true)
+  image.onerror = () => (isLoaded.value = false)
 }
 
 watch(() => img, handlePreload, { immediate: true })
@@ -48,7 +39,7 @@ watch(() => img, handlePreload, { immediate: true })
   <img
     v-if="isLoaded"
     :class="cn('card', attrs.class)"
-    :src="resolvedSrc || img"
+    :src="img"
     loading="lazy"
     decoding="async"
     alt=""
