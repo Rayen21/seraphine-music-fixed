@@ -87,7 +87,6 @@ jobs:
           prerelease: false
           releaseNotes: true
           updaterJsonPreferNsis: true
-          tauriScript: pnpm tauri
           args: --target ${{ matrix.target }}
 
       - name: Build Tauri bundle (no release)
