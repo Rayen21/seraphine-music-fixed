@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Image from '@/components/Image.vue'
-import ToTop from '@/components/PageActions/ToTop.vue'
+import ToTop from '@/components/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { getPic } from '@/utils/music'

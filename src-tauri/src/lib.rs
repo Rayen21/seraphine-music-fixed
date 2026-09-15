@@ -15,6 +15,7 @@ use crate::{
 };
 
 mod api;
+mod media_keys;
 mod http;
 mod music;
 mod system;
@@ -35,10 +36,10 @@ pub fn run() {
       // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
       #[cfg(desktop)]
       {
-        app_handle.plugin(tauri_plugin_updater::Builder::new().build())?;
         app_handle.plugin(tauri_plugin_process::init())?;
       }
 
+      media_keys::init(&app_handle);
       create_tray_icon(&app_handle)?;
 
       // HttpMode 需要比 HttpConfig 先初始化

@@ -1,3 +1,4 @@
+import path from "path"
 import vue from '@vitejs/plugin-vue'
 import Icons from 'unplugin-icons/vite'
 import { defineConfig } from 'vite'
@@ -7,7 +8,7 @@ const host = process.env.TAURI_DEV_HOST
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
-    alias: { '@': '/src' }
+    alias: { '@': path.resolve(__dirname, 'src') }
   },
   plugins: [vue(), Icons()],
   build: {

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import MusicActions from '@/components/MusicTable/MusicActions.vue'
-import MusicTable from '@/components/MusicTable/MusicTable.vue'
+import MusicActions from '@/components/MusicActions.vue'
+import MusicTable from '@/components/MusicTable.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import { useListStore } from '@/stores/list'
 import { getPrivilegeTags } from '@/utils/music'

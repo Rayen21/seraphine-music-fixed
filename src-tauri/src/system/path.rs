@@ -27,7 +27,9 @@ impl AppPath {
   }
 
   fn get_current_dir() -> PathBuf {
-    env::current_dir().unwrap_or_else(|_| env::home_dir().unwrap_or_else(|| env::temp_dir()))
+    // In sandboxed apps (macOS), current_dir may be "/" which is read-only.
+    // Use home directory as base path for cache files.
+    env::home_dir().unwrap_or_else(|| env::temp_dir())
   }
 
   fn get_temp_dir(current_dir: &PathBuf) -> PathBuf {
