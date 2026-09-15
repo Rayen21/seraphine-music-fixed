@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import RowList from '@/components/RowList.vue'
+import RowList from '@/components/MusicList/RowList.vue'
 import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { ref } from 'vue'
