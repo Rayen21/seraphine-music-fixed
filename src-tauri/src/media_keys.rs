@@ -24,7 +24,7 @@ pub fn init(app: &AppHandle) {
     }
 }
 
-#[cfg(not(target_os = "macos")]
+#[cfg(not(target_os = "macos"))]
 pub fn init(_app: &AppHandle) {}
 
 fn emit_media_key(action: &str) {
