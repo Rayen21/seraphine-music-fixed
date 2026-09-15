@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+src-tauri/target/
+
+# pnpm store
+.pnpm-store/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# cargo
+Cargo.lock

@@ -6,7 +6,7 @@ use tauri::{
 
 use crate::{
   api::{
-    album, image, artist, audio, login, lyric as api_lyric, music as api_music, personal, playlist,
+    album, artist, audio, login, lyric as api_lyric, music as api_music, personal, playlist,
     privilege, rank, register, search, song, top, user, youth,
   },
   http::{config, mode},
@@ -19,7 +19,6 @@ mod http;
 mod music;
 mod system;
 mod utils;
-mod media_keys;
 
 pub fn run() {
   tauri::Builder::default()
@@ -32,7 +31,6 @@ pub fn run() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app| {
       let app_handle = app.app_handle();
-      
 
       // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
       #[cfg(desktop)]
@@ -50,7 +48,6 @@ pub fn run() {
       let player = player::Player::new(app_handle)?;
 
       app.manage(player);
-      media_keys::init(app_handle);
 
       Ok(())
     })
@@ -95,7 +92,6 @@ pub fn run() {
       search::api_search_complex,
       song::api_song_url,
       album::api_album_songs,
-      image::api_download_image,
       artist::api_artist_list,
       artist::api_artist_audios,
       audio::api_audio_info,
