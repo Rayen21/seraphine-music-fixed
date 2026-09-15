@@ -1,3 +1,4 @@
+import '@/types/notification'
 <script lang="ts">
 const notifyState: Notify.State = {
   counter: 0,
