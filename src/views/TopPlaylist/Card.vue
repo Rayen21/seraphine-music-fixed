@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import ColList from '@/components/ColList.vue'
+import ColList from '@/components/MusicList/ColList.vue'
 import { ApiInvokeStatus } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { ref } from 'vue'

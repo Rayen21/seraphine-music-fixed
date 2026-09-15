@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ToTop from '@/components/ToTop.vue'
+import ToTop from '@/components/PageActions/ToTop.vue'
 import { useRefreshStore } from '@/stores/refresh'
 import { useTemplateRef } from 'vue'
 

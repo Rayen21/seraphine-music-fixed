@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Image from '@/components/Image.vue'
-import MusicActions from '@/components/MusicActions.vue'
-import MusicTable from '@/components/MusicTable.vue'
-import ToTop from '@/components/ToTop.vue'
+import MusicActions from '@/components/MusicTable/MusicActions.vue'
+import MusicTable from '@/components/MusicTable/MusicTable.vue'
+import ToTop from '@/components/PageActions/ToTop.vue'
 import SlideBar from '@/components/SlideBar.vue'
 import VirtualList from '@/components/VirtualList.vue'
 import { useListStore } from '@/stores/list'
