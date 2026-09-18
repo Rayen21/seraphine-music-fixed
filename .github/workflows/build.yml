@@ -62,8 +62,8 @@ jobs:
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
-         tauriScript: pnpm tauri
-         args: --target aarch64-apple-darwin
+          tauriScript: pnpm tauri
+          args: --target aarch64-apple-darwin
 
       - name: Build Tauri bundle (dev)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
