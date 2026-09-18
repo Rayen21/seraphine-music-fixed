@@ -14,14 +14,12 @@ use crate::{
     privilege, rank, register, search, song, top, user, youth,
   },
   http::{config, mode},
-  mediakeys,
   music::{file, lyric as music_lyric, player, scan},
   system::{path, setting},
 };
 
 mod api;
 mod http;
-mod mediakeys;
 mod music;
 mod system;
 mod utils;
@@ -36,8 +34,6 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app_handle: &AppHandle| {
-      // 注册媒体键盘 (F7/F8/F9)
-      mediakeys::MediaKeyState::new().register(app_handle)?;
       create_tray_icon(app_handle)?;
       mode::HttpMode::init(app_handle);
       config::HttpConfig::init(app_handle);

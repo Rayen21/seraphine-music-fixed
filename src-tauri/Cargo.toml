@@ -51,8 +51,6 @@ tauri-plugin-dialog = { version = "2", features = [] }
 tauri-plugin-opener = { version = "2", features = [] }
 # Store
 tauri-plugin-store = { version = "2", features = [] }
-# 媒体键盘快捷键（macOS media keys）
-media-keys = "0.2"
 
 
 aes = "0.8"
