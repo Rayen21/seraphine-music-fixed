@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Seraphine 音乐播放器",
+        "title": "Seraphine \u97f3\u4e50\u64ad\u653e\u5668",
         "decorations": false,
         "minWidth": 1152,
         "minHeight": 768,
@@ -39,9 +39,9 @@
     "active": true,
     "targets": "all",
     "publisher": "bunre_lee",
-    "copyright": "Copyright © 2026 bunre_lee",
+    "copyright": "Copyright \u00a9 2026 bunre_lee",
     "category": "Music",
-    "shortDescription": "Seraphine 音乐播放器",
+    "shortDescription": "Seraphine \u97f3\u4e50\u64ad\u653e\u5668",
     "createUpdaterArtifacts": false,
     "icon": [
       "icons/16x16.png",
@@ -80,7 +80,8 @@
     },
     "macOS": {
       "minimumSystemVersion": "10.15",
-      "hardenedRuntime": false
+      "hardenedRuntime": false,
+      "entitlements": "entitlements/entitlements.plist"
     }
   },
   "plugins": {}

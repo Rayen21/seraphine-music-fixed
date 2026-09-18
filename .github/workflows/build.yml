@@ -8,23 +8,158 @@ on:
 permissions:
   contents: write
 
+# ─── macOS: signed + notarized build ─────────────────────────────────────────────
 jobs:
-  build:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.18.0'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.11.0
+          run_install: false
+
+      - name: Pnpm Cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.pnpm-store
+          key: 'pnpm-macos-aarch64-apple-darwin'
+          restore-keys: pnpm-macos-aarch64-apple-darwin
+
+      - name: Cache Cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: 'rust-macos-aarch64-apple-darwin'
+          restore-keys: 'rust-macos-aarch64-apple-darwin'
+
+      - name: Install Rust target
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Install dependencies
+        run: pnpm install --dangerously-allow-all-builds
+
+      # ─── Import signing certificate ─────────────────────────────────────────
+      - name: Import signing certificate
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          CERT_P12: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          echo "$CERT_P12" | base64 -d > /tmp/cert.p12
+          security import /tmp/cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,softwareupdate: -s -k "$KEYCHAIN"
+
+      # ─── Build with signing (tag only) ────────────────────────────────────────
+      - name: Build Tauri bundle (signed)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          CERT_P12: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$CERT_P12" | base64 -d > /tmp/cert.p12
+          pnpm tauri build --target aarch64-apple-darwin \
+            --signing-options "p12:/tmp/cert.p12,password:${CERT_PASSWORD}"
+
+      # ─── Build unsigned (dev) ─────────────────────────────────────────────────
+      - name: Build Tauri bundle (dev)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: pnpm tauri build --target aarch64-apple-darwin
+
+      # ─── Notarize (tag only) ──────────────────────────────────────────────────
+      - name: Notarize
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          API_KEY_JSON: ${{ secrets.APPLE_API_KEY_JSON }}
+          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPLE_API_KEY_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ACCOUNT_EMAIL }}
+        run: |
+          APP_BUNDLE=$(find src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.app" -type d | head -1)
+          if [ -z "$APP_BUNDLE" ]; then
+            echo "No .app bundle found, skipping notarization"
+            exit 0
+          fi
+          
+          # Store API key in keychain
+          echo "$API_KEY_JSON" | base64 -d > /tmp/api_key.json
+          xcrun notarytool store-api-key \
+            --key-id "$KEY_ID" \
+            --team-id "$TEAM_ID" \
+            --issuer "$ISSUER_ID" \
+            --apple-id "$APPLE_ID" \
+            --key-path /tmp/api_key.json
+          
+          # Submit for notarization
+          echo "Submitting for notarization..."
+          xcrun notarytool submit "$APP_BUNDLE" \
+            --key-id "$KEY_ID" \
+            --team-id "$TEAM_ID" \
+            --issuer "$ISSUER_ID" \
+            --apple-id "$APPLE_ID" \
+            --wait
+          
+          # Staple ticket
+          echo "Stapling ticket..."
+          xcrun notarytool staple "$APP_BUNDLE" \
+            --key-id "$KEY_ID" \
+            --team-id "$TEAM_ID" \
+            --issuer "$ISSUER_ID" \
+            --apple-id "$APPLE_ID" \
+            2>&1 || echo "Staple skipped (may not be needed)"
+
+      # ─── Upload to release (tag only) ─────────────────────────────────────────
+      - name: Upload macOS artifacts to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app.tar.gz
+
+      # ─── Upload to artifacts (dev) ────────────────────────────────────────────
+      - name: Upload bundle artifacts (dev)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: seraphine-music-macos-aarch64
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app.tar.gz
+
+# ─── Windows + Linux: single build (no signing needed) ──────────────────────────
+  build-other:
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: aarch64-apple-darwin
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v7
 
       - name: Install dependencies (ubuntu only)
@@ -68,16 +203,17 @@ jobs:
           key: 'rust-${{ matrix.os }}-${{ matrix.target }}'
           restore-keys: 'rust-${{ matrix.os }}-${{ matrix.target }}'
 
-      - name: Add Rust target
+      - name: Install Rust target
         run: rustup target add ${{ matrix.target }}
 
       - name: Install dependencies
         run: pnpm install --dangerously-allow-all-builds
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Build Tauri bundle
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: tauri-apps/tauri-action@v0
         with:
           includeUpdaterJson: false
           tagName: ${{ github.ref_name }}
@@ -89,18 +225,18 @@ jobs:
           args: --target ${{ matrix.target }}
           signingOptions: "disabled"
 
-      - name: Build Tauri bundle (no release)
+      - name: Build Tauri bundle (dev)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         env:
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         run: pnpm tauri build --target ${{ matrix.target }}
 
-      - name: Upload bundle artifacts (no release)
+      - name: Upload bundle artifacts (dev)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
         with:
-          name: seraphine-music-${{ matrix.os }}
+          name: seraphine-music-${{ matrix.os }}-${{ matrix.target }}
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
