@@ -2,9 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{
+  AppHandle,
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  App, Manager,
+  Manager,
 };
 
 use crate::{
@@ -13,12 +14,14 @@ use crate::{
     privilege, rank, register, search, song, top, user, youth,
   },
   http::{config, mode},
+  mediakeys,
   music::{file, lyric as music_lyric, player, scan},
   system::{path, setting},
 };
 
 mod api;
 mod http;
+mod mediakeys;
 mod music;
 mod system;
 mod utils;
@@ -32,24 +35,26 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
-    .setup(|app: &App| {
-      create_tray_icon(app)?;
-      mode::HttpMode::init(app);
-      config::HttpConfig::init(app);
+    .setup(|app_handle: &AppHandle| {
+      // 注册媒体键盘 (F7/F8/F9)
+      mediakeys::MediaKeyState::new().register(app_handle)?;
+      create_tray_icon(app_handle)?;
+      mode::HttpMode::init(app_handle);
+      config::HttpConfig::init(app_handle);
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
-      app.listen("app://ready", move |app: &App, _event: &str| {
+      app_handle.listen("app://ready", move |app_handle, _event: &str| {
         tauri::async_runtime::spawn(async move {
-          let player = match player::Player::new(app) {
+          let player = match player::Player::new(app_handle) {
             Ok(p) => p,
             Err(e) => {
               eprintln!("音频初始化失败，跳过播放功能: {}", e);
               return;
             }
           };
-          app.manage(player);
-          app.emit("player://ready", ());
+          app_handle.manage(player);
+          app_handle.emit("player://ready", ());
         });
       });
 
@@ -130,36 +135,39 @@ pub fn run() {
     .expect("error while running tauri application");
 }
 
-fn get_player(app: &App) -> tauri::Result<&player::Player> {
-  app.try_state::<player::Player>().ok_or_else(|| {
-    tauri::Error::from("player not initialized yet")
-  })
+fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
+  app_handle
+    .try_state::<player::Player>()
+    .ok_or_else(|| {
+      tauri::error::Error::Custom("player not initialized yet".into())
+    })
+    .map_err(|e| tauri::Error::from(e))
 }
 
-fn show_main_window(app: &App) {
-  if app.get_webview_window("mini-player").is_some() {
+fn show_main_window(app_handle: &AppHandle) {
+  if app_handle.get_webview_window("mini-player").is_some() {
     return;
   }
-  if let Some(window) = app.get_webview_window("main") {
+  if let Some(window) = app_handle.get_webview_window("main") {
     let _ = window.show();
     let _ = window.set_focus();
   }
 }
 
-fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
-  let icon = app.default_window_icon().unwrap().clone();
-  let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
-  let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+fn create_tray_icon(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
+  let icon = app_handle.default_window_icon().unwrap().clone();
+  let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
+  let quit = MenuItem::with_id(app_handle, "quit", "退出", true, None::<&str>)?;
 
-  let menu = Menu::with_items(app, &[&show, &quit])?;
+  let menu = Menu::with_items(app_handle, &[&show, &quit])?;
 
   let tray = TrayIconBuilder::new()
     .icon(icon)
     .menu(&menu)
     .show_menu_on_left_click(false)
-    .on_menu_event(|app, event| match event.id.as_ref() {
-      "show" => show_main_window(app),
-      "quit" => app.exit(0),
+    .on_menu_event(|app_handle, event| match event.id.as_ref() {
+      "show" => show_main_window(app_handle),
+      "quit" => app_handle.exit(0),
       _ => {}
     })
     .on_tray_icon_event(|tray, event| match event {
@@ -169,7 +177,9 @@ fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
         ..
       } => {
         let h = tray.app_handle();
-        if h.get_webview_window("mini-player").is_some() { return; }
+        if h.get_webview_window("mini-player").is_some() {
+          return;
+        }
         if let Some(window) = h.get_webview_window("main") {
           let _ = window.show();
           let _ = window.set_focus();
@@ -177,7 +187,7 @@ fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
       }
       _ => {}
     })
-    .build(app)?;
+    .build(app_handle)?;
 
   Ok(tray)
 }

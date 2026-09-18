@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use serde_json::json;
 use std::sync::{LazyLock, RwLock};
-use tauri::App;
 use tauri_plugin_store::StoreExt;
 
 use crate::http::{
@@ -67,8 +66,8 @@ LgFVxtzIY41Pe7lPOgsfTCn5kZcvKhYKJesKnnJDNr5/abvTGf+rHG3YRwsCHcQ0
 pub struct HttpConfig;
 
 impl HttpConfig {
-  pub fn init(app: &App) {
-    let config = Self::load_dynamic_config(app);
+  pub fn init(app_handle: &AppHandle) {
+    let config = Self::load_dynamic_config(app_handle);
 
     if let Ok(mut http_config) = DYNAMIC_CONFIG.write() {
       *http_config = config;
@@ -76,9 +75,9 @@ impl HttpConfig {
   }
 
   /// 从 store 加载动态配置
-  fn load_dynamic_config(app: &App) -> DynamicConfig {
+  fn load_dynamic_config(app_handle: &AppHandle) -> DynamicConfig {
     // 尝试获取 store
-    let Ok(store) = app.store(STORE_PATH) else {
+    let Ok(store) = app_handle.store(STORE_PATH) else {
       return DynamicConfig::default();
     };
 
@@ -122,14 +121,14 @@ impl HttpConfig {
       Mode::KgLite => config.kg.lite.cookies = cookies,
     }
 
-    let store = app.store(STORE_PATH)?;
+    let store = app_handle.store(STORE_PATH)?;
     store.set(CONFIG_KEY, json!(*config));
     store.save()?;
 
     Ok(())
   }
 
-  pub fn clear_kg_cookies(app: &App, url: &str) -> anyhow::Result<()> {
+  pub fn clear_kg_cookies(app_handle: &AppHandle, url: &str) -> anyhow::Result<()> {
     HttpRequest::clear_cookies(url);
 
     let mut config = DYNAMIC_CONFIG.write().map_err(|e| anyhow!(e.to_string()))?;
@@ -141,7 +140,7 @@ impl HttpConfig {
       Mode::KgLite => config.kg.lite.cookies = default_cookies,
     }
 
-    let store = app.store(STORE_PATH)?;
+    let store = app_handle.store(STORE_PATH)?;
     store.set(CONFIG_KEY, json!(*config));
     store.save()?;
 
@@ -162,7 +161,7 @@ impl HttpConfig {
 
   /// 清除 kg 的动态配置
   /// 这将清除当前模式的 cookies，包括 mobile 和 lite 模式。
-  pub fn clear_kg_dynamic_config(app: &App) -> anyhow::Result<()> {
+  pub fn clear_kg_dynamic_config(app_handle: &AppHandle) -> anyhow::Result<()> {
     let mut config = DYNAMIC_CONFIG.write().map_err(|e| anyhow!(e.to_string()))?;
 
     match HttpMode::get_mode() {
@@ -170,7 +169,7 @@ impl HttpConfig {
       Mode::KgLite => config.kg.lite.cookies = KgCookies::default(),
     }
 
-    let store = app.store(STORE_PATH)?;
+    let store = app_handle.store(STORE_PATH)?;
     store.set(CONFIG_KEY, json!(*config));
     store.save()?;
 

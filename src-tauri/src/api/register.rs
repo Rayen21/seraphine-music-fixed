@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde_json::{json, Value};
-use tauri::{http::Method, App};
+use tauri::{http::Method};
 
 use crate::{
   api::libs::RegisterDev,
@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[tauri::command]
-pub async fn api_register_dev(app: &App) -> Result<(), String> {
+pub async fn api_register_dev(app_handle: &AppHandle) -> Result<(), String> {
   let kg_dynamic_config = HttpConfig::get_kg_dynamic_config();
 
   if kg_dynamic_config.cookies.dfid != "-" {
@@ -93,7 +93,7 @@ pub async fn api_register_dev(app: &App) -> Result<(), String> {
   let mut cookies = HttpConfig::get_kg_dynamic_config().cookies;
   cookies.dfid = data.dfid.clone();
 
-  HttpConfig::set_kg_cookies(&app, BASE_URL, cookies).map_err(|e| e.to_string())?;
+  HttpConfig::set_kg_cookies(&app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
 
   Ok(())
 }

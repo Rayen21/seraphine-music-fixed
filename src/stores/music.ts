@@ -383,6 +383,21 @@ export const useMusicStore = defineStore(
       }
     }
 
+    // 媒体键盘快捷键 (F7/F8/F9)
+    listen('music:mediakeys:play', () => {
+      if (isPlaying.value) {
+        pause()
+      } else {
+        play()
+      }
+    })
+    listen('music:mediakeys:prev', () => {
+      playPrevOrNext('prev')
+    })
+    listen('music:mediakeys:next', () => {
+      playPrevOrNext('next')
+    })
+
     // 监听下载进度
     const monitorDownload = async () => {
       if (downloadChannel !== null) return
