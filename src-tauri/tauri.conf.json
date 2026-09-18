@@ -42,7 +42,7 @@
     "copyright": "Copyright © 2026 bunre_lee",
     "category": "Music",
     "shortDescription": "Seraphine 音乐播放器",
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "icon": [
       "icons/16x16.png",
       "icons/24x24.png",
@@ -83,11 +83,5 @@
       "hardenedRuntime": true
     }
   },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/burenLee/seraphine-music/releases/latest/download/latest.json"
-      ]
-    }
-  }
+  "plugins": {}
 }
