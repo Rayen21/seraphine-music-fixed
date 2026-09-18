@@ -4,7 +4,7 @@
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Emitter, Manager, State, WebviewWindowBuilder, WebviewUrl,
+  AppEvent, Emitter, Manager, State, WebviewUrl,
 };
 
 use crate::{
@@ -47,9 +47,7 @@ pub fn run() {
       // is created during the NSApplicationDidFinishLaunchingNotification phase.
       // The app://ready event fires after the main thread returns to the event loop,
       // making WebKit initialization safe.
-      app_handle.on("app://ready".into(), |app_handle, _event| {
-        let app_handle = app_handle.app_handle();
-
+      app_handle.app_event().listen("app://ready".into(), move |app_handle, _event| {
         // Spawn the player creation on the async runtime
         // so we don't block the main thread during launch.
         tauri::async_runtime::spawn(async move {
@@ -59,11 +57,11 @@ pub fn run() {
           app_handle.manage(player);
 
           // Signal that player is ready, so the frontend can initialize
-          app_handle.emit("player://ready", ());
+          app_handle.emit("player://ready".to_string(), ());
         });
 
-        Ok(())
-      });
+        tauri::Result::Ok(())
+      })?;
 
       Ok(())
     })
@@ -143,11 +141,13 @@ pub fn run() {
 }
 
 // Helper: get player from app state, or return error if not ready
-fn get_player(app: &AppHandle) -> Result<State<player::Player>> {
-  app
-    .state::<player::Player>()
-    .get()
-    .ok_or_else(|| format!("player not initialized yet"))
+fn get_player(app: &AppHandle) -> tauri::Result<&player::Player> {
+  let state = app.state::<player::Player>();
+  if state.is_some() {
+    Ok(state.get())
+  } else {
+    Err(tauri::Error::NotFound("player not initialized yet".to_string()))
+  }
 }
 
 // Show main window (skip if mini-player is open)
@@ -162,7 +162,7 @@ fn show_main_window(app: &AppHandle) {
 }
 
 // Create tray icon
-fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
+fn create_tray_icon(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
   let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
   let quit = MenuItem::with_id(app_handle, "quit", "退出", true, None::<&str>)?;
 
