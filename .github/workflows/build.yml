@@ -31,14 +31,7 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-              libasound2-dev \
-              libxslt1.1 \
-              libwebkit2gtk-4.1-dev \
-              libayatana-appindicator3-dev \
-              librsvg2-dev \
-              patchelf
+          sudo apt-get install -y \            pkg-config \              libasound2-dev \              libxslt1.1 \              libwebkit2gtk-4.1-dev \              libayatana-appindicator3-dev \              librsvg2-dev \              patchelf
 
       - name: Install Node
         uses: actions/setup-node@v6
@@ -74,44 +67,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --dangerously-allow-all-builds
 
-      # ============================================================
-      # Tag 推送：tauri-action 一站式完成构建 + 签名 + 创建 Release
-      #           + 上传产物 + 生成 latest.json（供 updater 检查更新）
-      # 多平台矩阵并发：首个 job 创建 Release，后续 job 追加产物并
-      # 合并 latest.json 的 platforms 字段（action 内部处理并发）
-      # ============================================================
       - uses: tauri-apps/tauri-action@v0
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Updater 签名私钥：构建时生成 .sig 文件
-          # 本地构建需先 export TAURI_SIGNING_PRIVATE_KEY="..." 再执行 pnpm tauri build
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # 无密码私钥时此 secret 为空，不影响构建
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          includeUpdaterJson: false
           tagName: ${{ github.ref_name }}
           releaseName: 'Seraphine Music ${{ github.ref_name }}'
           releaseDraft: false
           prerelease: false
-          # 使用 GitHub 自动生成的 Release Notes（基于 PR 标题和 label）
-          # 需在仓库 Settings → General → Features 勾选 "Automatically generated release notes"
-          # 配合 .github/release.yml 可自定义分类规则
           generateReleaseNotes: true
-          # Windows 同时生成 NSIS + MSI，updater 优先使用 NSIS（支持 passive 安装模式）
-          updaterJsonPreferNsis: true
           tauriScript: pnpm tauri
           args: --target ${{ matrix.target }}
 
-      # ============================================================
-      # 手动触发（workflow_dispatch）：仅构建 + 签名，不发布 Release
-      # 产物上传到 Actions Artifacts 供下载验证
-      # ============================================================
       - name: Build Tauri bundle (no release)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm tauri build --target ${{ matrix.target }}
 
       - name: Upload bundle artifacts (no release)
