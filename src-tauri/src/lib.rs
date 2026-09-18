@@ -45,7 +45,8 @@ pub fn run() {
       let app_handle = app.app_handle().clone();
       app.listen("app://ready", move |event: Event| {
         tauri::async_runtime::spawn(async move {
-          let player = match player::Player::new(app_handle) {
+          let app_handle_clone = app_handle.clone();
+          let player = match player::Player::new(app_handle_clone) {
             Ok(p) => p,
             Err(e) => {
               eprintln!("音频初始化失败，跳过播放功能: {}", e);
@@ -137,10 +138,8 @@ pub fn run() {
 fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
   app_handle
     .try_state::<player::Player>()
-    .ok_or_else(|| {
-      tauri::Error::from(std::io::Error::new(std::io::ErrorKind::Other, "player not initialized yet"))
-    })
-    .map_err(|e| tauri::Error::from(e))
+    .ok_or_else(|| tauri::Error::from(std::io::Error::new(std::io::ErrorKind::Other, "player not initialized yet")))
+    .map(|state| &*state)
 }
 
 fn show_main_window(app_handle: &AppHandle) {
