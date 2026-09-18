@@ -54,7 +54,6 @@ tauri-plugin-store = { version = "2", features = [] }
 # 媒体键盘快捷键（macOS media keys）
 media-keys = "0.2"
 
-tauri-plugin-store = { version = "2", features = [] }
 
 aes = "0.8"
 base64 = "0.22"
