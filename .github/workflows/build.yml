@@ -97,7 +97,7 @@ jobs:
           # 使用 GitHub 自动生成的 Release Notes（基于 PR 标题和 label）
           # 需在仓库 Settings → General → Features 勾选 "Automatically generated release notes"
           # 配合 .github/release.yml 可自定义分类规则
-          releaseNotes: true
+          generateReleaseNotes: true
           # Windows 同时生成 NSIS + MSI，updater 优先使用 NSIS（支持 passive 安装模式）
           updaterJsonPreferNsis: true
           tauriScript: pnpm tauri
