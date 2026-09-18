@@ -4,7 +4,7 @@
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  AppEvent, Emitter, Manager, State, WebviewUrl,
+  App, Manager,
 };
 
 use crate::{
@@ -32,36 +32,20 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
-    .setup(|app| {
-      let app_handle = app.app_handle();
-
-      // Create tray icon (no WebKit dependency)
-      create_tray_icon(&app_handle)?;
-
-      // HttpMode needs to be initialized before HttpConfig
-      mode::HttpMode::init(&app_handle);
-      config::HttpConfig::init(&app_handle);
+    .setup(|app: &App| {
+      create_tray_icon(app)?;
+      mode::HttpMode::init(app);
+      config::HttpConfig::init(app);
 
       // Defer player creation to app://ready event.
-      // On macOS 26 (Sequoia), WebKit ServicesController panics when a WebView
-      // is created during the NSApplicationDidFinishLaunchingNotification phase.
-      // The app://ready event fires after the main thread returns to the event loop,
-      // making WebKit initialization safe.
-      app_handle.app_event().listen("app://ready".into(), move |app_handle, _event| {
-        // Spawn the player creation on the async runtime
-        // so we don't block the main thread during launch.
+      app.app_event().listen("app://ready".into(), |app_handle, _event| {
         tauri::async_runtime::spawn(async move {
-          // Create the player (this initializes the audio engine via rodio::cpal)
           let player = player::Player::new(&app_handle)
             .expect("Failed to create player");
           app_handle.manage(player);
-
-          // Signal that player is ready, so the frontend can initialize
-          app_handle.emit("player://ready".to_string(), ());
+          app_handle.emit("player://ready", ());
         });
-
-        tauri::Result::Ok(())
-      })?;
+      });
 
       Ok(())
     })
@@ -140,18 +124,13 @@ pub fn run() {
     .expect("error while running tauri application");
 }
 
-// Helper: get player from app state, or return error if not ready
-fn get_player(app: &AppHandle) -> tauri::Result<&player::Player> {
-  let state = app.state::<player::Player>();
-  if state.is_some() {
-    Ok(state.get())
-  } else {
-    Err(tauri::Error::NotFound("player not initialized yet".to_string()))
-  }
+fn get_player(app: &App) -> tauri::Result<&player::Player> {
+  app.try_state::<player::Player>().ok_or_else(|| {
+    tauri::Error::Custom("player not initialized yet".to_string())
+  })
 }
 
-// Show main window (skip if mini-player is open)
-fn show_main_window(app: &AppHandle) {
+fn show_main_window(app: &App) {
   if app.get_webview_window("mini-player").is_some() {
     return;
   }
@@ -161,15 +140,14 @@ fn show_main_window(app: &AppHandle) {
   }
 }
 
-// Create tray icon
-fn create_tray_icon(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
-  let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
-  let quit = MenuItem::with_id(app_handle, "quit", "退出", true, None::<&str>)?;
+fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
+  let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+  let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 
-  let menu = Menu::with_items(app_handle, &[&show, &quit])?;
+  let menu = Menu::with_items(app, &[&show, &quit])?;
 
-  let tray = TrayIconBuilder::new()
-    .icon(app_handle.default_window_icon().unwrap().clone())
+  let tray = TrayIconBuilder::new(app)
+    .icon(app.default_window_icon().unwrap().clone())
     .menu(&menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app, event| match event.id.as_ref() {
@@ -184,7 +162,8 @@ fn create_tray_icon(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
         ..
       } => show_main_window(tray.app_handle()),
       _ => {}
-    });
+    })
+    .build(app)?;
 
-  tray.build(app_handle)
+  Ok(tray)
 }

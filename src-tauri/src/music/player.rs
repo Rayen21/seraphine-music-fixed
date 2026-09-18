@@ -14,7 +14,7 @@ use std::{
   },
   time::Duration,
 };
-use tauri::{async_runtime, ipc::Channel, AppHandle, Emitter, State};
+use tauri::{async_runtime, ipc::Channel, App, State};
 use tauri_plugin_http::reqwest::Response;
 use tokio::time;
 use tokio_stream::StreamExt;
@@ -74,7 +74,7 @@ pub struct Player {
 }
 
 impl Player {
-  pub fn new(app_handle: &AppHandle) -> Result<Player> {
+  pub fn new(app: &App) -> Result<Player> {
     let audio = Audio::new()?;
 
     let player = Self {
@@ -88,14 +88,14 @@ impl Player {
       downloaded_size: Arc::new(AtomicU64::new(0)),
     };
 
-    player.monitor_device(app_handle);
+    player.monitor_device(app);
 
     Ok(player)
   }
 
   /// 监测设备变动
-  fn monitor_device(&self, app_handle: &AppHandle) {
-    let app = app_handle.clone();
+  fn monitor_device(&self, app: &App) {
+    let app = app.clone();
     let audio = self.audio.clone();
 
     async_runtime::spawn(async move {
