@@ -85,7 +85,6 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY3NzZBNjJBMTgwNkQ0Q0EKUldUSzFBWVlLcVoyOTMyUTQ5dEM0eGo4V0pvRjVjZzV2b21MbCtGS2FhY1JxM01CcUZPVmNlVjYK",
       "endpoints": [
         "https://github.com/burenLee/seraphine-music/releases/latest/download/latest.json"
       ]
