@@ -9,6 +9,7 @@ use std::{
   fs::File,
   io::{Read, Seek},
   time::Duration,
+  panic,
 };
 
 pub struct Audio {
@@ -19,20 +20,27 @@ pub struct Audio {
 
 impl Audio {
   pub fn new() -> Result<Self> {
-    let device = default_host()
-      .default_output_device()
-      .ok_or_else(|| anyhow!("未识别到输出设备"))?;
-    let sink = DeviceSinkBuilder::from_device(device.clone())?.open_stream()?;
-    let player = Player::connect_new(&sink.mixer());
+    let result = panic::catch_unwind(|| {
+      let device = default_host()
+        .default_output_device()
+        .ok_or_else(|| anyhow!("未识别到输出设备"))?;
+      let sink = DeviceSinkBuilder::from_device(device.clone())?.open_stream()?;
+      let player = Player::connect_new(&sink.mixer());
 
-    // 默认是play状态,手动暂停
-    player.pause();
+      // 默认是play状态,手动暂停
+      player.pause();
 
-    Ok(Self {
-      _sink: sink,
-      player,
-      device: Some(device),
-    })
+      Ok::<Audio, anyhow::Error>(Self {
+        _sink: sink,
+        player,
+        device: Some(device),
+      })
+    });
+
+    match result {
+      Ok(audio) => audio,
+      Err(_) => Err(anyhow!("音频系统初始化失败，请检查音频设备")),
+    }
   }
 
   /// 获取全部音频输出设备
@@ -136,28 +144,20 @@ impl Audio {
 mod tests {
   use super::*;
 
-  // === Audio 结构体约束 ===
-
   #[test]
   fn test_audio_is_send() {
-    // 跨线程传递约束（Player / Sink / Device 必须 Send）
     fn assert_send<T: Send>() {}
     assert_send::<Audio>();
   }
 
   #[test]
   fn test_audio_is_sync() {
-    // 跨线程共享约束（用于 Arc<RwLock<Audio>>）
     fn assert_sync<T: Sync>() {}
     assert_sync::<Audio>();
   }
 
-  // === 方法签名约束（编译期校验，防止意外修改可见性或签名）===
-
   #[test]
   fn test_audio_method_signatures_compile() {
-    // 仅校验非泛型方法存在且签名匹配，不实际调用（避免依赖音频设备）
-    // 泛型方法 load_from_stream 不在此校验，因其无法转换为函数指针
     let _new: fn() -> Result<Audio> = Audio::new;
     let _current_device: fn(&Audio) -> Option<&Device> = Audio::current_device;
     let _all_devices: fn(&Audio) -> Vec<Device> = Audio::all_devices;
@@ -170,7 +170,6 @@ mod tests {
     let _set_volume: fn(&Audio, f32) = Audio::set_volume;
     let _get_pos: fn(&Audio) -> Duration = Audio::get_pos;
     let _try_seek: fn(&Audio, Duration) -> Result<(), SeekError> = Audio::try_seek;
-    // 显式引用避免 unused 警告
     let _ = (
       _new,
       _current_device,
@@ -187,11 +186,8 @@ mod tests {
     );
   }
 
-  // === Duration 边界（try_seek 的入参类型）===
-
   #[test]
   fn test_try_seek_duration_zero_is_valid() {
-    // Duration::ZERO 是合法入参，不会触发 Duration 内部 overflow
     let d = Duration::ZERO;
     assert_eq!(d.as_secs(), 0);
     assert_eq!(d.subsec_nanos(), 0);
@@ -199,23 +195,17 @@ mod tests {
 
   #[test]
   fn test_try_seek_duration_max_is_valid() {
-    // Duration::MAX 也不会触发内部 overflow（rodio 内部可能有其他限制，但 Duration 本身合法）
     let d = Duration::MAX;
     assert!(d.as_secs() > 0);
   }
 
   #[test]
   fn test_try_seek_duration_from_secs_f32_roundtrip() {
-    // 与 player.rs 中 music_player_seek 的换算保持一致
     let d = Duration::from_secs_f32(0.0);
     assert_eq!(d.as_secs_f32(), 0.0);
     let d = Duration::from_secs_f32(1.5);
     assert!((d.as_secs_f32() - 1.5).abs() < f32::EPSILON);
   }
-
-  // === set_volume 比例换算 ===
-  // player.rs 中 music_player_set_volume 调用 audio.set_volume(volume / 100.0)
-  // 这里独立验证比例换算的纯数学逻辑
 
   #[test]
   fn test_set_volume_ratio_mapping() {
@@ -236,15 +226,8 @@ mod tests {
     }
   }
 
-  // === Audio::new 在无音频设备环境的容错 ===
-  // 在 CI 或无音频设备环境中调用 Audio::new() 应返回 Err 而非 panic。
-  // 但由于 rodio 在某些平台初始化时会 panic（而非返回 Err），
-  // 这里仅做 "如果返回 Ok 则结构可用" 的弱校验，避免在 CI 上误报。
-
   #[test]
   fn test_audio_new_does_not_panic_when_no_device() {
-    // 如果环境无音频设备，Audio::new() 返回 Err；如果有设备，返回 Ok。
-    // 无论哪种情况，都不应 panic。
     let _ = Audio::new();
   }
 }

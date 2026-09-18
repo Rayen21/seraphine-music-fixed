@@ -38,10 +38,16 @@ pub fn run() {
       config::HttpConfig::init(app);
 
       // Defer player creation to app://ready event.
+      // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
       app.app_event().listen("app://ready".into(), |app_handle, _event| {
         tauri::async_runtime::spawn(async move {
-          let player = player::Player::new(&app_handle)
-            .expect("Failed to create player");
+          let player = match player::Player::new(&app_handle) {
+            Ok(p) => p,
+            Err(e) => {
+              eprintln!("音频初始化失败，跳过播放功能: {}", e);
+              return;
+            }
+          };
           app_handle.manage(player);
           app_handle.emit("player://ready", ());
         });
