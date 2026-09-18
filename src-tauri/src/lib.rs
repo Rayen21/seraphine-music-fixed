@@ -4,7 +4,7 @@
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Emitter, Manager, Result, State, WebviewWindow, WebviewWindowBuilder,
+  AppHandle, Emitter, Manager, State, WebviewWindowBuilder, WebviewUrl,
 };
 
 use crate::{
@@ -42,30 +42,23 @@ pub fn run() {
       mode::HttpMode::init(&app_handle);
       config::HttpConfig::init(&app_handle);
 
-      // Defer main window and player creation to app://ready event.
+      // Defer player creation to app://ready event.
       // On macOS 26 (Sequoia), WebKit ServicesController panics when a WebView
       // is created during the NSApplicationDidFinishLaunchingNotification phase.
       // The app://ready event fires after the main thread returns to the event loop,
       // making WebKit initialization safe.
-      app_handle.on_app_event("app://ready", |app_handle| {
+      app_handle.on("app://ready".into(), |app_handle, _event| {
         let app_handle = app_handle.app_handle();
 
-        // Spawn the player and main window creation on the async runtime
+        // Spawn the player creation on the async runtime
         // so we don't block the main thread during launch.
         tauri::async_runtime::spawn(async move {
-          // Create the main window (WebView creation is now safe on macOS 26)
-          let _main_window = WebviewWindowBuilder::new(app_handle.clone(), "main")
-            .title("Seraphine Music")
-            .min_inner_size(1152.0, 768.0)
-            .center()
-            .build();
-
-          // Create the player (initializes audio engine via rodio::cpal)
+          // Create the player (this initializes the audio engine via rodio::cpal)
           let player = player::Player::new(&app_handle)
             .expect("Failed to create player");
           app_handle.manage(player);
 
-          // Signal that everything is ready
+          // Signal that player is ready, so the frontend can initialize
           app_handle.emit("player://ready", ());
         });
 
@@ -153,7 +146,8 @@ pub fn run() {
 fn get_player(app: &AppHandle) -> Result<State<player::Player>> {
   app
     .state::<player::Player>()
-    .ok_or_else(|| tauri::Error::NotFound("player not initialized yet".into()))
+    .get()
+    .ok_or_else(|| format!("player not initialized yet"))
 }
 
 // Show main window (skip if mini-player is open)
