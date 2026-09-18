@@ -383,18 +383,6 @@ export const useMusicStore = defineStore(
       }
     }
 
-      if (isPlaying.value) {
-        pause()
-      } else {
-        play()
-      }
-    })
-      playPrevOrNext('prev')
-    })
-      playPrevOrNext('next')
-    })
-
-    // 监听下载进度
     const monitorDownload = async () => {
       if (downloadChannel !== null) return
 
