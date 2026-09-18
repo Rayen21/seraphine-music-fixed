@@ -44,6 +44,7 @@ pub fn run() {
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
       let app_handle = app.app_handle().clone();
       app.listen("app://ready", move |event: Event| {
+        let app_handle = app_handle.clone();
         tauri::async_runtime::spawn(async move {
           let player = match player::Player::new(app_handle.clone()) {
             Ok(p) => p,
