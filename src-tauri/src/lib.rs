@@ -44,9 +44,9 @@ pub fn run() {
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
       let app_handle = app.app_handle().clone();
       app.listen("app://ready", |event: Event| {
+        let app_handle = app_handle.clone();
         tauri::async_runtime::spawn(async move {
-          let app_handle = app_handle.clone();
-          let player = match player::Player::new(app_handle.clone()) {
+          let player = match player::Player::new(app_handle) {
             Ok(p) => p,
             Err(e) => {
               eprintln!("音频初始化失败，跳过播放功能: {}", e);
@@ -136,9 +136,7 @@ pub fn run() {
 }
 
 fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
-  app_handle
-    .state::<player::Player>()
-    .map(|state| &*state)
+  Ok(&*app_handle.state::<player::Player>())
 }
 
 fn show_main_window(app_handle: &AppHandle) {
