@@ -43,10 +43,10 @@ pub fn run() {
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
       let app_handle = app.app_handle().clone();
-      app.listen("app://ready", move |event: Event| {
+      app.listen("app://ready", |event: Event| {
         tauri::async_runtime::spawn(async move {
-          let app_handle_clone = app_handle.clone();
-          let player = match player::Player::new(app_handle_clone) {
+          let app_handle = app_handle.clone();
+          let player = match player::Player::new(app_handle.clone()) {
             Ok(p) => p,
             Err(e) => {
               eprintln!("音频初始化失败，跳过播放功能: {}", e);
@@ -137,8 +137,7 @@ pub fn run() {
 
 fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
   app_handle
-    .try_state::<player::Player>()
-    .ok_or_else(|| tauri::Error::from(std::io::Error::new(std::io::ErrorKind::Other, "player not initialized yet")))
+    .state::<player::Player>()
     .map(|state| &*state)
 }
 
