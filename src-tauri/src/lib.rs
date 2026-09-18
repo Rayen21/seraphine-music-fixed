@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Event, 
+use tauri::{AppHandle, Event, WebviewUrl, 
   App,
   Emitter,
   Listener,
@@ -35,10 +35,27 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
-    .setup(|app: &mut App| {
-      create_tray_icon(app.app_handle())?;
-      mode::HttpMode::init(app.app_handle().clone());
-      config::HttpConfig::init(app.app_handle().clone());
+   .setup(|app: &mut App| {
+     // Create main window
+     tauri::WebviewWindowBuilder::new(
+       app,
+       "main",
+       WebviewUrl::App("index.html".into()),
+     )
+     .inner_size(1024.0, 768.0)
+     .resizable(false)
+     .minimizable(false)
+     .maximizable(false)
+     .visible(false)
+     .title("Seraphine Music")
+     .focused(true)
+     .skip_taskbar(true)
+     .always_on_top(true)
+     .build()?;
+
+     create_tray_icon(app.app_handle())?;
+     mode::HttpMode::init(app.app_handle().clone());
+     config::HttpConfig::init(app.app_handle().clone());
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
