@@ -1,6 +1,7 @@
 use chrono::{Local, Utc};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use tauri::AppHandle;
 use tauri_plugin_http::reqwest::Method;
 
 use crate::{
@@ -76,7 +77,7 @@ pub fn api_login_qr_create(key: &str) -> String {
 /// ## 返回结果
 ///
 /// * `status` - `0`: 二维码过期，`1`: 等待扫码，`2`: 待确认，`4`: 授权登录成功（同时返回 token）
-pub async fn api_login_qr_check(app_handle: &AppHandle, key: &str) -> Result<LoginQrCheck, String> {
+pub async fn api_login_qr_check(app_handle: AppHandle, key: &str) -> Result<LoginQrCheck, String> {
   let kg_dynamic_config = HttpConfig::get_kg_dynamic_config();
   let kg_static_config = HttpConfig::get_kg_static_config();
 
@@ -224,7 +225,7 @@ pub async fn api_login_wx_check(uuid: &str) -> Result<LoginWxCheck, String> {
 ///
 /// * `code` - 第三方的 code
 pub async fn api_login_openplat(
-  app_handle: &AppHandle,
+  app_handle: AppHandle,
   code: &str,
 ) -> Result<LoginOpenplat, String> {
   let kg_dynamic_config = HttpConfig::get_kg_dynamic_config();
@@ -382,7 +383,7 @@ pub async fn api_login_captcha(mobile: &str) -> ApiResult<HashMap<String, Value>
 ///
 /// * `userid` - 用户 id, 默认为 0
 pub async fn api_login_cellphone(
-  app_handle: &AppHandle,
+  app_handle: AppHandle,
   mobile: &str,
   code: &str,
   userid: Option<&str>,
@@ -638,7 +639,7 @@ pub async fn api_login_device_kick() -> ApiResult<HashMap<String, Value>> {
 
 #[tauri::command]
 /// 登出账号
-pub fn api_login_out(app_handle: &AppHandle) -> Result<(), String> {
+pub fn api_login_out(app_handle: AppHandle) -> Result<(), String> {
   HttpConfig::clear_kg_cookies(&app_handle, BASE_URL).map_err(|e| e.to_string())
 }
 

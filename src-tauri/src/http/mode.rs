@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
 use std::sync::RwLock;
+use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 use crate::http::libs::{MODE_KEY, STORE_PATH};
@@ -22,7 +23,7 @@ impl Default for Mode {
 pub struct HttpMode;
 
 impl HttpMode {
-  pub fn init(app_handle: &AppHandle) {
+  pub fn init(app_handle: AppHandle) {
     if let Ok(store) = app_handle.store(STORE_PATH) {
       let mode = store
         .get(MODE_KEY)
@@ -42,7 +43,7 @@ impl HttpMode {
     }
   }
 
-  pub fn set_mode(app_handle: &AppHandle, mode: Mode) {
+  pub fn set_mode(app_handle: AppHandle, mode: Mode) {
     if let Ok(mut http_mode) = HTTP_MODE.write() {
       *http_mode = mode;
     };

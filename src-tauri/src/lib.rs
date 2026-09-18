@@ -2,7 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{
-  AppHandle,
+  App,
+  Emitter,
+  Listener,
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
   Manager,
@@ -33,14 +35,14 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
-    .setup(|app_handle: &AppHandle| {
-      create_tray_icon(app_handle)?;
-      mode::HttpMode::init(app_handle);
-      config::HttpConfig::init(app_handle);
+    .setup(|app: &mut App| {
+      create_tray_icon(app.app_handle())?;
+      mode::HttpMode::init(app.app_handle());
+      config::HttpConfig::init(app.app_handle());
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
-      app_handle.listen("app://ready", move |app_handle, _event: &str| {
+      app.listen("app://ready", move |app_handle, _event: &str| {
         tauri::async_runtime::spawn(async move {
           let player = match player::Player::new(app_handle) {
             Ok(p) => p,
@@ -131,11 +133,11 @@ pub fn run() {
     .expect("error while running tauri application");
 }
 
-fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
+fn get_player(app_handle: AppHandle) -> tauri::Result<&player::Player> {
   app_handle
     .try_state::<player::Player>()
     .ok_or_else(|| {
-      tauri::error::Error::Custom("player not initialized yet".into())
+      tauri::Error::from(std::io::Error::new(std::io::ErrorKind::Other, "player not initialized yet"))
     })
     .map_err(|e| tauri::Error::from(e))
 }
