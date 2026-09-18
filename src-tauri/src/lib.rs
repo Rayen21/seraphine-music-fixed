@@ -39,17 +39,17 @@ pub fn run() {
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
-      app.app_event().listen("app://ready".into(), |app_handle, _event| {
+      app.listen("app://ready", move |app: &App, _event: &str| {
         tauri::async_runtime::spawn(async move {
-          let player = match player::Player::new(&app_handle) {
+          let player = match player::Player::new(app) {
             Ok(p) => p,
             Err(e) => {
               eprintln!("音频初始化失败，跳过播放功能: {}", e);
               return;
             }
           };
-          app_handle.manage(player);
-          app_handle.emit("player://ready", ());
+          app.manage(player);
+          app.emit("player://ready", ());
         });
       });
 
@@ -132,7 +132,7 @@ pub fn run() {
 
 fn get_player(app: &App) -> tauri::Result<&player::Player> {
   app.try_state::<player::Player>().ok_or_else(|| {
-    tauri::Error::Custom("player not initialized yet".to_string())
+    tauri::Error::from("player not initialized yet")
   })
 }
 
@@ -147,13 +147,14 @@ fn show_main_window(app: &App) {
 }
 
 fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
+  let icon = app.default_window_icon().unwrap().clone();
   let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
   let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 
   let menu = Menu::with_items(app, &[&show, &quit])?;
 
-  let tray = TrayIconBuilder::new(app)
-    .icon(app.default_window_icon().unwrap().clone())
+  let tray = TrayIconBuilder::new()
+    .icon(icon)
     .menu(&menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app, event| match event.id.as_ref() {
@@ -166,7 +167,14 @@ fn create_tray_icon(app: &App) -> tauri::Result<TrayIcon> {
         button: MouseButton::Left,
         button_state: MouseButtonState::Up,
         ..
-      } => show_main_window(tray.app_handle()),
+      } => {
+        let h = tray.app_handle();
+        if h.get_webview_window("mini-player").is_some() { return; }
+        if let Some(window) = h.get_webview_window("main") {
+          let _ = window.show();
+          let _ = window.set_focus();
+        }
+      }
       _ => {}
     })
     .build(app)?;

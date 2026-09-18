@@ -68,7 +68,7 @@ pub struct HttpConfig;
 
 impl HttpConfig {
   pub fn init(app: &App) {
-    let config = Self::load_dynamic_config(app_handle);
+    let config = Self::load_dynamic_config(app);
 
     if let Ok(mut http_config) = DYNAMIC_CONFIG.write() {
       *http_config = config;

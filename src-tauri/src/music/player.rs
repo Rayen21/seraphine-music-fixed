@@ -15,7 +15,7 @@ use std::{
   time::Duration,
   panic,
 };
-use tauri::{async_runtime, ipc::Channel, App, State};
+use tauri::{async_runtime, ipc::Channel, App, AppHandle, State};
 use tauri_plugin_http::reqwest::Response;
 use tokio::time;
 use tokio_stream::StreamExt;
@@ -100,12 +100,12 @@ impl Player {
       let host = default_host();
       host.default_output_device()
     });
-    result.flatten()
+    result.ok().flatten()
   }
 
   /// 监测设备变动
   fn monitor_device(&self, app: &App) {
-    let app = app.clone();
+
     let audio = self.audio.clone();
 
     async_runtime::spawn(async move {
