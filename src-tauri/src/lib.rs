@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{
+use tauri::{AppHandle, Event, 
   App,
   Emitter,
   Listener,
@@ -134,7 +134,7 @@ pub fn run() {
     .expect("error while running tauri application");
 }
 
-fn get_player(app_handle: AppHandle) -> tauri::Result<&player::Player> {
+fn get_player(app_handle: &AppHandle) -> tauri::Result<&player::Player> {
   app_handle
     .try_state::<player::Player>()
     .ok_or_else(|| {
