@@ -12,12 +12,17 @@
   "app": {
     "windows": [
       {
-        "label": "main",
-        "title": "Seraphine \u97f3\u4e50\u64ad\u653e\u5668",
+        "label": "desktop-lyric",
+        "title": "桌面歌词",
         "decorations": false,
-        "minWidth": 1152,
-        "minHeight": 768,
-        "center": true
+        "alwaysOnTop": true,
+        "resizable": true
+      },
+      {
+        "label": "mini-player",
+        "title": "迷你播放器",
+        "decorations": false,
+        "resizable": true
       }
     ],
     "security": {

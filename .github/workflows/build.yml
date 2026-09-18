@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-# ─── macOS: signed + notarized build ─────────────────────────────────────────────
+# ─── macOS build (Apple Silicon, no signing needed for personal project) ───
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -50,33 +50,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --dangerously-allow-all-builds
 
-      # ─── Import signing certificate ─────────────────────────────────────────
-      - name: Import signing certificate
+      - name: Build Tauri bundle (release)
         if: startsWith(github.ref, 'refs/tags/')
         env:
-          CERT_P12: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE }}
-          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-        run: |
-          KEYCHAIN="$RUNNER_TEMP/build.keychain"
-          security create-keychain -p "" "$KEYCHAIN"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN"
-          security unlock-keychain -p "" "$KEYCHAIN"
-          echo "$CERT_P12" | base64 -d > /tmp/cert.p12
-          security import /tmp/cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,softwareupdate: -s -k "$KEYCHAIN"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: tauri-apps/tauri-action@v0
+        with:
+          includeUpdaterJson: false
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Seraphine Music ${{ github.ref_name }}'
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: true
+          tauriScript: pnpm tauri
+          args: --target aarch64-apple-darwin
+          signingOptions: "disabled"
 
-      # ─── Build with signing (tag only) ────────────────────────────────────────
-      - name: Build Tauri bundle (signed)
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          CERT_P12: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE }}
-          CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-        run: |
-          echo "$CERT_P12" | base64 -d > /tmp/cert.p12
-          pnpm tauri build --target aarch64-apple-darwin \
-            --signing-options "p12:/tmp/cert.p12,password:${CERT_PASSWORD}"
-
-      # ─── Build unsigned (dev) ─────────────────────────────────────────────────
       - name: Build Tauri bundle (dev)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         env:
@@ -84,50 +73,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         run: pnpm tauri build --target aarch64-apple-darwin
 
-      # ─── Notarize (tag only) ──────────────────────────────────────────────────
-      - name: Notarize
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          API_KEY_JSON: ${{ secrets.APPLE_API_KEY_JSON }}
-          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          ISSUER_ID: ${{ secrets.APPLE_API_KEY_ISSUER_ID }}
-          TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
-          APPLE_ID: ${{ secrets.APPLE_ACCOUNT_EMAIL }}
-        run: |
-          APP_BUNDLE=$(find src-tauri/target/aarch64-apple-darwin/release/bundle -name "*.app" -type d | head -1)
-          if [ -z "$APP_BUNDLE" ]; then
-            echo "No .app bundle found, skipping notarization"
-            exit 0
-          fi
-          
-          # Store API key in keychain
-          echo "$API_KEY_JSON" | base64 -d > /tmp/api_key.json
-          xcrun notarytool store-api-key \
-            --key-id "$KEY_ID" \
-            --team-id "$TEAM_ID" \
-            --issuer "$ISSUER_ID" \
-            --apple-id "$APPLE_ID" \
-            --key-path /tmp/api_key.json
-          
-          # Submit for notarization
-          echo "Submitting for notarization..."
-          xcrun notarytool submit "$APP_BUNDLE" \
-            --key-id "$KEY_ID" \
-            --team-id "$TEAM_ID" \
-            --issuer "$ISSUER_ID" \
-            --apple-id "$APPLE_ID" \
-            --wait
-          
-          # Staple ticket
-          echo "Stapling ticket..."
-          xcrun notarytool staple "$APP_BUNDLE" \
-            --key-id "$KEY_ID" \
-            --team-id "$TEAM_ID" \
-            --issuer "$ISSUER_ID" \
-            --apple-id "$APPLE_ID" \
-            2>&1 || echo "Staple skipped (may not be needed)"
-
-      # ─── Upload to release (tag only) ─────────────────────────────────────────
       - name: Upload macOS artifacts to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -136,7 +81,6 @@ jobs:
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app.tar.gz
 
-      # ─── Upload to artifacts (dev) ────────────────────────────────────────────
       - name: Upload bundle artifacts (dev)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/upload-artifact@v4
@@ -146,7 +90,7 @@ jobs:
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.dmg
             src-tauri/target/aarch64-apple-darwin/release/bundle/**/*.app.tar.gz
 
-# ─── Windows + Linux: single build (no signing needed) ──────────────────────────
+# ─── Windows + Linux: single build (no signing needed) ───────────────────────
   build-other:
     strategy:
       fail-fast: false

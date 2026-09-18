@@ -1,7 +1,10 @@
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Manager, Result,
+  AppHandle, Emitter, Manager, Result, State, WebviewWindow, WebviewWindowBuilder,
 };
 
 use crate::{
@@ -32,22 +35,42 @@ pub fn run() {
     .setup(|app| {
       let app_handle = app.app_handle();
 
-      // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
-      #[cfg(desktop)]
-      {
-        app_handle.plugin(tauri_plugin_updater::Builder::new().build())?;
-        app_handle.plugin(tauri_plugin_process::init())?;
-      }
-
+      // Create tray icon (no WebKit dependency)
       create_tray_icon(&app_handle)?;
 
-      // HttpMode 需要比 HttpConfig 先初始化
+      // HttpMode needs to be initialized before HttpConfig
       mode::HttpMode::init(&app_handle);
       config::HttpConfig::init(&app_handle);
 
-      let player = player::Player::new(app_handle)?;
+      // Defer main window and player creation to app://ready event.
+      // On macOS 26 (Sequoia), WebKit ServicesController panics when a WebView
+      // is created during the NSApplicationDidFinishLaunchingNotification phase.
+      // The app://ready event fires after the main thread returns to the event loop,
+      // making WebKit initialization safe.
+      app_handle.on_app_event("app://ready", |app_handle| {
+        let app_handle = app_handle.app_handle();
 
-      app.manage(player);
+        // Spawn the player and main window creation on the async runtime
+        // so we don't block the main thread during launch.
+        tauri::async_runtime::spawn(async move {
+          // Create the main window (WebView creation is now safe on macOS 26)
+          let _main_window = WebviewWindowBuilder::new(app_handle.clone(), "main")
+            .title("Seraphine Music")
+            .min_inner_size(1152.0, 768.0)
+            .center()
+            .build();
+
+          // Create the player (initializes audio engine via rodio::cpal)
+          let player = player::Player::new(&app_handle)
+            .expect("Failed to create player");
+          app_handle.manage(player);
+
+          // Signal that everything is ready
+          app_handle.emit("player://ready", ());
+        });
+
+        Ok(())
+      });
 
       Ok(())
     })
@@ -105,8 +128,6 @@ pub fn run() {
       playlist::api_playlist_tracks_add,
       playlist::api_playlist_tracks_del,
       privilege::api_privilege_lite,
-      // api_personal_fm,
-      // api_images_audio,
       login::api_login_qr_key,
       login::api_login_qr_create,
       login::api_login_qr_check,
@@ -122,13 +143,20 @@ pub fn run() {
       user::api_user_detail,
       youth::api_youth_union_vip,
       youth::api_youth_day_vip,
-      youth::api_youth_day_upgrade
+      youth::api_youth_day_upgrade,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
 
-// 显示主窗口（迷你播放器打开时跳过）
+// Helper: get player from app state, or return error if not ready
+fn get_player(app: &AppHandle) -> Result<State<player::Player>> {
+  app
+    .state::<player::Player>()
+    .ok_or_else(|| tauri::Error::NotFound("player not initialized yet".into()))
+}
+
+// Show main window (skip if mini-player is open)
 fn show_main_window(app: &AppHandle) {
   if app.get_webview_window("mini-player").is_some() {
     return;
@@ -139,7 +167,7 @@ fn show_main_window(app: &AppHandle) {
   }
 }
 
-// 创建托盘图标
+// Create tray icon
 fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
   let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
   let quit = MenuItem::with_id(app_handle, "quit", "退出", true, None::<&str>)?;
