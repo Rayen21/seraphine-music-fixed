@@ -188,7 +188,7 @@ impl HttpConfig {
 
 #[tauri::command]
 pub fn http_config_clear(app: AppHandle) -> Result<(), String> {
-  HttpConfig::clear_kg_dynamic_config(&app).map_err(|e| e.to_string())
+  HttpConfig::clear_kg_dynamic_config(app).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

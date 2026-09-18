@@ -87,7 +87,7 @@ pub fn http_mode_get() -> Mode {
 
 #[tauri::command]
 pub fn http_mode_set(app_handle: AppHandle, mode: Mode) {
-  HttpMode::set_mode(&app_handle, mode);
+  HttpMode::set_mode(app_handle, mode);
 }
 
 #[cfg(test)]

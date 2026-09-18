@@ -37,12 +37,13 @@ pub fn run() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .setup(|app: &mut App| {
       create_tray_icon(app.app_handle())?;
-      mode::HttpMode::init(app.app_handle());
-      config::HttpConfig::init(app.app_handle());
+      mode::HttpMode::init(app.app_handle().clone());
+      config::HttpConfig::init(app.app_handle().clone());
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
-      app.listen("app://ready", move |app_handle, _event: &str| {
+      let app_handle = app.app_handle().clone();
+      app.listen("app://ready", move |event: &str| {
         tauri::async_runtime::spawn(async move {
           let player = match player::Player::new(app_handle) {
             Ok(p) => p,
