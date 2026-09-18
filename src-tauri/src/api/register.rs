@@ -93,7 +93,7 @@ pub async fn api_register_dev(app_handle: AppHandle) -> Result<(), String> {
   let mut cookies = HttpConfig::get_kg_dynamic_config().cookies;
   cookies.dfid = data.dfid.clone();
 
-  HttpConfig::set_kg_cookies(&app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
+  HttpConfig::set_kg_cookies(app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
 
   Ok(())
 }

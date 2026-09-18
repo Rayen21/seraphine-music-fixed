@@ -110,7 +110,7 @@ pub async fn api_login_qr_check(app_handle: AppHandle, key: &str) -> Result<Logi
   let mut cookies = kg_dynamic_config.cookies;
   cookies.token = data.token.clone().unwrap_or_default();
   cookies.userid = data.userid.unwrap_or_default();
-  HttpConfig::set_kg_cookies(&app_handle, &base_url, cookies).map_err(|e| e.to_string())?;
+  HttpConfig::set_kg_cookies(app_handle, &base_url, cookies).map_err(|e| e.to_string())?;
 
   data.token = None;
 
@@ -311,7 +311,7 @@ pub async fn api_login_openplat(
     cookies.token = get_token;
   }
 
-  HttpConfig::set_kg_cookies(&app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
+  HttpConfig::set_kg_cookies(app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
 
   data.t1 = String::new();
   data.vip_type = 0;
@@ -485,7 +485,7 @@ pub async fn api_login_cellphone(
     cookies.token = get_token;
   }
 
-  HttpConfig::set_kg_cookies(&app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
+  HttpConfig::set_kg_cookies(app_handle, BASE_URL, cookies).map_err(|e| e.to_string())?;
 
   data.t1 = String::new();
   data.vip_type = 0;
@@ -640,7 +640,7 @@ pub async fn api_login_device_kick() -> ApiResult<HashMap<String, Value>> {
 #[tauri::command]
 /// 登出账号
 pub fn api_login_out(app_handle: AppHandle) -> Result<(), String> {
-  HttpConfig::clear_kg_cookies(&app_handle, BASE_URL).map_err(|e| e.to_string())
+  HttpConfig::clear_kg_cookies(app_handle, BASE_URL).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
