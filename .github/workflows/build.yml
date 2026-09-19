@@ -30,9 +30,9 @@ jobs:
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.pnpm-store
-            ~/.cargo
+          path:
+            - ~/.pnpm-store
+            - ~/.cargo
           key: deps-macos-aarch64-apple-darwin-${{ hashFiles("src-tauri/Cargo.toml", "pnpm-lock.yaml") }}
           restore-keys: |
             deps-macos-aarch64-apple-darwin-
