@@ -1,13 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{AppHandle, Event, WebviewUrl, 
-  App,
-  Emitter,
-  Listener,
+use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  Manager,
+  AppHandle, Manager, Result,
 };
 
 use crate::{
@@ -35,31 +32,26 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
-   .setup(|app: &mut App| {
-     // Create main window
-     tauri::WebviewWindowBuilder::new(
-       app,
-       "main",
-       WebviewUrl::App("index.html".into()),
-    )
-    .inner_size(1024.0, 768.0)
-    .resizable(false)
-    .minimizable(false)
-    .maximizable(false)
-    .visible(false)
-    .title("Seraphine Music")
-    .focused(true)
-    .skip_taskbar(true)
-    .build()?;
+    .setup(|app| {
+      let app_handle = app.app_handle();
 
-     create_tray_icon(app.app_handle())?;
-     mode::HttpMode::init(app.app_handle().clone());
-     config::HttpConfig::init(app.app_handle().clone());
+      // Updater 与 Process 插件仅在桌面端启用，供前端调用 check/download/install/relaunch
+      #[cfg(desktop)]
+      {
+        app_handle.plugin(tauri_plugin_updater::Builder::new().build())?;
+        app_handle.plugin(tauri_plugin_process::init())?;
+      }
+
+      create_tray_icon(&app_handle)?;
+
+      // HttpMode 需要比 HttpConfig 先初始化
+      mode::HttpMode::init(&app_handle);
+      config::HttpConfig::init(&app_handle);
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
-      let app_handle = app.app_handle().clone();
-      app.listen("app://ready", move |_event: Event| {
+      let app_handle = app_handle.clone();
+      app.listen("app://ready", move |_event: tauri::Event| {
         let app_handle = app_handle.clone();
         tauri::async_runtime::spawn(async move {
           let player = match player::Player::new(app_handle.clone()) {
