@@ -14,3 +14,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.18.0'
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.11.0
+          run_install: false
+      - name: Pnpm Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-macos-aarch64-apple-darwin
+          restore-keys: pnpm-macos-aarch64-apple-darwin
