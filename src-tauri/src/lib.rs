@@ -41,17 +41,16 @@ pub fn run() {
        app,
        "main",
        WebviewUrl::App("index.html".into()),
-     )
-     .inner_size(1024.0, 768.0)
-     .resizable(true)
-     .minimizable(false)
-     .maximizable(false)
-     .visible(false)
-     .title("Seraphine Music")
-     .focused(true)
-     .skip_taskbar(true)
-     .always_on_top(true)
-     .build()?;
+    )
+    .inner_size(1024.0, 768.0)
+    .resizable(false)
+    .minimizable(false)
+    .maximizable(false)
+    .visible(false)
+    .title("Seraphine Music")
+    .focused(true)
+    .skip_taskbar(true)
+    .build()?;
 
      create_tray_icon(app.app_handle())?;
      mode::HttpMode::init(app.app_handle().clone());
