@@ -41,8 +41,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: 'rust-macos-aarch64-apple-darwin'
-          restore-keys: 'rust-macos-aarch64-apple-darwin'
+          key: 'rust-macos-aarch64-apple-darwin-${{ hashFiles("src-tauri/Cargo.toml") }}'
+          restore-keys: |
+            rust-macos-aarch64-apple-darwin-
+            rust-macos-aarch64-apple-darwin
 
       - name: Install Rust target
         run: rustup target add aarch64-apple-darwin
