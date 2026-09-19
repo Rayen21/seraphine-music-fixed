@@ -4,7 +4,7 @@
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Emitter, Event, Listener, Manager, Result,
+  AppHandle, Emitter, Event, Listener, Manager,
 };
 
 use crate::{
@@ -45,8 +45,8 @@ pub fn run() {
       create_tray_icon(&app_handle)?;
 
       // HttpMode 需要比 HttpConfig 先初始化
-      mode::HttpMode::init(app_handle);
-      config::HttpConfig::init(app_handle);
+      mode::HttpMode::init(app_handle.clone());
+      config::HttpConfig::init(app_handle.clone());
 
       // Defer player creation to app://ready event.
       // 音频初始化可能 panic（cpal::default_host），用 match 替代 expect
