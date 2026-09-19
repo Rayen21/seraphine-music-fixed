@@ -23,18 +23,6 @@ jobs:
         with:
           version: 11.11.0
           run_install: false
-      - name: Pnpm Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-macos-aarch64-apple-darwin
-          restore-keys: pnpm-macos-aarch64-apple-darwin
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo
-          key: rust-macos-aarch64-apple-darwin-${{ hashFiles("src-tauri/Cargo.toml") }}
-          restore-keys: rust-macos-aarch64-apple-darwin-
       - name: Install Rust target
         run: rustup target add aarch64-apple-darwin
       - name: Install dependencies
