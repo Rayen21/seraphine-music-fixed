@@ -232,7 +232,7 @@ export const useSettingStore = defineStore(
 
       try {
         await register('MediaPlayPause', (e) => {
-          if (e.state === 'Pressed') return
+          if (e.state === 'Released') return
 
           if (musicStore.isPlaying) {
             musicStore.pause()
@@ -241,12 +241,12 @@ export const useSettingStore = defineStore(
           }
         })
         await register('MediaTrackNext', (e) => {
-          if (e.state === 'Pressed') return
+          if (e.state === 'Released') return
 
           musicStore.playPrevOrNext('next')
         })
         await register('MediaTrackPrevious', (e) => {
-          if (e.state === 'Pressed') return
+          if (e.state === 'Released') return
 
           musicStore.playPrevOrNext('prev')
         })

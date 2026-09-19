@@ -43,7 +43,7 @@ pub fn run() {
        WebviewUrl::App("index.html".into()),
      )
      .inner_size(1024.0, 768.0)
-     .resizable(false)
+     .resizable(true)
      .minimizable(false)
      .maximizable(false)
      .visible(false)
