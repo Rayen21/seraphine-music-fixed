@@ -1,6 +1,6 @@
 [package]
 name = "seraphine-music"
-version = "0.1.13"
+version = "0.1.32"
 description = "音乐播放器"
 authors = ["buren_lee"]
 edition = "2021"
