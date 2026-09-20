@@ -396,6 +396,27 @@ unsafe extern "C" fn media_key_event_callback(
                 return ptr::null();
             }
         }
+        // Fallback: for NX_KEYTYPE::Previous/Next, also try matching F7/F9
+        let fallback_code = match nx_keytype {
+            NX_KEYTYPE::Previous => Some(Code::F7),
+            NX_KEYTYPE::Next => Some(Code::F9),
+            _ => None,
+        };
+        if let Some(fallback_code) = fallback_code {
+            let fallback_hotkey = HotKey::new(Some(mods), fallback_code);
+            if let Some(media_hotkey) = media_hotkeys.lock().unwrap().get(&fallback_hotkey) {
+                let key_flags = data_1 & 0x0000FFFF;
+                let is_pressed: bool = ((key_flags & 0xFF00) >> 8) == 0xA;
+                GlobalHotKeyEvent::send(GlobalHotKeyEvent {
+                    id: media_hotkey.id(),
+                    state: match is_pressed {
+                        true => crate::HotKeyState::Pressed,
+                        false => crate::HotKeyState::Released,
+                    },
+                });
+                return ptr::null();
+            }
+        }
     } else if ev_type == CGEventType::KeyDown || ev_type == CGEventType::KeyUp {
         // F7/F9 通过 keyCode 拦截（非 Fn 模式下的普通按键）
         let ns_event: Retained<NSEvent> = msg_send![NSEvent::class(), eventWithCGEvent: event];
