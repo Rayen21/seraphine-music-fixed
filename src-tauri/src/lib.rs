@@ -1,6 +1,7 @@
+use tauri::Icon;
 use tauri::{
   menu::{Menu, MenuItem},
-  tray::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
+  tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
   AppHandle, Manager, Result,
 };
 
@@ -142,7 +143,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
   let menu = Menu::with_items(app_handle, &[&show, &quit])?;
 
   let tray = TrayIconBuilder::new()
-    .icon(app_handle.default_window_icon().ok().unwrap_or_else(|| Icon::from_rgba(vec![128u8; 4], 1, 1).unwrap()))
+    .icon(app_handle.default_window_icon().unwrap_or_else(|| Icon::from_rgba(vec![128u8; 4], 1, 1).unwrap()))
     .menu(&menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app, event| match event.id.as_ref() {
