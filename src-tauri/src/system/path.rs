@@ -6,7 +6,6 @@ use std::{
 };
 
 use std::sync::Mutex;
-use std::sync::LazyLock;
 
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
@@ -23,7 +22,7 @@ pub struct AppPath {
 
 /// 从 Tauri Store 持久化存储的路径（跨进程共享）
 const PERSISTED_CUSTOM_DIRS_KEY: &str = "system_path_custom_dirs";
-static PERSISTED_CUSTOM_DIRS: LazyLock<Mutex<HashMap<String, PathBuf>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+static PERSISTED_CUSTOM_DIRS: Mutex<HashMap<String, PathBuf>> = Mutex::new(HashMap::new());
 
 impl AppPath {
   pub fn new() -> Self {
