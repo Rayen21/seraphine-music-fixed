@@ -210,7 +210,8 @@ impl AppPath {
     dirs.insert(name.to_string(), path.to_path_buf());
 
     // 持久化到 Tauri Store（跨进程共享）
-    Self::save_to_store(app_handle, &dirs);
+    let store_dirs: HashMap<String, String> = dirs.iter().map(|(k, v)| (k.clone(), v.to_string_lossy().to_string())).collect();
+    Self::save_to_store(app_handle, &store_dirs);
 
     Ok(())
   }
