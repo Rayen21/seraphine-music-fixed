@@ -102,8 +102,10 @@ export const useSettingStore = defineStore(
 
       if (globalShortcutState.value) {
         registerAllGlobalShortcut()
+        registerMediaShortcut()
       } else {
         unregisterAllGlobalShortcut()
+        unregisterMediaShortcut()
       }
     }
     const toggleMediaShortcutState = () => {
@@ -228,7 +230,7 @@ export const useSettingStore = defineStore(
     }
 
     const registerMediaShortcut = async () => {
-      if (!mediaShortcutState.value) return
+      if (!mediaShortcutState.value || !globalShortcutState.value) return
 
       try {
         await register('MediaPlayPause', (e) => {
