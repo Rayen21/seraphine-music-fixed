@@ -144,7 +144,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
   let menu = Menu::with_items(app_handle, &[&show, &quit])?;
 
   let tray = TrayIconBuilder::new()
-    .icon(app_handle.default_window_icon().unwrap_or_else(|| Image::new(vec![128u8; 4], 1, 1).expect("fallback image")))
+    .icon(app_handle.default_window_icon().cloned().unwrap_or(Image::new(&[0u8; 16], 1, 1)))
     .menu(&menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app, event| match event.id.as_ref() {
