@@ -1,5 +1,5 @@
 
-use tauri::Image;
+use tauri::tray::Image;
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
