@@ -5,7 +5,7 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
@@ -22,7 +22,7 @@ pub struct AppPath {
 
 /// 从 Tauri Store 持久化存储的路径（跨进程共享）
 const PERSISTED_CUSTOM_DIRS_KEY: &str = "system_path_custom_dirs";
-static PERSISTED_CUSTOM_DIRS: Mutex<HashMap<String, PathBuf>> = Mutex::new(HashMap::new());
+static PERSISTED_CUSTOM_DIRS: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
 
 impl AppPath {
   pub fn new() -> Self {
@@ -73,7 +73,7 @@ impl AppPath {
   }
 
   fn get_persisted_custom_dirs() -> (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) {
-    let dirs = PERSISTED_CUSTOM_DIRS.read().unwrap();
+    let dirs = PERSISTED_CUSTOM_DIRS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
     (
       dirs.get("audio").cloned(),
       dirs.get("lyric").cloned(),
@@ -85,7 +85,7 @@ impl AppPath {
   pub fn load_persisted_custom_dirs(&mut self, app_handle: &AppHandle) {
     let dirs = Self::load_from_store(app_handle);
     for (key, val) in dirs {
-      PERSISTED_CUSTOM_DIRS.write().unwrap().insert(key.clone(), PathBuf::from(&val));
+      PERSISTED_CUSTOM_DIRS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap().insert(key.clone(), PathBuf::from(&val));
       match key.as_str() {
         "audio" => self.custom_audio_dir = Some(PathBuf::from(val)),
         "lyric" => self.custom_lyric_dir = Some(PathBuf::from(val)),
@@ -206,7 +206,7 @@ impl AppPath {
     }
 
     // 更新内存缓存
-    let mut dirs = PERSISTED_CUSTOM_DIRS.write().unwrap();
+    let mut dirs = PERSISTED_CUSTOM_DIRS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
     dirs.insert(name.to_string(), path.to_path_buf());
 
     // 持久化到 Tauri Store（跨进程共享）
@@ -240,7 +240,7 @@ impl AppPath {
   }
 
   pub fn reset_custom_dirs(&mut self, app_handle: &AppHandle) {
-    let mut dirs = PERSISTED_CUSTOM_DIRS.write().unwrap();
+    let mut dirs = PERSISTED_CUSTOM_DIRS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
     dirs.clear();
     self.custom_audio_dir = None;
     self.custom_lyric_dir = None;
