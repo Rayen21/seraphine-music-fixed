@@ -1,4 +1,5 @@
 use std::{
+  sync::LazyLock,
   collections::HashMap,
   env, fs,
   path::{Path, PathBuf},
@@ -14,7 +15,7 @@ pub struct AppPath {
   custom_cover_dir: Option<PathBuf>,
 }
 
-static CUSTOM_DIRS: std::sync::Mutex<HashMap<String, String>> = std::sync::Mutex::new(HashMap::new());
+static CUSTOM_DIRS: LazyLock<std::sync::Mutex<HashMap<String, String>>> = LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
 
 impl AppPath {
   pub fn new() -> Self {
