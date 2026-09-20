@@ -4,6 +4,7 @@ import Modal from '@/components/Modal.vue'
 import { notify } from '@/components/Notification.vue'
 import { useUserStore } from '@/stores/user'
 import { invoke } from '@/utils/tools'
+import { open } from '@tauri-apps/plugin-dialog'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import { onMounted, ref } from 'vue'
 
@@ -22,19 +23,21 @@ const cacheOptions = ref<CacheOption[]>([
 const clearOption = ref<CacheOption>()
 const clearVisible = ref(false)
 const clearUserVisible = ref(false)
+const setOption = ref<CacheOption>()
+const setModalVisible = ref(false)
 
 const getPaths = async () => {
   try {
-    const path_all = await invoke('system_path_all')
+    const path_all = await invoke<any>('system_path_all')
     if (!path_all) return
 
     cacheOptions.value.forEach((option) => {
       if (option.label === '音频') {
-        option.value = path_all.temp_dir
+        option.value = path_all.custom_audio_dir || path_all.temp_dir
       } else if (option.label === '歌词') {
-        option.value = path_all.lyric_dir
+        option.value = path_all.custom_lyric_dir || path_all.lyric_dir
       } else if (option.label === '本地封面') {
-        option.value = path_all.cover_dir
+        option.value = path_all.custom_cover_dir || path_all.cover_dir
       }
     })
   } catch (error) {
@@ -42,12 +45,33 @@ const getPaths = async () => {
   }
 }
 
-const clearUserCache = async () => {
-  clearUserVisible.value = true
+const setPath = (option: CacheOption) => {
+  setOption.value = { label: option.label, value: '' }
+  setModalVisible.value = true
 }
 
-const setPath = (option: CacheOption) => {
-  console.log(option)
+const handleSetPath = async () => {
+  if (!setOption.value) return
+
+  const nameMap: Record<string, string> = {
+    '音频': 'audio',
+    '歌词': 'lyric',
+    '本地封面': 'cover'
+  }
+
+  try {
+    await invoke<any>('system_path_set_custom_dir', {
+      name: nameMap[setOption.value.label || ''] || '',
+      dir: setOption.value.value
+    })
+
+    await getPaths()
+    handleSetModalCancel()
+    notify.success(`已设置${setOption.value.label}缓存路径`)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    notify.error(`设置失败: ${msg}`)
+  }
 }
 
 const openPath = async (option: CacheOption) => {
@@ -61,6 +85,10 @@ const openPath = async (option: CacheOption) => {
 const clearCache = (option: CacheOption) => {
   clearOption.value = option
   clearVisible.value = true
+}
+
+const clearUserCache = async () => {
+  clearUserVisible.value = true
 }
 
 const handleClearUserConfirm = async () => {
@@ -97,6 +125,22 @@ const handleClearCancel = () => {
   clearVisible.value = false
 }
 
+const handleSetModalCancel = () => {
+  setOption.value = undefined
+  setModalVisible.value = false
+}
+
+const openDirectory = async () => {
+  if (!setOption.value) return
+  const selected = await open({
+    directory: true,
+    title: '选择缓存目录'
+  })
+  if (selected) {
+    setOption.value = { label: setOption.value.label!, value: selected }
+  }
+}
+
 onMounted(() => {
   getPaths()
 })
@@ -114,8 +158,12 @@ onMounted(() => {
 
       <div v-for="(option, index) in cacheOptions" :key="index" class="flex items-center gap-3">
         <div class="w-20">{{ option.label }}</div>
-        <input class="card flex-1 min-w-0 truncate px-2 py-1" :value="option.value" readonly />
-        <ActionButton theme="success" @click="setPath(option)" disabled>设置</ActionButton>
+        <input
+          class="card flex-1 min-w-0 truncate px-2 py-1"
+          :value="option.value"
+          readonly
+        />
+        <ActionButton theme="info" @click="setPath(option)">设置</ActionButton>
         <ActionButton theme="success" @click="openPath(option)">打开</ActionButton>
         <ActionButton theme="error" @click="clearCache(option)">清理</ActionButton>
       </div>
@@ -149,6 +197,28 @@ onMounted(() => {
 
     <div v-if="clearOption?.label === '本地封面'" class="px-4 mt-2 text-warning">
       tips: 不建议清除本地封面缓存
+    </div>
+  </Modal>
+
+  <Modal
+    v-model="setModalVisible"
+    class="w-80"
+    title="设置缓存目录"
+    @confirm="handleSetPath"
+    @cancel="handleSetModalCancel">
+    <div class="px-4 space-y-3">
+      <div>
+        <div class="text-sm text-zinc-500">选择 {{ setOption?.label }}缓存目录</div>
+      </div>
+      <div class="flex gap-2">
+        <input
+          class="card flex-1 min-w-0 px-2 py-1"
+          :value="setOption?.value || ''"
+          readonly
+          placeholder="尚未选择目录"
+        />
+        <ActionButton theme="info" @click="openDirectory">选择</ActionButton>
+      </div>
     </div>
   </Modal>
 </template>

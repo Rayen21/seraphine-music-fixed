@@ -56,6 +56,7 @@ pub fn run() {
       setting::system_setting_restore_window,
       path::system_path_all,
       path::system_path_clear,
+      path::system_path_set_custom_dir,
       scan::music_scan_dir,
       scan::music_scan_type,
       scan::music_scan_file,
