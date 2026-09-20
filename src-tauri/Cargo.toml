@@ -25,10 +25,6 @@ tauri-plugin-global-shortcut = { version = "2", features = [] }
 # 单例
 tauri-plugin-single-instance = { version = "2", features = [] }
 # 进程
-tauri-plugin-process = { version = "2", features = [] }
-# 更新
-tauri-plugin-updater = { version = "2", features = [] }
-
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "protocol-asset"] }
 # tauri = { version = "2", features = [
