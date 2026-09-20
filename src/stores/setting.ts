@@ -240,12 +240,12 @@ export const useSettingStore = defineStore(
             musicStore.play()
           }
         })
-        await register('MediaTrackNext', (e) => {
+        await register('F9', (e) => {
           if (e.state === 'Released') return
 
           musicStore.playPrevOrNext('next')
         })
-        await register('MediaTrackPrevious', (e) => {
+        await register('F7', (e) => {
           if (e.state === 'Released') return
 
           musicStore.playPrevOrNext('prev')
@@ -262,8 +262,8 @@ export const useSettingStore = defineStore(
       if (mediaShortcutState.value) return
 
       unregister('MediaPlayPause')
-      unregister('MediaTrackNext')
-      unregister('MediaTrackPrevious')
+      unregister('F9')
+      unregister('F7')
     }
 
     const setMiniPlayerPosition = (pos: { x: number; y: number }) => {
