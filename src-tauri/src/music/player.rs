@@ -311,6 +311,13 @@ pub async fn music_player_load_url(
     return Err(String::from("无效的哈希值"));
   }
 
+  // 从 URL 路径提取扩展名（如 /song.mp3 → .mp3）
+  let ext = path
+    .split('?')
+    .next()
+    .and_then(|p| p.rsplit('.').next())
+    .map(|e| format!(".{}", e))
+    .unwrap_or_else(|| ".unknown".to_string());
   let response = HttpRequest::get(path).await.map_err(|e| e.to_string())?;
   let file_size = response
     .content_length()
@@ -326,14 +333,6 @@ pub async fn music_player_load_url(
   state.is_downloading.store(true, Ordering::Release);
   state.downloaded_size.store(0, Ordering::Release);
   state.audio_size.store(file_size, Ordering::Release);
-
-  // 从 URL 路径提取扩展名（如 /song.mp3 → .mp3）
-  let ext = path
-    .split('?')
-    .next()
-    .and_then(|p| p.rsplit('.').next())
-    .map(|e| format!(".{}", e))
-    .unwrap_or_else(|| ".unknown".to_string());
   let file_path = state
     .app_path
     .temp_dir()
