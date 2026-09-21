@@ -8,8 +8,8 @@ use tauri::{
 
 use crate::{
   api::{
-    album, artist, audio, login, lyric as api_lyric, music as api_music, personal, playlist,
-    privilege, rank, register, search, song, top, user, youth,
+    album, artist, audio, image, login, lyric as api_lyric, music as api_music, personal,
+    playlist, privilege, rank, register, search, song, top, user, youth,
   },
   http::{config, mode},
   music::{file, lyric as music_lyric, player, scan},
