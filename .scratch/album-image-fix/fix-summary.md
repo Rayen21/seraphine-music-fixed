@@ -31,19 +31,39 @@ WebView 的 CSP 拦截发生在渲染层，不触发 img 的 error 事件，因�
 
 ## 修复内容
 
+### 修复一：CSP 放行 data: 协议
+
 文件：src-tauri/tauri.conf.json
 
 修改：在 img-src 中添加 data: 协议
 
+```
 img-src 'self' asset: data: http: https:
+```
 
-## 影响范围
+Commit: 3d8ccec
 
-- 所有使用 Image 组件的页面（专辑封面、歌手头像、播放列表封面等）
-- 不影响已有 HTTPS 直链图片（https: 已放行）
-- 不影响本地文件图片（asset: 已放行）
+### 修复二：适配 Kuwo CDN（img4.kuwo.cn）请求头
+
+**问题**：顶部"猜你喜欢"、"每日推荐"等 Banner 卡片图片仍为空白。
+
+**根因**：Kuwo CDN（img{1-5}.kuwo.cn）对请求的 Cookie 有特定要求，需要 `kw_token` 参数。后端 `fetch_image` 命令之前只设置了 Kugou CDN 的 Cookie（dfid, token 等），Kuwo 域名收到请求后因缺少 kw_token 而拒绝返回图片。
+
+**修复方案**：在 `build_cdn_header()` 中识别 Kuwo CDN URL（包含 `kuwo.cn` 或 `kuwoimg.com`），从 URL 查询参数中提取 `kw_token`，将其作为 Cookie 发送。同时设置 Kuwo 专用的 Referer 和 User-Agent。
+
+文件：src-tauri/src/api/image.rs
+
+变更：
+- `build_cdn_header()` 新增 `url: &str` 参数
+- 新增 `extract_kw_token(url)` 辅助函数，解析 URL 查询参数中的 `kw_token`
+- `build_cdn_header()` 内按域名区分 Kuwo/Kugou 的请求头策略
+- Kuwo 策略：Referer=kuwo.cn, UA=MSIE 10.0, Cookie=kw_token=xxx
+
+Commit: 55cb7c7
 
 ## CI 构建
 
-Commit: 3d8ccec | 分支: main
-GitHub Actions: Rayen21/seraphine-music-fixed/actions
+| Commit | 说明 | Actions 链接 |
+|--------|------|-------------|
+| 3d8ccec | CSP 放行 data: 协议 | [run](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35548778389) |
+| 55cb7c7 | Kuwo CDN kw_token 适配 | [run](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35611209158) |

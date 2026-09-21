@@ -365,7 +365,7 @@ declare global {
       return: undefined
     }
     music_player_load_url: {
-      args: { path: string; hash: string }
+      args: { path: string; hash: string; name: string; artist: string }
       return: undefined
     }
     music_player_monitor_download: {

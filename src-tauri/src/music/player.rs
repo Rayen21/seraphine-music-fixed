@@ -303,6 +303,8 @@ pub async fn music_player_load_url(
   state: State<'_, Player>,
   path: String,
   hash: String,
+  name: String,
+  artist: String,
 ) -> Result<(), String> {
   // 验证 hash 参数的合法性
   if !is_valid_hash(&hash) {
@@ -325,7 +327,17 @@ pub async fn music_player_load_url(
   state.downloaded_size.store(0, Ordering::Release);
   state.audio_size.store(file_size, Ordering::Release);
 
-  let file_path = state.app_path.temp_dir().join(&hash);
+  // 从 URL 路径提取扩展名（如 /song.mp3 → .mp3）
+  let ext = path
+    .split('?')
+    .next()
+    .and_then(|p| p.rsplit('.').next())
+    .map(|e| format!(".{}", e))
+    .unwrap_or_else(|| ".unknown".to_string());
+  let file_path = state
+    .app_path
+    .temp_dir()
+    .join(format!("{} - {} - {}{}", name, artist, hash, ext));
 
   // 检查文件是否存在且全量数据
   if let Ok(metadata) = metadata(&file_path) {
