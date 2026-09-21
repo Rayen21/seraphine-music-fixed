@@ -1,5 +1,6 @@
 pub mod artist;
-// pub mod images;
+pub mod image;
+  // pub mod images;
 pub mod album;
 pub mod audio;
 pub mod libs;

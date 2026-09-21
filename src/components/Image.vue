@@ -2,7 +2,8 @@
 import SvgIcon from '@/components/SvgIcon.vue'
 import { IconName } from '@/utils/icons'
 import { cn } from '@/utils/tools'
-import { ref, useAttrs } from 'vue'
+import { invoke } from '@/utils/tools'
+import { ref, useAttrs, watch } from 'vue'
 
 interface Props {
   img: string
@@ -13,23 +14,57 @@ interface Props {
 const { img, icon = 'Music', iconSize = 20 } = defineProps<Props>()
 
 const attrs = useAttrs()
+const imageDataUrl = ref('')
 const isError = ref(false)
 
-const handleError = () => (isError.value = true)
-const handleLoad = () => (isError.value = false)
+// 简单缓存：避免重复请求同一 URL
+const cache = new Map<string, string>()
+
+const loadImg = async (url: string) => {
+  if (!url) {
+    imageDataUrl.value = ''
+    isError.value = false
+    return
+  }
+
+  // 命中缓存直接返回
+  if (cache.has(url)) {
+    imageDataUrl.value = cache.get(url)!
+    isError.value = false
+    return
+  }
+
+  try {
+    const result = await invoke('fetch_image', { url })
+    cache.set(url, result.url)
+    imageDataUrl.value = result.url
+    isError.value = false
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error(`[Image] fetch_image failed: ${msg}`)
+    imageDataUrl.value = ''
+    isError.value = true
+  }
+}
+
+watch(() => img, (v) => loadImg(v), { immediate: true })
 </script>
 
 <template>
   <div class="card relative overflow-hidden" :class="cn(attrs.class)">
     <img
-      :src="img"
+      v-if="imageDataUrl"
+      :src="imageDataUrl"
       loading="lazy"
       decoding="async"
       alt=""
       :draggable="false"
       class="size-full object-cover"
-      @error="handleError"
-      @load="handleLoad" />
-    <SvgIcon v-if="isError" :name="icon" :size="iconSize" class="size-full absolute inset-0 flex items-center justify-center" />
+      @error="isError = true" />
+    <SvgIcon
+      v-if="isError"
+      :name="icon"
+      :size="iconSize"
+      class="size-full absolute inset-0 flex items-center justify-center" />
   </div>
 </template>

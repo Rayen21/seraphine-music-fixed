@@ -119,7 +119,8 @@ pub fn run() {
       user::api_user_detail,
       youth::api_youth_union_vip,
       youth::api_youth_day_vip,
-      youth::api_youth_day_upgrade
+      youth::api_youth_day_upgrade,
+      image::fetch_image
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

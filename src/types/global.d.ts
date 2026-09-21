@@ -455,6 +455,10 @@ declare global {
         }>
       }>
     }
+    fetch_image: {
+      args: { url: string }
+      return: { url: string }
+    }
     api_album_songs: {
       args: { id: number; is_buy?: string; page?: number; pageSize?: number }
       return: ApiResponse
