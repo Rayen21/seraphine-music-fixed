@@ -36,6 +36,7 @@ const loadImg = async (url: string) => {
 
   // CDN 图片可能走代理失败，HTTP → HTTPS 重试
   let finalUrl = url
+  // Kugou CDN
   if (url.startsWith('http://') && url.includes('.kugou.com/')) {
     const httpsUrl = url.replace('http://', 'https://')
     try {
@@ -47,6 +48,20 @@ const loadImg = async (url: string) => {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       console.log(`[Image] HTTPS ${httpsUrl} failed: ${msg}, falling back to HTTP`)
+    }
+  }
+  // Kuwo CDN
+  if (url.startsWith('http://') && (url.includes('kuwo.cn') || url.includes('kuwoimg.com'))) {
+    const httpsUrl = url.replace('http://', 'https://')
+    try {
+      const result = await invoke('fetch_image', { url: httpsUrl })
+      cache.set(httpsUrl, result.url)
+      imageDataUrl.value = result.url
+      isError.value = false
+      return
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.log(`[Image] HTTPS Kuwo ${httpsUrl} failed: ${msg}, falling back to HTTP`)
     }
   }
 

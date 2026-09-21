@@ -43,7 +43,6 @@ export const useUpdaterStore = defineStore(
     const check = async () => {
       if (isChecking.value || isDownloading.value) return
       isChecking.value = true
-      notify.info('检查更新中...')
 
       try {
         await updater?.close()
@@ -59,6 +58,7 @@ export const useUpdaterStore = defineStore(
             latestVersion: `v${currentVersion}`
           }
 
+          notify.info('检查更新中...')
           notify.success('已是最新版本')
         } else {
           updater = update
@@ -70,6 +70,7 @@ export const useUpdaterStore = defineStore(
             date: update.date
           }
 
+          notify.info('检查更新中...')
           notify.success(`发现新版本 ${update.version}`)
         }
       } catch (error) {

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
+import { relaunch } from '@tauri-apps/plugin-process'
 import { notify } from '@/components/Notification.vue'
 
 const showAccessibilityPrompt = ref(false)
@@ -40,9 +41,14 @@ onMounted(async () => {
         请打开 <code class="rounded bg-zinc-200 px-1 dark:bg-zinc-700">系统设置 → 隐私与安全 → 辅助功能</code>，为 <code class="rounded bg-zinc-200 px-1 dark:bg-zinc-700">Seraphine Music</code> 勾选授权。
       </p>
       <button
-        class="mt-5 rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+        class="mt-3 rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
         @click="showAccessibilityPrompt = false">
         知道了
+      </button>
+      <button
+        class="mt-2 rounded bg-zinc-200 px-5 py-2 text-sm text-zinc-700 transition hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600"
+        @click="showAccessibilityPrompt = false; relaunch()">
+        重启以启用
       </button>
     </div>
   </div>
