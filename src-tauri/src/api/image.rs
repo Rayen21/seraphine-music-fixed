@@ -2,7 +2,7 @@
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
-use tauri_plugin_http::reqwest::header::HeaderMap;
+use tauri_plugin_http::reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::http::{
   client::{HttpRequest, HttpRequestOptions},
@@ -17,10 +17,9 @@ pub async fn fetch_image(url: String) -> Result<ImageData, String> {
   let header = build_cdn_header();
   let resp = HttpRequest::request(
     HttpRequestOptions::new()
-      .url(&url)
+      .url(url)
       .method(Method::GET)
       .header(header)
-      .build(),
   )
   .await
   .map_err(|e| format!("Fetch failed: {e}"))?;
