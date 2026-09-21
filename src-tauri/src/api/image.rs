@@ -2,26 +2,36 @@
 
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
-use tauri_plugin_http::reqwest::header::{HeaderMap, HeaderValue};
+use tauri_plugin_http::reqwest::header::HeaderMap;
 
 use crate::http::{
-  client::HttpRequest,
+  client::{HttpRequest, HttpRequestOptions},
   config::HttpConfig,
 };
+
+use tauri_plugin_http::reqwest::Method;
 
 /// 前端调用的 fetch_image 命令
 #[tauri::command]
 pub async fn fetch_image(url: String) -> Result<ImageData, String> {
   let header = build_cdn_header();
-  let resp = HttpRequest::get(url).await.map_err(|e| format!("Fetch failed: {e}"))?;
-  let bytes = resp.bytes().await.map_err(|e| format!("Read bytes failed: {e}"))?;
+  let resp = HttpRequest::request(
+    HttpRequestOptions::new()
+      .url(&url)
+      .method(Method::GET)
+      .header(header)
+      .build(),
+  )
+  .await
+  .map_err(|e| format!("Fetch failed: {e}"))?;
 
-  // 检测 content-type
+  // 先读取 headers（bytes() 会 consume resp）
   let content_type = resp
     .headers()
     .get("content-type")
     .and_then(|v| v.to_str().ok())
     .unwrap_or("image/jpeg");
+  let bytes = resp.bytes().await.map_err(|e| format!("Read bytes failed: {e}"))?;
 
   let data_url = format!(
     "data:{contentType};base64,{encoded}",
