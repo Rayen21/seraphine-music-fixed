@@ -148,7 +148,7 @@ export const useMusicStore = defineStore(
             }
 
             music.value.path = api_song_url.backupUrl[0]
-            await invoke('music_player_load_url', { path: music.value.path, hash: newMusic.hash, name: newMusic.title, artist: newMusic.artist })
+            await invoke('music_player_load_url', { path: music.value.path, hash: newMusic.hash, name: newMusic.title, artist: newMusic.artist || "" })
             break
         }
 
