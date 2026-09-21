@@ -67,3 +67,30 @@ Commit: 55cb7c7
 |--------|------|-------------|
 | 3d8ccec | CSP 放行 data: 协议 | [run](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35548778389) |
 | 55cb7c7 | Kuwo CDN kw_token 适配 | [run](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35611209158) |
+
+## 修复三：音频缓存文件名使用可读名称
+
+**问题**：音频缓存文件（`~/.seraphine-music/` 目录下）存储为 32 位十六进制哈希字符串（如 `228610852CB411A6FC432B2258AA585E`），而歌词文件使用可读格式（如 `爱河 - 花粥 - 765512743.krc`）。
+
+**根因**：`music_player_load_url` 命令只接收 `{ path, hash }` 参数，文件保存直接使用 `hash` 作为文件名，没有歌曲名和歌手名信息。
+
+**修复方案**：
+1. 后端 `music_player_load_url` 新增 `name` 和 `artist` 参数
+2. 从 URL 路径提取扩展名（如 `/song.mp3?token=xxx` → `.mp3`）
+3. 文件名格式改为：`{name} - {artist} - {hash}.{ext}`
+4. 前端 `music.ts` 传入 `newMusic.title` 和 `newMusic.artist`
+
+**涉及文件**：
+- `src-tauri/src/music/player.rs`：参数增加 + 文件命名逻辑
+- `src/stores/music.ts`：调用时传入 title/artist
+- `src/types/global.d.ts`：类型定义更新（注意 `artist: string | null` 需 fallback 为 `""`）
+
+**已知编译问题及修复**：
+- `E0382: borrow of moved value: path` — `HttpRequest::get(path)` 消费了 `path` 所有权，需将扩展名提取移至 `get()` 调用之前。
+
+**Commit 历史**：
+- `2326508` — 初始实现（含类型错误）
+- `baf83c8` — 修复 `artist: string | null` 类型错误
+- `6553187` — 修复 borrow of moved value
+
+**CI 构建**：[run 35616096084](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35616096084) — ✅ 成功，DMG 已下载至 `/tmp/seraphine-build/`
