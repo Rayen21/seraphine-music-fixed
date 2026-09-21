@@ -31,29 +31,26 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
+    .on_window_event(|window, event| {
+      if let tauri::WindowEvent::CloseRequested { .. } = event {
+        // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
+        window.hide();
+      }
+      Ok(())
+    })
+    .on_activate(|app| {
+      let _ = app.get_webview_window("main").map(|w| {
+        if w.is_minimized().unwrap_or(false) {
+          let _ = w.unminimize();
+        }
+        let _ = w.show();
+        let _ = w.set_focus();
+      });
+    })
     .setup(|app| {
       let app_handle = app.app_handle();
 
 
-      // 修复 Cmd+W 关闭窗口
-      app.on_window_event(|window, event| {
-        if let tauri::WindowEvent::CloseRequested { .. } = event {
-          // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
-          window.hide();
-        }
-        Ok(())
-      });
-
-      // 修复 Dock 图标点击恢复窗口
-      app.on_activate(|app| {
-        let _ = app.get_webview_window("main").map(|w| {
-          if w.is_minimized().unwrap_or(false) {
-            let _ = w.unminimize();
-          }
-          let _ = w.show();
-          let _ = w.set_focus();
-        });
-      });
 
       create_tray_icon(&app_handle)?;
 
