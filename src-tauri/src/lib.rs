@@ -36,16 +36,6 @@ pub fn run() {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
         window.hide();
       }
-      Ok(())
-    })
-    .on_activate(|app| {
-      let _ = app.get_webview_window("main").map(|w| {
-        if w.is_minimized().unwrap_or(false) {
-          let _ = w.unminimize();
-        }
-        let _ = w.show();
-        let _ = w.set_focus();
-      });
     })
     .setup(|app| {
       let app_handle = app.app_handle();
@@ -171,6 +161,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
       _ => {}
     })
     .on_tray_icon_event(|tray, event| match event {
+      TrayIconEvent::Activate { .. } => show_main_window(tray.app_handle()),
       TrayIconEvent::Click {
         button: MouseButton::Left,
         button_state: MouseButtonState::Up,
