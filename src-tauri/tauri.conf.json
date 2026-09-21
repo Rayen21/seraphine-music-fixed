@@ -26,7 +26,7 @@
         "desktop-lyric-capability",
         "mini-player-capability"
       ],
-      "csp": "default-src 'self'; img-src 'self' asset: http: https:; connect-src 'self' http: https:;style-src 'self' 'unsafe-inline';",
+      "csp": "default-src 'self'; img-src 'self' asset: data: http: https:; connect-src 'self' http: https:;style-src 'self' 'unsafe-inline';",
       "assetProtocol": {
         "enable": true,
         "scope": [
