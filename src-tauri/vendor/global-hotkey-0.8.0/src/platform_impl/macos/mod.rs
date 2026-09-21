@@ -399,6 +399,8 @@ unsafe extern "C" fn media_key_event_callback(
             let fallback_code = match nx_keytype {
                 NX_KEYTYPE::Previous => Some(Code::F7),
                 NX_KEYTYPE::Next => Some(Code::F9),
+                NX_KEYTYPE::Rewind => Some(Code::F9),
+                NX_KEYTYPE::Fast => Some(Code::F9),
                 _ => None,
             };
             if let Some(fallback_code) = fallback_code {
