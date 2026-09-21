@@ -34,9 +34,25 @@ const loadImg = async (url: string) => {
     return
   }
 
+  // CDN 图片可能走代理失败，HTTP → HTTPS 重试
+  let finalUrl = url
+  if (url.startsWith('http://') && url.includes('.kugou.com/')) {
+    const httpsUrl = url.replace('http://', 'https://')
+    try {
+      const result = await invoke('fetch_image', { url: httpsUrl })
+      cache.set(httpsUrl, result.url)
+      imageDataUrl.value = result.url
+      isError.value = false
+      return
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.log(`[Image] HTTPS ${httpsUrl} failed: ${msg}, falling back to HTTP`)
+    }
+  }
+
   try {
-    const result = await invoke('fetch_image', { url })
-    cache.set(url, result.url)
+    const result = await invoke('fetch_image', { url: finalUrl })
+    cache.set(finalUrl, result.url)
     imageDataUrl.value = result.url
     isError.value = false
   } catch (e: unknown) {
