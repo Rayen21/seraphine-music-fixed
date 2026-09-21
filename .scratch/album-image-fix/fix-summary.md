@@ -94,3 +94,33 @@ Commit: 55cb7c7
 - `6553187` — 修复 borrow of moved value
 
 **CI 构建**：[run 35616096084](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35616096084) — ✅ 成功，DMG 已下载至 `/tmp/seraphine-build/`
+
+## 修复四：三个额外问题
+
+### 4.1 更新检查同时显示"检查更新中…"和"检查更新失败"
+
+**根因**：`src/stores/updater.ts` 的 `check()` 函数在 `try` 开始前就调用了 `notify.info('检查更新中...')`，而 `catch` 块又调用了 `notify.error('检查更新失败')`，导致两个提示同时出现。
+
+**修复**：将 `notify.info('检查更新中...')` 移至成功分支内，失败时只报 "检查更新失败"。
+
+**文件**：`src/stores/updater.ts`
+
+### 4.2 辅助功能授权后不自动重启
+
+**根因**：`src/App.vue` 的辅助功能权限提示弹窗只有 "知道了" 按钮，没有重启逻辑。用户授权后需要手动关闭弹窗再重新启动。
+
+**修复**：新增 "重启以启用" 按钮，点击后调用 `relaunch()` 重启应用。重启后辅助功能权限已授权，弹窗不再出现。
+
+**文件**：`src/App.vue`
+
+### 4.3 "猜你喜欢" / "每日推荐" 图片不显示（Kuwo CDN HTTP→HTTPS 重试）
+
+**根因**：`src/components/Image.vue` 的 HTTP→HTTPS 重试逻辑只对 `.kugou.com/` 生效，Kuwo CDN 的 HTTP URL（如 `http://img4.kuwo.cn/...`）没有被重试。
+
+**修复**：在 `loadImg()` 中新增 Kuwo CDN 的 HTTP→HTTPS 重试逻辑，与 Kugou 的重试逻辑对齐。
+
+**文件**：`src/components/Image.vue`
+
+**Commit**：e4a1645
+
+**CI 构建**：[run 35619904989](https://github.com/Rayen21/seraphine-music-fixed/actions/runs/35619904989) — ✅ 成功
