@@ -402,7 +402,7 @@ unsafe extern "C" fn media_key_event_callback(
                 _ => None,
             };
             if let Some(fallback_code) = fallback_code {
-                let fallback_hotkey = HotKey::new(Some(mods), fallback_code);
+                let fallback_hotkey = HotKey::new(None, fallback_code);
                 if let Some(media_hotkey) = media_hotkeys.lock().unwrap().get(&fallback_hotkey) {
                     let key_flags = data_1 & 0x0000FFFF;
                     let is_pressed: bool = ((key_flags & 0xFF00) >> 8) == 0xA;
@@ -444,7 +444,7 @@ unsafe extern "C" fn media_key_event_callback(
             mods |= Modifiers::META;
         }
 
-        let hotkey = HotKey::new(Some(mods), mapped_code);
+        let hotkey = HotKey::new(None, mapped_code);
 
         let media_hotkeys = &*(user_info as *const Mutex<HashSet<HotKey>>);
 
