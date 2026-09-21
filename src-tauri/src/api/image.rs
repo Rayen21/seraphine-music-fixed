@@ -24,12 +24,13 @@ pub async fn fetch_image(url: String) -> Result<ImageData, String> {
   .await
   .map_err(|e| format!("Fetch failed: {e}"))?;
 
-  // 先读取 headers（bytes() 会 consume resp）
+  // 先读取 headers（bytes() 会 consume resp），克隆字符串避免借用
   let content_type = resp
     .headers()
     .get("content-type")
     .and_then(|v| v.to_str().ok())
-    .unwrap_or("image/jpeg");
+    .map(|s| s.to_owned())
+    .unwrap_or_else(|| String::from("image/jpeg"));
   let bytes = resp.bytes().await.map_err(|e| format!("Read bytes failed: {e}"))?;
 
   let data_url = format!(
