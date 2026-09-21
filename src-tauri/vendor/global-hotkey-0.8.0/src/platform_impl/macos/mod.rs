@@ -376,7 +376,7 @@ unsafe extern "C" fn media_key_event_callback(
             }
 
             // Generate hotkey for matching
-            let hotkey = HotKey::new(Some(mods), nx_keytype.into());
+            let hotkey = HotKey::new(None, nx_keytype.into());
 
             // Prevent Arc been releaded after callback returned
             let media_hotkeys = &*(user_info as *const Mutex<HashSet<HotKey>>);
