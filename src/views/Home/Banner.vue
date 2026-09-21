@@ -160,12 +160,8 @@ onMounted(() => {
         <div
           class="absolute group right-0 top-0 bg-[var(--from-bg)] overflow-hidden border size-full cursor-pointer rounded-lg"
           @click="banner.onClick">
-          <img v-if="banner.img" :src="banner.img" loading="lazy" decoding="async" alt="" />
-          <SvgIcon
-            v-else
-            class="size-full flex justify-center items-center"
-            name="Music"
-            size="32" />
+          <Image class="size-full" :img="banner.img" />
+          <SvgIcon v-if="!banner.img" class="size-full flex justify-center items-center" name="Music" size="32" />
 
           <SvgIcon
             class="absolute inset-0 bg-black/30 text-neutral-50 transition-opacity opacity-0 group-hover:opacity-100"
