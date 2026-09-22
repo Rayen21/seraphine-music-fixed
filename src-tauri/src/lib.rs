@@ -1,8 +1,8 @@
 
 use tauri::icon::Icon;
 use tauri::{
+  tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent},
   AppHandle, Manager, Result,
 };
 
@@ -32,45 +32,20 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_store::Builder::default().build())
     .on_window_event(|window, event| {
-      if let tauri::WindowEvent::CloseRequested { prevent_default, .. } = event {
+      if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
         window.hide();
-        *prevent_default = true;
+        api.prevent_default();
       }
     })
-    .tray_icon(
-      TrayIconBuilder::new()
-        .id("tray-icon")
-        .icon(Icon::from_rgb_bytes(&[0, 0, 0, 0], 1, 1).unwrap())
-        .show_menu_on_left_click(false),
-    )
+    .on_tray_icon_event(|app, event| match event {
+      TrayIconEvent::Click { .. } => show_main_window(&app),
+      _ => {}
+    })
     .setup(|app| {
       let app_handle = app.app_handle();
-      // 更新托盘图标的实际图标和菜单（builder 链中只放了占位图标）
-      if let Some(tray) = app.get_tray_icon("tray-icon") {
-        let show = MenuItem::with_id(&app_handle, "show", "显示窗口", true, None::<&str>)?;
-        let quit = MenuItem::with_id(&app_handle, "quit", "退出", true, None::<&str>)?;
-        let menu = Menu::with_items(&app_handle, &[&show, &quit])?;
-        tray.set_menu(Some(&menu))?;
-        tray.set_icon(app_handle.default_window_icon().cloned().unwrap_or(
-          Icon::from_rgb_bytes(&[0, 0, 0, 0], 1, 1).unwrap(),
-        ))?;
-        tray.set_on_menu_event({
-          let app_handle = app_handle.clone();
-          move |app, event| match event.id.as_ref() {
-            "show" => show_main_window(&app_handle),
-            "quit" => app.exit(0),
-            _ => {}
-          }
-        });
-        tray.set_on_tray_icon_event({
-          let app_handle = app_handle.clone();
-          move |tray, event| match event {
-            TrayIconEvent::Click { .. } => show_main_window(tray.app_handle()),
-            _ => {}
-          }
-        });
-      }
+
+      create_tray_icon(&app_handle)?;
 
       // HttpMode 需要比 HttpConfig 先初始化
       mode::HttpMode::init(&app_handle);
@@ -170,4 +145,29 @@ fn show_main_window(app: &AppHandle) {
     let _ = window.show();
     let _ = window.set_focus();
   }
+}
+// 创建托盘图标
+fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
+  let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
+  let quit = MenuItem::with_id(app_handle, "quit", "退出", true, None::<&str>)?;
+
+  let menu = Menu::with_items(app_handle, &[&show, &quit])?;
+
+  let tray = TrayIconBuilder::new()
+    .icon(app_handle.default_window_icon().cloned().unwrap_or(
+      Icon::from_rgb_bytes(&[0, 0, 0, 0], 1, 1).unwrap(),
+    ))
+    .menu(&menu)
+    .show_menu_on_left_click(false)
+    .on_menu_event(|app, event| match event.id.as_ref() {
+      "show" => show_main_window(app),
+      "quit" => app.exit(0),
+      _ => {}
+    })
+    .on_tray_icon_event(|tray, event| match event {
+      TrayIconEvent::Click { .. } => show_main_window(tray.app_handle()),
+      _ => {}
+    });
+
+  tray.build(app_handle)
 }
