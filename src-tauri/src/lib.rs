@@ -22,7 +22,7 @@ mod system;
 mod utils;
 
 pub fn run() {
-  tauri::Builder::default()
+  let app = tauri::Builder::default()
     .plugin(tauri_plugin_autostart::Builder::new().build())
     .plugin(tauri_plugin_global_shortcut::Builder::new().build())
     .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
@@ -131,11 +131,14 @@ pub fn run() {
       youth::api_youth_day_upgrade,
       image::fetch_image
     ])
-    .run(|app, event| {
-      if let RunEvent::Reopen { .. } = event {
-        show_main_window(app);
-      }
-    });
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application");
+
+  app.run(|app, event| {
+    if let RunEvent::Reopen { .. } = event {
+      show_main_window(app);
+    }
+  });
 }
 
 // 显示主窗口（迷你播放器打开时跳过）
