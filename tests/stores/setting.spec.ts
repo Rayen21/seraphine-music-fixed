@@ -320,8 +320,8 @@ describe('stores/setting — 系统设置/快捷键/字体/窗口状态（M4.1�
       // 此时 mediaShortcutState 已被取反为 false → 不 return，执行 3 个 unregister
       expect(mockUnregister).toHaveBeenCalledTimes(3)
       expect(mockUnregister).toHaveBeenCalledWith('MediaPlayPause')
-      expect(mockUnregister).toHaveBeenCalledWith('MediaTrackNext')
-      expect(mockUnregister).toHaveBeenCalledWith('MediaTrackPrevious')
+      expect(mockUnregister).toHaveBeenCalledWith('F9')
+      expect(mockUnregister).toHaveBeenCalledWith('F7')
     })
 
     it('false → true：调用 registerMediaShortcut（注册 3 个媒体键）', async () => {
@@ -337,8 +337,8 @@ describe('stores/setting — 系统设置/快捷键/字体/窗口状态（M4.1�
       expect(settingStore.mediaShortcutState).toBe(true)
       expect(mockRegister).toHaveBeenCalledTimes(3)
       expect(mockRegister).toHaveBeenCalledWith('MediaPlayPause', expect.any(Function))
-      expect(mockRegister).toHaveBeenCalledWith('MediaTrackNext', expect.any(Function))
-      expect(mockRegister).toHaveBeenCalledWith('MediaTrackPrevious', expect.any(Function))
+      expect(mockRegister).toHaveBeenCalledWith('F9', expect.any(Function))
+      expect(mockRegister).toHaveBeenCalledWith('F7', expect.any(Function))
     })
 
     it('registerMediaShortcut 内部 register 抛错 → catch：mediaShortcutState=false + notify.error', async () => {

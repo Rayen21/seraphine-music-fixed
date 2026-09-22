@@ -1,7 +1,6 @@
 import { SizeUnits } from './params'
 import { invoke as tauriInvoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { emit } from '@tauri-apps/api/event'
 import { ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -124,17 +123,11 @@ export function disableHotkeys(disabled: boolean = true) {
         (ctrlMeta &&
           ['KeyG', 'KeyJ', 'KeyT', 'KeyP', 'KeyR', 'KeyS', 'KeyF'].includes(code)) ||
         // Ctrl+Shift组合
-        (ctrlMeta && shiftKey && ['KeyR', 'KeyI', 'KeyJ', 'KeyC'].includes(code)) ||
-        // Cmd+W（macOS 关闭标签）：退出应用
-        (metaKey && code === 'KeyW')
+        (ctrlMeta && shiftKey && ['KeyR', 'KeyI', 'KeyJ', 'KeyC'].includes(code))
 
       if (needBlock) {
         e.preventDefault()
         e.stopPropagation()
-        // Cmd+W 触发时通知 Rust 退出应用
-        if (metaKey && code === 'KeyW') {
-          emit('app:close', null)
-        }
       }
     },
     true

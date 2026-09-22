@@ -375,7 +375,9 @@ describe('stores/music 播放状态机（M2：状态机切换核心）', () => {
       })
       expect(mockInvoke).toHaveBeenNthCalledWith(3, 'music_player_load_url', {
         path: 'https://cdn/x.mp3',
-        hash: 'online-ok-hash'
+        hash: 'online-ok-hash',
+        name: 'Song online-ok',
+        artist: 'Artist'
       })
       expect(musicStore.music?.path).toBe('https://cdn/x.mp3')
       expect(musicStore.origin).toBe(PlayingOrigin.Online)
