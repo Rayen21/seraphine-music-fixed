@@ -138,12 +138,18 @@ pub fn run() {
     RunEvent::Reopen { .. } => {
       show_main_window(app);
     }
-    // 窗口关闭请求：macOS 上 Cmd+W / 关闭按钮时触发
+    // Cmd+W 退出应用（前端通过 emit('app:close') 触发）
+    RunEvent::Custom { payload, .. } => {
+      if payload == "app:close" {
+        std::process::exit(0);
+      }
+    }
+    // 窗口关闭请求：macOS 上 Cmd+Q / 关闭按钮时触发
     RunEvent::WindowEvent { label, event, .. } => {
       if label == "main" {
         match event {
           tauri::WindowEvent::CloseRequested { .. } => {
-            // 阻止窗口关闭，改为隐藏
+            // 阻止窗口关闭，改为隐藏（Cmd+Q、关闭按钮）
             let _ = app.get_webview_window("main").map(|w| w.hide());
           }
           _ => {}

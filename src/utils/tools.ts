@@ -121,13 +121,19 @@ export function disableHotkeys(disabled: boolean = true) {
         ) ||
         // Ctrl/Command组合浏览器快捷键
         (ctrlMeta &&
-          ['KeyG', 'KeyJ', 'KeyW', 'KeyT', 'KeyP', 'KeyR', , 'KeyS', 'KeyF'].includes(code)) ||
+          ['KeyG', 'KeyJ', 'KeyT', 'KeyP', 'KeyR', 'KeyS', 'KeyF'].includes(code)) ||
         // Ctrl+Shift组合
-        (ctrlMeta && shiftKey && ['KeyR', 'KeyI', 'KeyJ', 'KeyC'].includes(code))
+        (ctrlMeta && shiftKey && ['KeyR', 'KeyI', 'KeyJ', 'KeyC'].includes(code)) ||
+        // Cmd+W（macOS 关闭标签）：退出应用
+        (metaKey && code === 'KeyW')
 
       if (needBlock) {
         e.preventDefault()
         e.stopPropagation()
+        // Cmd+W 触发时通知 Rust 退出应用
+        if (metaKey && code === 'KeyW') {
+          emit('app:close', null)
+        }
       }
     },
     true

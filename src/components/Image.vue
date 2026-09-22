@@ -14,88 +14,102 @@ interface Props {
 const { img, icon = 'Music', iconSize = 20 } = defineProps<Props>()
 
 const attrs = useAttrs()
-const imageDataUrl = ref('')
-const isError = ref(false)
+const isLoaded = ref(false)
 
-// 简单缓存：避免重复请求同一 URL
-const cache = new Map<string, string>()
-
-const loadImg = async (url: string) => {
+// 直接预加载图片（适用于普通 HTTP/HTTPS 图片）
+const handlePreload = (url: string) => {
   if (!url) {
-    imageDataUrl.value = ''
-    isError.value = false
+    isLoaded.value = false
     return
   }
 
-  // 命中缓存直接返回
-  if (cache.has(url)) {
-    imageDataUrl.value = cache.get(url)!
-    isError.value = false
-    return
-  }
+  const image = new Image()
+  image.src = url
+  image.onload = () => (isLoaded.value = true)
+  image.onerror = () => (isLoaded.value = false)
+}
 
-  // CDN 图片可能走代理失败，HTTP → HTTPS 重试
-  let finalUrl = url
-  // Kugou CDN
-  if (url.startsWith('http://') && url.includes('.kugou.com/')) {
-    const httpsUrl = url.replace('http://', 'https://')
-    try {
-      const result = await invoke('fetch_image', { url: httpsUrl })
-      cache.set(httpsUrl, result.url)
-      imageDataUrl.value = result.url
-      isError.value = false
-      return
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.log(`[Image] HTTPS ${httpsUrl} failed: ${msg}, falling back to HTTP`)
-    }
-  }
-  // Kuwo CDN
-  if (url.startsWith('http://') && (url.includes('kuwo.cn') || url.includes('kuwoimg.com'))) {
-    const httpsUrl = url.replace('http://', 'https://')
-    try {
-      const result = await invoke('fetch_image', { url: httpsUrl })
-      cache.set(httpsUrl, result.url)
-      imageDataUrl.value = result.url
-      isError.value = false
-      return
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.log(`[Image] HTTPS Kuwo ${httpsUrl} failed: ${msg}, falling back to HTTP`)
-    }
+// Kugou CDN 需要后端代理（因为需要特定 cookies）
+const handlePreloadKugou = async (url: string) => {
+  if (!url) {
+    isLoaded.value = false
+    return
   }
 
   try {
-    const result = await invoke('fetch_image', { url: finalUrl })
-    cache.set(finalUrl, result.url)
-    imageDataUrl.value = result.url
-    isError.value = false
+    const result = await invoke('fetch_image', { url })
+    isLoaded.value = true
+    // 替换 img 的 src 为后端返回的 data URL
+    const imgEl = document.querySelector('.image-container img')
+    if (imgEl && result.url) {
+      imgEl.src = result.url
+    }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error(`[Image] fetch_image failed: ${msg}`)
-    imageDataUrl.value = ''
-    isError.value = true
+    console.log(`[Image] Kugou fetch_image failed: ${msg}, falling back to direct preload`)
+    // 降级：尝试直接加载
+    handlePreload(url)
   }
 }
 
-watch(() => img, (v) => loadImg(v), { immediate: true })
+// Kuwo CDN 也需要后端代理（kw_token / Referer）
+const handlePreloadKuwo = async (url: string) => {
+  if (!url) {
+    isLoaded.value = false
+    return
+  }
+
+  try {
+    const result = await invoke('fetch_image', { url })
+    isLoaded.value = true
+    const imgEl = document.querySelector('.image-container img')
+    if (imgEl && result.url) {
+      imgEl.src = result.url
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.log(`[Image] Kuwo fetch_image failed: ${msg}, falling back to direct preload`)
+    // 降级：尝试直接加载
+    handlePreload(url)
+  }
+}
+
+const loadImage = (url: string) => {
+  if (!url) {
+    isLoaded.value = false
+    return
+  }
+
+  // Kugou CDN 使用后端代理（带 cookie）
+  if (url.includes('.kugou.com/')) {
+    handlePreloadKugou(url)
+    return
+  }
+
+  // Kuwo CDN 也使用后端代理（带 kw_token / Referer）
+  if (url.includes('kuwo.cn') || url.includes('kuwoimg.com')) {
+    handlePreloadKuwo(url)
+    return
+  }
+
+  // 其他 CDN（普通 HTTP/HTTPS）直接加载
+  handlePreload(url)
+}
+
+watch(() => img, loadImage, { immediate: true })
 </script>
 
 <template>
   <div class="card relative overflow-hidden" :class="cn(attrs.class)">
     <img
-      v-if="imageDataUrl"
-      :src="imageDataUrl"
+      v-if="isLoaded"
+      class="size-full object-cover"
+      :src="img"
       loading="lazy"
       decoding="async"
       alt=""
       :draggable="false"
-      class="size-full object-cover"
-      @error="isError = true" />
-    <SvgIcon
-      v-if="isError"
-      :name="icon"
-      :size="iconSize"
-      class="size-full absolute inset-0 flex items-center justify-center" />
+      @error="isLoaded = false" />
+    <SvgIcon v-else :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
   </div>
 </template>
