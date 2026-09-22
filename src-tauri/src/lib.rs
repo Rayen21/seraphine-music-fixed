@@ -34,6 +34,7 @@ pub fn run() {
     .on_window_event(|window, event| {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
+        api.prevent_close();
         let _ = window.hide();
       }
     })
