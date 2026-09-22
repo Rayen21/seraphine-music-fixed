@@ -1,9 +1,8 @@
 
-use tauri::image::Icon;
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  AppHandle, Manager, Result,
+  AppHandle, Image, Manager, Result, RunEvent,
 };
 
 use crate::{
@@ -35,7 +34,7 @@ pub fn run() {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
         window.hide();
-        api.prevent_default = true;
+        api.prevent_close();
       }
     })
     .on_tray_icon_event(|app, event| match event {
@@ -132,8 +131,11 @@ pub fn run() {
       youth::api_youth_day_upgrade,
       image::fetch_image
     ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .run(|app, event| {
+      if let RunEvent::Reopen { .. } = event {
+        show_main_window(app);
+      }
+    });
 }
 
 // 显示主窗口（迷你播放器打开时跳过）
@@ -155,7 +157,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
 
   let tray = TrayIconBuilder::new()
     .icon(app_handle.default_window_icon().cloned().unwrap_or(
-      Icon::from_rgb_bytes(&[0, 0, 0, 0], 1, 1).unwrap(),
+      Image::new(&[0, 0, 0, 0], 1, 1),
     ))
     .menu(&menu)
     .show_menu_on_left_click(false)
