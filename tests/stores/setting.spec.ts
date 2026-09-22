@@ -613,7 +613,7 @@ describe('stores/setting — 系统设置/快捷键/字体/窗口状态（M4.1�
       expect(mockMusicPause).not.toHaveBeenCalled()
     })
 
-    it('MediaTrackNext 回调 Pressed → playPrevOrNext("next")', async () => {
+    it('F9 键（切下一首）回调 Pressed → playPrevOrNext("next")', async () => {
       let nextCb: any
       settingStore.toggleMediaShortcutState()
       await flushAll()
@@ -635,7 +635,7 @@ describe('stores/setting — 系统设置/快捷键/字体/窗口状态（M4.1�
       expect(mockMusicPlayPrevOrNext).toHaveBeenCalledWith('next')
     })
 
-    it('MediaTrackPrevious 回调 Pressed → playPrevOrNext("prev")', async () => {
+    it('F7 键（切上一首）回调 Pressed → playPrevOrNext("prev")', async () => {
       let prevCb: any
       settingStore.toggleMediaShortcutState()
       await flushAll()

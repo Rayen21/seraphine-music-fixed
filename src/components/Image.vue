@@ -3,7 +3,7 @@ import SvgIcon from '@/components/SvgIcon.vue'
 import { IconName } from '@/utils/icons'
 import { cn } from '@/utils/tools'
 import { invoke } from '@/utils/tools'
-import { ref, useAttrs, watch } from 'vue'
+import { ref, useAttrs, watch, nextTick } from 'vue'
 
 interface Props {
   img: string
@@ -15,6 +15,7 @@ const { img, icon = 'Music', iconSize = 20 } = defineProps<Props>()
 
 const attrs = useAttrs()
 const isLoaded = ref(false)
+const imageRef = ref<HTMLImageElement | null>(null)
 
 // 直接预加载图片（适用于普通 HTTP/HTTPS 图片）
 const handlePreload = (url: string) => {
@@ -39,8 +40,8 @@ const handlePreloadKugou = async (url: string) => {
   try {
     const result = await invoke('fetch_image', { url })
     isLoaded.value = true
-    // 替换 img 的 src 为后端返回的 data URL
-    const imgEl = document.querySelector('.image-container img') as HTMLImageElement
+    await nextTick()
+    const imgEl = imageRef.value
     if (imgEl && result.url) {
       imgEl.src = result.url
     }
@@ -62,7 +63,8 @@ const handlePreloadKuwo = async (url: string) => {
   try {
     const result = await invoke('fetch_image', { url })
     isLoaded.value = true
-    const imgEl = document.querySelector('.image-container img') as HTMLImageElement
+    await nextTick()
+    const imgEl = imageRef.value
     if (imgEl && result.url) {
       imgEl.src = result.url
     }
@@ -104,12 +106,13 @@ watch(() => img, loadImage, { immediate: true })
     <img
       v-if="isLoaded"
       class="size-full object-cover"
+      ref="imageRef"
       :src="img"
       loading="lazy"
       decoding="async"
       alt=""
       :draggable="false"
-      @error="isLoaded = false" />
+      />
     <SvgIcon v-else :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
   </div>
 </template>
