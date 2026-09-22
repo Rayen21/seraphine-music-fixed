@@ -1,7 +1,7 @@
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  AppHandle, Image, Manager, Result, RunEvent,
+  AppHandle, Manager, Result, RunEvent,
 };
 
 use crate::{
@@ -174,7 +174,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
 
   let tray = TrayIconBuilder::new()
     .icon(app_handle.default_window_icon().cloned().unwrap_or(
-      Image::new(&[0, 0, 0, 0], 1, 1),
+      tauri::image::Image::new(&[0, 0, 0, 0], 1, 1),
     ))
     .menu(&menu)
     .show_menu_on_left_click(false)
