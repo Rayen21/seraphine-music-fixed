@@ -161,12 +161,7 @@ fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
       _ => {}
     })
     .on_tray_icon_event(|tray, event| match event {
-      TrayIconEvent::Activate { .. } => show_main_window(tray.app_handle()),
-      TrayIconEvent::Click {
-        button: MouseButton::Left,
-        button_state: MouseButtonState::Up,
-        ..
-      } => show_main_window(tray.app_handle()),
+      TrayIconEvent::Click { .. } => show_main_window(tray.app_handle()),
       _ => {}
     });
 
