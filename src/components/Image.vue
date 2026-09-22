@@ -40,7 +40,7 @@ const handlePreloadKugou = async (url: string) => {
     const result = await invoke('fetch_image', { url })
     isLoaded.value = true
     // 替换 img 的 src 为后端返回的 data URL
-    const imgEl = document.querySelector('.image-container img')
+    const imgEl = document.querySelector('.image-container img') as HTMLImageElement
     if (imgEl && result.url) {
       imgEl.src = result.url
     }
@@ -62,7 +62,7 @@ const handlePreloadKuwo = async (url: string) => {
   try {
     const result = await invoke('fetch_image', { url })
     isLoaded.value = true
-    const imgEl = document.querySelector('.image-container img')
+    const imgEl = document.querySelector('.image-container img') as HTMLImageElement
     if (imgEl && result.url) {
       imgEl.src = result.url
     }
