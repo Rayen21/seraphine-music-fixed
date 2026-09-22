@@ -141,7 +141,7 @@ pub fn run() {
     // Cmd+W 退出应用（前端通过 emit('app:close') 触发）
     RunEvent::Custom { payload, .. } => {
       if payload == "app:close" {
-        std::process::exit(0);
+        app.exit(0);
       }
     }
     // 窗口关闭请求：macOS 上 Cmd+Q / 关闭按钮时触发
