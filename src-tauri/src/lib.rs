@@ -1,8 +1,7 @@
-
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  AppHandle, Image, Manager, Result, RunEvent,
+  AppHandle, Image, Manager, Result, RunEvent, Window,
 };
 
 use crate::{
@@ -33,7 +32,7 @@ pub fn run() {
     .on_window_event(|window, event| {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
-        window.hide();
+        let _ = window.hide();
         api.prevent_close();
       }
     })
@@ -134,10 +133,33 @@ pub fn run() {
     .build(tauri::generate_context!())
     .expect("error while building tauri application");
 
-  app.run(|app, event| {
-    if let RunEvent::Reopen { .. } = event {
+  app.run(|app, event| match event {
+    // Dock 点击事件：macOS 上点击 Dock 图标时触发
+    RunEvent::Reopen { .. } => {
       show_main_window(app);
     }
+    // 窗口关闭请求：macOS 上 Cmd+W / 关闭按钮时触发
+    RunEvent::WindowEvent { label, event, .. } => {
+      if label == "main" {
+        match event {
+          tauri::WindowEvent::CloseRequested { .. } => {
+            // 阻止窗口关闭，改为隐藏
+            let _ = app.get_webview_window("main").map(|w| w.hide());
+          }
+          tauri::WindowEvent::Focused(focused) => {
+            // 窗口获得焦点时确保可见
+            if focused {
+              let _ = app.get_webview_window("main").map(|w| {
+                let _ = w.show();
+                let _ = w.set_focus();
+              });
+            }
+          }
+          _ => {}
+        }
+      }
+    }
+    _ => {}
   });
 }
 
@@ -149,8 +171,21 @@ fn show_main_window(app: &AppHandle) {
   if let Some(window) = app.get_webview_window("main") {
     let _ = window.show();
     let _ = window.set_focus();
+  } else {
+    // 窗口已销毁则重新创建
+    let app_handle = app.clone();
+    tauri::Window::new(
+      &app_handle,
+      "main",
+      tauri::WebviewUrl::App("index.html".into()),
+    )
+    .map(|w| {
+      let _ = w.show();
+      let _ = w.set_focus();
+    });
   }
 }
+
 // 创建托盘图标
 fn create_tray_icon(app_handle: &AppHandle) -> Result<TrayIcon> {
   let show = MenuItem::with_id(app_handle, "show", "显示窗口", true, None::<&str>)?;
