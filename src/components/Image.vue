@@ -27,7 +27,7 @@ const handlePreload = (url: string) => {
   const image = new Image()
   image.src = url
   image.onload = () => (isLoaded.value = true)
-  image.onerror = () => (isLoaded.value = false)
+  image.onerror = () => { /* 预加载失败仍显示图片，让浏览器原生 <img> 加载（可能是 CORS 但浏览器能加载） */ isLoaded.value = true }
 }
 
 // Kugou CDN 需要后端代理（因为需要特定 cookies）
@@ -103,16 +103,17 @@ watch(() => img, loadImage, { immediate: true })
 
 <template>
   <div class="card relative overflow-hidden" :class="cn(attrs.class)">
-    <img
-      v-if="isLoaded"
-      class="size-full object-cover"
-      ref="imageRef"
-      :src="img"
-      loading="lazy"
-      decoding="async"
-      alt=""
-      :draggable="false"
-      />
+  <img
+    v-if="isLoaded"
+    class="size-full object-cover"
+    ref="imageRef"
+    :src="img"
+    loading="lazy"
+    decoding="async"
+    alt=""
+    :draggable="false"
+    @error="isLoaded = false"
+  />
     <SvgIcon v-else :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
   </div>
 </template>

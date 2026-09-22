@@ -23,7 +23,16 @@ mod utils;
 pub fn run() {
   let app = tauri::Builder::default()
     .plugin(tauri_plugin_autostart::Builder::new().build())
-    .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+    .plugin(tauri_plugin_global_shortcut::Builder::new()
+      .with_shortcut("Cmd+W").expect("Failed to register Cmd+W shortcut")
+      .with_handler(|app, _shortcut, event| {
+        if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+          if let Some(window) = app.get_webview_window("main") {
+            let _ = window.hide();
+          }
+        }
+      })
+      .build())
     .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
@@ -33,7 +42,6 @@ pub fn run() {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
         let _ = window.hide();
-        api.prevent_close();
       }
     })
     .on_tray_icon_event(|app, event| match event {
