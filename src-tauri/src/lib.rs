@@ -1,5 +1,5 @@
 
-use tauri::icon::Icon;
+use tauri::image::Icon;
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
@@ -35,7 +35,7 @@ pub fn run() {
       if let tauri::WindowEvent::CloseRequested { api, .. } = event {
         // 阻止默认关闭行为，改为隐藏窗口（应用继续运行在托盘）
         window.hide();
-        api.prevent_default();
+        api.prevent_default = true;
       }
     })
     .on_tray_icon_event(|app, event| match event {
