@@ -3,6 +3,7 @@ use tauri::{
   menu::{Menu, MenuItem},
   AppHandle, Manager, Result, RunEvent,
 };
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 use crate::{
   api::{
@@ -24,14 +25,6 @@ pub fn run() {
   let app = tauri::Builder::default()
     .plugin(tauri_plugin_autostart::Builder::new().build())
     .plugin(tauri_plugin_global_shortcut::Builder::new()
-      .with_shortcut("Cmd+W").expect("Failed to register Cmd+W shortcut")
-      .with_handler(|app, _shortcut, event| {
-        if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-          if let Some(window) = app.get_webview_window("main") {
-            let _ = window.hide();
-          }
-        }
-      })
       .build())
     .plugin(tauri_plugin_single_instance::init(|_app, _args, _cwd| {}))
     .plugin(tauri_plugin_clipboard_manager::init())
@@ -50,6 +43,17 @@ pub fn run() {
     })
     .setup(|app| {
       let app_handle = app.app_handle();
+      // Cmd+W 全局快捷键：隐藏主窗口（回到托盘），只对 Cmd+W 生效，不干扰 F7/F9
+      app_handle
+        .global_shortcut()
+        .on_shortcut("Cmd+W", |app, _shortcut, event| {
+          if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            if let Some(window) = app.get_webview_window("main") {
+              let _ = window.hide();
+            }
+          }
+        })
+        .expect("Failed to register Cmd+W shortcut");
 
       create_tray_icon(&app_handle)?;
 
