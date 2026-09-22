@@ -1,7 +1,7 @@
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  AppHandle, Image, Manager, Result, RunEvent, Window,
+  AppHandle, Image, Manager, Result, RunEvent,
 };
 
 use crate::{
@@ -146,15 +146,6 @@ pub fn run() {
             // 阻止窗口关闭，改为隐藏
             let _ = app.get_webview_window("main").map(|w| w.hide());
           }
-          tauri::WindowEvent::Focused(focused) => {
-            // 窗口获得焦点时确保可见
-            if focused {
-              let _ = app.get_webview_window("main").map(|w| {
-                let _ = w.show();
-                let _ = w.set_focus();
-              });
-            }
-          }
           _ => {}
         }
       }
@@ -171,18 +162,6 @@ fn show_main_window(app: &AppHandle) {
   if let Some(window) = app.get_webview_window("main") {
     let _ = window.show();
     let _ = window.set_focus();
-  } else {
-    // 窗口已销毁则重新创建
-    let app_handle = app.clone();
-    tauri::Window::new(
-      &app_handle,
-      "main",
-      tauri::WebviewUrl::App("index.html".into()),
-    )
-    .map(|w| {
-      let _ = w.show();
-      let _ = w.set_focus();
-    });
   }
 }
 
