@@ -1,7 +1,7 @@
 use tauri::{
   tray::{TrayIcon, TrayIconBuilder, TrayIconEvent},
   menu::{Menu, MenuItem},
-  AppHandle, Manager, Result, RunEvent,
+  AppHandle, Manager, Result, RunEvent, Listener,
 };
 
 use crate::{
@@ -133,16 +133,15 @@ pub fn run() {
     .build(tauri::generate_context!())
     .expect("error while building tauri application");
 
+  // Cmd+W 退出应用（前端通过 emit('app:close') 触发）
+  app.listen("app:close", move |_: tauri::Event| {
+    std::process::exit(0);
+  });
+
   app.run(|app, event| match event {
     // Dock 点击事件：macOS 上点击 Dock 图标时触发
     RunEvent::Reopen { .. } => {
       show_main_window(app);
-    }
-    // Cmd+W 退出应用（前端通过 emit('app:close') 触发）
-    RunEvent::Custom { payload, .. } => {
-      if payload == "app:close" {
-        app.exit(0);
-      }
     }
     // 窗口关闭请求：macOS 上 Cmd+Q / 关闭按钮时触发
     RunEvent::WindowEvent { label, event, .. } => {
