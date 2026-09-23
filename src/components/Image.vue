@@ -27,15 +27,18 @@ const isImageBlank = (img: HTMLImageElement): boolean => {
     if (!ctx) return false
     ctx.drawImage(img, 0, 0)
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-    // 检查是否全白（RGB 255）或全透明（RGBA 0）
+    // 统计接近白色的像素比例（阈值 240）
+    let whiteCount = 0
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
-        if (data[i + 3] !== 0) return false
+      if (data[i] >= 240 && data[i + 1] >= 240 && data[i + 2] >= 240) {
+        whiteCount++
+      } else if (data[i + 3] === 0) {
+        whiteCount++
       }
     }
-    return true
+    return whiteCount / data.length >= 0.99
   } catch {
-    return false
+    return true
   }
 }
 
