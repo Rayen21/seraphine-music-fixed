@@ -331,7 +331,6 @@ features = [
     "NSOpenGLView",
     "NSPasteboard",
     "NSResponder",
-    "NSRunningApplication",
     "NSScreen",
     "NSView",
     "NSWindow",
@@ -354,7 +353,6 @@ features = [
     "NSRange",
     "NSString",
     "NSThread",
-    "NSRunningApplication",
     "NSURL",
 ]
 default-features = false
