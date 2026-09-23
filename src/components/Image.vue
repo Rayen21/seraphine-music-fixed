@@ -17,8 +17,34 @@ const attrs = useAttrs()
 const isLoaded = ref(false)
 const imageRef = ref<HTMLImageElement | null>(null)
 
+const isImageBlank = (img: HTMLImageElement): boolean => {
+  if (img.naturalWidth === 0 || img.naturalHeight === 0) return true
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return false
+    ctx.drawImage(img, 0, 0)
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+    // 检查是否全白（RGB 255）或全透明（RGBA 0）
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
+        if (data[i + 3] !== 0) return false
+      }
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
 const handleImageLoad = () => {
-  if (imageRef.value && imageRef.value.naturalWidth === 0) {
+  if (!imageRef.value) {
+    isLoaded.value = false
+    return
+  }
+  if (isImageBlank(imageRef.value)) {
     isLoaded.value = false
   } else {
     isLoaded.value = true

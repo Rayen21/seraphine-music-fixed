@@ -336,10 +336,6 @@ extern "C" fn window_should_close(this: &Object, _: Sel, _: id) -> BOOL {
     // macOS 系统快捷键 Cmd+W 触发此委托，返回 NO 阻止窗口关闭，同时隐藏窗口
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     NSApplication::sharedApplication(mtm).hide(None);
-    // 备用：直接调用 [NSRunningApplication currentApplication] hide]
-    let cls = class!("NSRunningApplication");
-    let app: id = unsafe { msg_send![cls, currentApplication] };
-    let _: () = unsafe { msg_send![app, hide] };
   });
   trace!("Completed `windowShouldClose:`");
   NO
@@ -364,10 +360,6 @@ extern "C" fn window_will_miniaturize(this: &Object, _: Sel, _: id) {
     // macOS 系统快捷键 Cmd+M 触发此委托，隐藏窗口而非最小化
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
     NSApplication::sharedApplication(mtm).hide(None);
-    // 备用：直接调用 [NSRunningApplication currentApplication] hide]
-    let cls = class!("NSRunningApplication");
-    let app: id = unsafe { msg_send![cls, currentApplication] };
-    let _: () = unsafe { msg_send![app, hide] };
   });
   trace!("Completed `windowWillMiniaturize:`");
 }
