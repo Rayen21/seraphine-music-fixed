@@ -84,4 +84,5 @@ panic = "abort"   # 通过禁用 panic 处理程序来提高性能。
 strip = true      # 确保移除调试符号。
 
 [patch.crates-io]
+tao = { path = "patched-tao" }
 global-hotkey = { path = "vendor/global-hotkey-0.8.0" }
