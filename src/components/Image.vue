@@ -17,6 +17,12 @@ const attrs = useAttrs()
 const isLoaded = ref(false)
 const imageRef = ref<HTMLImageElement | null>(null)
 
+const handleImageLoad = () => {
+  if (imageRef.value && imageRef.value.naturalWidth === 0) {
+    isLoaded.value = false
+  }
+}
+
 // 直接预加载图片（适用于普通 HTTP/HTTPS 图片）
 const handlePreload = (url: string) => {
   if (!url) {
@@ -113,6 +119,7 @@ watch(() => img, loadImage, { immediate: true })
     alt=""
     :draggable="false"
     @error="isLoaded = false"
+    @load="handleImageLoad"
   />
     <SvgIcon v-else :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
   </div>
