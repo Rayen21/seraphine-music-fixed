@@ -20,6 +20,8 @@ const imageRef = ref<HTMLImageElement | null>(null)
 const handleImageLoad = () => {
   if (imageRef.value && imageRef.value.naturalWidth === 0) {
     isLoaded.value = false
+  } else {
+    isLoaded.value = true
   }
 }
 
@@ -45,7 +47,6 @@ const handlePreloadKugou = async (url: string) => {
 
   try {
     const result = await invoke('fetch_image', { url })
-    isLoaded.value = true
     await nextTick()
     const imgEl = imageRef.value
     if (imgEl && result.url) {
@@ -68,7 +69,6 @@ const handlePreloadKuwo = async (url: string) => {
 
   try {
     const result = await invoke('fetch_image', { url })
-    isLoaded.value = true
     await nextTick()
     const imgEl = imageRef.value
     if (imgEl && result.url) {
@@ -109,18 +109,18 @@ watch(() => img, loadImage, { immediate: true })
 
 <template>
   <div class="card relative overflow-hidden" :class="cn(attrs.class)">
-  <img
-    v-if="isLoaded"
-    class="size-full object-cover"
-    ref="imageRef"
-    :src="img"
-    loading="lazy"
-    decoding="async"
-    alt=""
-    :draggable="false"
-    @error="isLoaded = false"
-    @load="handleImageLoad"
-  />
-    <SvgIcon v-else :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
+    <img
+      ref="imageRef"
+      :src="img"
+      class="size-full object-cover"
+      loading="lazy"
+      decoding="async"
+      alt=""
+      :draggable="false"
+      :style="{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.2s ease' }"
+      @error="isLoaded = false"
+      @load="handleImageLoad"
+    />
+    <SvgIcon v-if="!isLoaded" :name="icon" :size="iconSize" class="size-full flex items-center justify-center" />
   </div>
 </template>
