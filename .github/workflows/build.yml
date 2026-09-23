@@ -35,7 +35,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 删除除最新 tag 外的所有 releases
           LATEST=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
           echo "Keeping $LATEST"
           gh release list --json tagName,name --jq '.[].tagName' | while read tag; do
@@ -46,6 +45,8 @@ jobs:
 
   build:
     name: Build macOS ARM64
+    # 仅当 workflow_dispatch 触发，或 push 提交信息包含 [build] 时才执行
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[build]') }}
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -85,14 +86,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --dangerously-allow-all-builds
 
-      # 手动触发 / push：仅构建，不签名，不发布 Release
+      # 构建 Tauri bundle（不签名，不发布 Release）
       - name: Build Tauri bundle (no signing, no release)
         env:
           TAURI_SIGNING_PRIVATE_KEY: ''
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
           TAURI_SIGNING_BYPASS: 'true'
         run: |
-          # 禁用 Tauri 签名
           export TAURI_SIGNING_PRIVATE_KEY=""
           export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
           pnpm tauri build --target aarch64-apple-darwin
