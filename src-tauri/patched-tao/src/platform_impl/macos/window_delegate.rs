@@ -334,7 +334,8 @@ extern "C" fn window_should_close(this: &Object, _: Sel, _: id) -> BOOL {
   with_state(this, |state| {
     state.emit_event(WindowEvent::CloseRequested);
     // 隐藏整个应用（菜单栏应用，托盘常驻）
-    let _: () = msg_send![NSApplication::shared_application(), hide: nil];
+    let mtm = unsafe { MainThreadMarker::new_unchecked() };
+    let _: () = msg_send![NSApplication::sharedApplication(mtm), hide: nil];
   });
   trace!("Completed `windowShouldClose:`");
   NO
@@ -357,7 +358,8 @@ extern "C" fn window_will_miniaturize(this: &Object, _: Sel, _: id) {
   trace!("Triggered `windowWillMiniaturize:` (Cmd+M)");
   with_state(this, |state| {
     // 隐藏整个应用（菜单栏应用，托盘常驻）
-    let _: () = msg_send![NSApplication::shared_application(), hide: nil];
+    let mtm = unsafe { MainThreadMarker::new_unchecked() };
+    let _: () = msg_send![NSApplication::sharedApplication(mtm), hide: nil];
   });
   trace!("Completed `windowWillMiniaturize:`");
 }
