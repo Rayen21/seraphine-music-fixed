@@ -354,6 +354,7 @@ features = [
     "NSRange",
     "NSString",
     "NSThread",
+    "NSRunningApplication",
     "NSURL",
 ]
 default-features = false
