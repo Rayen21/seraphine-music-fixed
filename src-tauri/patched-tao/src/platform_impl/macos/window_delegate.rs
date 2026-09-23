@@ -333,9 +333,8 @@ extern "C" fn window_should_close(this: &Object, _: Sel, _: id) -> BOOL {
   trace!("Triggered `windowShouldClose:`");
   with_state(this, |state| {
     state.emit_event(WindowEvent::CloseRequested);
-    // macOS 系统快捷键 Cmd+W 触发此委托，返回 NO 阻止窗口关闭，同时隐藏窗口
-    let mtm = unsafe { MainThreadMarker::new_unchecked() };
-    state.ns_window.orderOut(None);
+    // 隐藏整个应用（菜单栏应用，托盘常驻）
+    let _: () = msg_send![NSApplication::shared_application(), hide: nil];
   });
   trace!("Completed `windowShouldClose:`");
   NO
@@ -357,9 +356,8 @@ extern "C" fn window_will_close(this: &Object, _: Sel, _: id) {
 extern "C" fn window_will_miniaturize(this: &Object, _: Sel, _: id) {
   trace!("Triggered `windowWillMiniaturize:` (Cmd+M)");
   with_state(this, |state| {
-    // macOS 系统快捷键 Cmd+M 触发此委托，隐藏窗口而非最小化
-    let mtm = unsafe { MainThreadMarker::new_unchecked() };
-    state.ns_window.orderOut(None);
+    // 隐藏整个应用（菜单栏应用，托盘常驻）
+    let _: () = msg_send![NSApplication::shared_application(), hide: nil];
   });
   trace!("Completed `windowWillMiniaturize:`");
 }

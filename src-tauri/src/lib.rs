@@ -56,6 +56,16 @@ pub fn run() {
         })
         .expect("Failed to register Cmd+W shortcut");
 
+      // Cmd+M 全局快捷键：隐藏整个应用（菜单栏应用，托盘常驻）
+      app_handle
+        .global_shortcut()
+        .on_shortcut("Cmd+M", |app, _shortcut, event| {
+          if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            let _ = app.hide();
+          }
+        })
+        .expect("Failed to register Cmd+M shortcut");
+
       create_tray_icon(&app_handle)?;
 
       // HttpMode 需要比 HttpConfig 先初始化

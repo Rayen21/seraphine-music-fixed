@@ -36,7 +36,7 @@ const isImageBlank = (img: HTMLImageElement): boolean => {
         whiteCount++
       }
     }
-    return whiteCount / data.length >= 0.99
+    return whiteCount / (canvas.width * canvas.height) >= 0.99
   } catch {
     return true
   }
@@ -112,6 +112,7 @@ const handlePreloadKuwo = async (url: string) => {
 }
 
 const loadImage = (url: string) => {
+  isLoaded.value = false;
   if (!url) {
     isLoaded.value = false
     return
