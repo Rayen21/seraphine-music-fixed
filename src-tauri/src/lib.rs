@@ -20,6 +20,7 @@ mod http;
 mod music;
 mod system;
 mod utils;
+pub mod commands;
 
 pub fn run() {
   let app = tauri::Builder::default()
@@ -151,7 +152,9 @@ pub fn run() {
       youth::api_youth_union_vip,
       youth::api_youth_day_vip,
       youth::api_youth_day_upgrade,
-      image::fetch_image
+      image::fetch_image,
+      commands::hide_window,
+      commands::hide_app
     ])
     .build(tauri::generate_context!())
     .expect("error while building tauri application");

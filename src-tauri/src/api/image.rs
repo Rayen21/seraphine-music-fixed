@@ -46,11 +46,16 @@ pub async fn fetch_image(url: String) -> Result<ImageData, String> {
 fn build_cdn_header(url: &str) -> HeaderMap {
   let mut header = HeaderMap::new();
 
+  // 判断是否为 QQ 音乐 CDN
+  if url.contains("imgcache.qq.com") || url.contains("y.qq.com/") {
+    // QQ 音乐 CDN：使用 QQ 相关请求头
+    header.insert("Referer", HeaderValue::from_str("https://y.qq.com/").unwrap());
+    header.insert(
+      "User-Agent",
+      HeaderValue::from_str("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36").unwrap(),
+    );
   // 判断是否为 Kuwo CDN 请求（img{1-5}.kuwo.cn）
-  let is_kuwo = url.contains("kuwo.cn")
-    || url.contains("kuwoimg.com");
-
-  if is_kuwo {
+  } else if url.contains("kuwo.cn") || url.contains("kuwoimg.com") {
     // Kuwo CDN：提取 kw_token 作为 Cookie
     let kw_token = extract_kw_token(url);
     header.insert("Referer", HeaderValue::from_str("https://music.kuwo.cn/").unwrap());
@@ -83,8 +88,6 @@ fn build_cdn_header(url: &str) -> HeaderMap {
 
   header
 }
-
-/// 从 Kuwo CDN URL 中提取 kw_token 查询参数
 fn extract_kw_token(url: &str) -> Option<String> {
   let query = url.split('?').nth(1)?;
   for param in query.split('&') {

@@ -111,6 +111,27 @@ const handlePreloadKuwo = async (url: string) => {
   }
 }
 
+// QQ 音乐 CDN 需要后端代理（QQ 音乐图片需要特定 cookie/token）
+const handlePreloadQQ = async (url: string) => {
+  if (!url) {
+    isLoaded.value = false
+    return
+  }
+  try {
+    const result = await invoke('fetch_image', { url })
+    await nextTick()
+    const imgEl = imageRef.value
+    if (imgEl && result.url) {
+      imgEl.src = result.url
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.log(`[Image] QQ CDN fetch_image failed: ${msg}, falling back to direct preload`)
+    // 降级：尝试直接加载
+    handlePreload(url)
+  }
+}
+
 const loadImage = (url: string) => {
   isLoaded.value = false;
   if (!url) {
@@ -121,6 +142,12 @@ const loadImage = (url: string) => {
   // Kugou CDN 使用后端代理（带 cookie）
   if (url.includes('.kugou.com/')) {
     handlePreloadKugou(url)
+    return
+  }
+
+  // QQ 音乐 CDN 使用后端代理（需要 cookie/token）
+  if (url.includes('imgcache.qq.com') || url.includes('y.qq.com/')) {
+    handlePreloadQQ(url)
     return
   }
 

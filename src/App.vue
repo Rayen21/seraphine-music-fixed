@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
+import { invoke } from '@/utils/tools'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { notify } from '@/components/Notification.vue'
@@ -24,6 +25,21 @@ onMounted(async () => {
       '检测到 macOS 辅助功能权限未授权，全局快捷键（F7/F9 切歌等）可能无法使用。请在"系统设置 → 隐私与安全 → 辅助功能"中授权 Seraphine Music。'
     )
   }
+
+  // Cmd+W / Cmd+M 快捷键处理（macOS 系统快捷键，需 JS 层拦截）
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.metaKey && e.key === 'w') {
+      e.preventDefault()
+      // Cmd+W: 隐藏主窗口回到托盘
+        invoke('hide_window' as any)
+    }
+    if (e.metaKey && e.key === 'm') {
+      e.preventDefault()
+      // Cmd+M: 隐藏整个应用回到托盘
+        invoke('hide_app' as any)
+    }
+  }
+  document.addEventListener('keydown', onKeydown)
 })
 </script>
 
