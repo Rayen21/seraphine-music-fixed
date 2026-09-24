@@ -70,7 +70,7 @@ const handlePreload = async (url: string) => {
     // 预加载成功后将结果设给 DOM 元素，解决 WKWebView 跨域导致原始 URL 加载失败的问题
     if (imageRef.value) imageRef.value.src = url
   }
-  image.onerror = () => { /* 预加载失败仍尝试显示图片，让浏览器原生 <img> 加载（可能是 CORS 但浏览器能加载） */ isLoaded.value = true }
+  image.onerror = () => { /* 预加载失败，让浏览器原生 <img> 自行处理（可能是 CORS 但浏览器能加载） */ }
 }
 
 // Kugou CDN 需要后端代理（因为需要特定 cookies）
@@ -133,6 +133,18 @@ const loadImage = async (url: string) => {
   // Kuwo CDN 也使用后端代理（带 kw_token / Referer）
   if (url.includes('kuwo.cn') || url.includes('kuwoimg.com')) {
     await handlePreloadKuwo(url)
+    return
+  }
+
+  // QQ 音乐 CDN 使用后端代理
+  if (url.includes('imgcache.qq.com') || url.includes('y.qq.com/')) {
+    await handlePreloadKugou(url)
+    return
+  }
+
+  // 网易云 CDN 使用后端代理
+  if (url.includes('p3.music.126.net') || url.includes('p4.music.126.net') || url.includes('p6.music.126.net')) {
+    await handlePreloadKugou(url)
     return
   }
 

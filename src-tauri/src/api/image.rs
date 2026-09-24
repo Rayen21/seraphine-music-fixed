@@ -54,6 +54,13 @@ fn build_cdn_header(url: &str) -> HeaderMap {
       "User-Agent",
       HeaderValue::from_str("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36").unwrap(),
     );
+  // 判断是否为网易云 CDN（p3/p4/p6.music.126.net）
+  } else if url.contains("music.126.net") {
+    header.insert("Referer", HeaderValue::from_str("https://music.163.com/").unwrap());
+    header.insert(
+      "User-Agent",
+      HeaderValue::from_str("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36").unwrap(),
+    );
   // 判断是否为 Kuwo CDN 请求（img{1-5}.kuwo.cn）
   } else if url.contains("kuwo.cn") || url.contains("kuwoimg.com") {
     // Kuwo CDN：提取 kw_token 作为 Cookie
