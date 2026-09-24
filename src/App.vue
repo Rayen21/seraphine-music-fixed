@@ -33,13 +33,13 @@ onMounted(async () => {
       e.preventDefault()
       e.stopPropagation()
       // Cmd+W: 隐藏主窗口回到托盘
-      invoke('commands::hide_window')
+      invoke('hide_window')
     }
     if (e.metaKey && e.key === 'm') {
       e.preventDefault()
       e.stopPropagation()
       // Cmd+M: 隐藏整个应用回到托盘
-      invoke('commands::hide_app')
+      invoke('hide_app')
     }
   }
   // 双端监听：window 优先捕获（WKWebView 可能不派发 document 级事件），document 兜底
@@ -50,7 +50,7 @@ onMounted(async () => {
     e.preventDefault()
     e.returnValue = ''
     // 不关闭页面，改为隐藏窗口
-    invoke('commands::hide_window')
+    invoke('hide_window')
   })
 })
 </script>
