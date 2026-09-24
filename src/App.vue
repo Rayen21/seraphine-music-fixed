@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { invoke } from '@/utils/tools'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { hide } from '@tauri-apps/api/app'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { notify } from '@/components/Notification.vue'
@@ -27,19 +28,20 @@ onMounted(async () => {
   }
 
   // Cmd+W / Cmd+M 快捷键处理（macOS 系统快捷键，需 JS 层拦截）
+  const win = getCurrentWindow()
   // 使用 window + document 双监听 + beforeunload 兜底，确保 WKWebView 拦截时也能生效
   const onKeydown = (e: KeyboardEvent) => {
     if (e.metaKey && e.key === 'w') {
       e.preventDefault()
       e.stopPropagation()
       // Cmd+W: 隐藏主窗口回到托盘
-      invoke('hide_window')
+      win.hide()
     }
     if (e.metaKey && e.key === 'm') {
       e.preventDefault()
       e.stopPropagation()
       // Cmd+M: 隐藏整个应用回到托盘
-      invoke('hide_app')
+      hide()
     }
   }
   // 双端监听：window 优先捕获（WKWebView 可能不派发 document 级事件），document 兜底
@@ -50,7 +52,7 @@ onMounted(async () => {
     e.preventDefault()
     e.returnValue = ''
     // 不关闭页面，改为隐藏窗口
-    invoke('hide_window')
+    win.hide()
   })
 })
 </script>
