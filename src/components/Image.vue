@@ -36,7 +36,7 @@ const isImageBlank = (img: HTMLImageElement): boolean => {
         whiteCount++
       }
     }
-    return whiteCount / (canvas.width * canvas.height) >= 0.99
+    return whiteCount / (canvas.width * canvas.height) >= 0.95
   } catch {
     return true
   }
@@ -55,7 +55,8 @@ const handleImageLoad = () => {
 }
 
 // 直接预加载图片（适用于普通 HTTP/HTTPS 图片）
-const handlePreload = (url: string) => {
+// 直接预加载图片（适用于普通 HTTP/HTTPS 图片）
+const handlePreload = async (url: string) => {
   if (!url) {
     isLoaded.value = false
     return
@@ -63,8 +64,13 @@ const handlePreload = (url: string) => {
 
   const image = new Image()
   image.src = url
-  image.onload = () => (isLoaded.value = true)
-  image.onerror = () => { /* 预加载失败仍显示图片，让浏览器原生 <img> 加载（可能是 CORS 但浏览器能加载） */ isLoaded.value = true }
+  await nextTick()
+  image.onload = () => {
+    isLoaded.value = true
+    // 预加载成功后将结果设给 DOM 元素，解决 WKWebView 跨域导致原始 URL 加载失败的问题
+    if (imageRef.value) imageRef.value.src = url
+  }
+  image.onerror = () => { /* 预加载失败仍尝试显示图片，让浏览器原生 <img> 加载（可能是 CORS 但浏览器能加载） */ isLoaded.value = true }
 }
 
 // Kugou CDN 需要后端代理（因为需要特定 cookies）
@@ -111,7 +117,7 @@ const handlePreloadKuwo = async (url: string) => {
   }
 }
 
-const loadImage = (url: string) => {
+const loadImage = async (url: string) => {
   isLoaded.value = false;
   if (!url) {
     isLoaded.value = false
@@ -120,18 +126,18 @@ const loadImage = (url: string) => {
 
   // Kugou CDN 使用后端代理（带 cookie）
   if (url.includes('.kugou.com/')) {
-    handlePreloadKugou(url)
+    await handlePreloadKugou(url)
     return
   }
 
   // Kuwo CDN 也使用后端代理（带 kw_token / Referer）
   if (url.includes('kuwo.cn') || url.includes('kuwoimg.com')) {
-    handlePreloadKuwo(url)
+    await handlePreloadKuwo(url)
     return
   }
 
   // 其他 CDN（普通 HTTP/HTTPS）直接加载
-  handlePreload(url)
+  await handlePreload(url)
 }
 
 watch(() => img, loadImage, { immediate: true })
