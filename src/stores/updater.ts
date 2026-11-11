@@ -1,4 +1,5 @@
 import { notify } from '@/components/Notification.vue'
+import { useSettingStore } from '@/stores/setting'
 import { getVersion } from '@tauri-apps/api/app'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { Update, check as tauriCheck } from '@tauri-apps/plugin-updater'
@@ -23,6 +24,7 @@ export const useUpdaterStore = defineStore(
   'updater',
   () => {
     const isHydrated = ref(false) // store 持久化的水合状态
+    const settingStore = useSettingStore()
 
     const isChecking = ref(false)
     const isDownloading = ref(false)
@@ -35,12 +37,12 @@ export const useUpdaterStore = defineStore(
     watch(
       isHydrated,
       () => {
-        check()
+        if (settingStore.autoCheckUpdate) check(true)
       },
       { once: true }
     )
 
-    const check = async () => {
+    const check = async (silent = false) => {
       if (isChecking.value || isDownloading.value) return
       isChecking.value = true
 
@@ -58,8 +60,7 @@ export const useUpdaterStore = defineStore(
             latestVersion: `v${currentVersion}`
           }
 
-          notify.info('检查更新中...')
-          notify.success('已是最新版本')
+          if (!silent) notify.success('已是最新版本')
         } else {
           updater = update
           updateInfo.value = {
@@ -70,12 +71,11 @@ export const useUpdaterStore = defineStore(
             date: update.date
           }
 
-          notify.info('检查更新中...')
           notify.success(`发现新版本 ${update.version}`)
         }
       } catch (error) {
         console.error(error)
-        notify.error('检查更新失败')
+        if (!silent) notify.error('检查更新失败')
       } finally {
         isChecking.value = false
       }

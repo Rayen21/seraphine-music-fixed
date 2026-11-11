@@ -35,7 +35,7 @@ const progressPercent = computed(() =>
         <ActionButton
           theme="success"
           :disabled="updaterStore.isChecking || updaterStore.isDownloading"
-          @click="updaterStore.check">
+          @click="() => updaterStore.check()">
           {{ updaterStore.isChecking ? '检查中...' : '检查更新' }}
         </ActionButton>
 

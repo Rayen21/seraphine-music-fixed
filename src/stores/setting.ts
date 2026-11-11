@@ -29,6 +29,7 @@ export const useSettingStore = defineStore(
     const isFullscreen = ref(false) // 全屏
 
     const autoLiteVipState = ref(false) // 自动领取概念版会员
+    const autoCheckUpdate = ref(false) // 启动时检查更新
     const availableFonts = ref<FontItem[]>([]) // 可用字体列表
     const fontFamily = ref<FontValue>('system-ui') // 字体
     const autoStartState = ref(false) // 开机自启状态
@@ -279,6 +280,7 @@ export const useSettingStore = defineStore(
       isMaximized,
       isFullscreen,
       autoLiteVipState,
+      autoCheckUpdate,
       availableFonts,
       fontFamily,
       autoStartState,
@@ -317,6 +319,7 @@ export const useSettingStore = defineStore(
       key: 'setting-store',
       pick: [
         'autoLiteVipState',
+        'autoCheckUpdate',
         'fontFamily',
         'autoStartState',
         'autoStartMode',

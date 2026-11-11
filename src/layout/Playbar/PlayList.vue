@@ -11,7 +11,7 @@ import { getFullName, getOrigin } from '@/utils/music'
 import { ApiInvokeStatus, ListType } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { vOnClickOutside } from '@vueuse/components'
-import { provide, ref } from 'vue'
+import { nextTick, provide, ref, useTemplateRef } from 'vue'
 
 provide('listType', ListType.Play)
 
@@ -19,6 +19,14 @@ const listStore = useListStore()
 const musicStore = useMusicStore()
 const userStore = useUserStore()
 const contextMenuStore = useContextMenuStore()
+const musicTableRef = useTemplateRef('musicTableRef')
+
+const handleLocateCurrent = async () => {
+  const id = musicStore.music?.id
+  if (!id || !listStore.play.list.some((item) => item.id === id)) return
+  await nextTick()
+  musicTableRef.value?.scrollToTarget(id, { position: 'center', behavior: 'smooth' })
+}
 
 const tableColumns: TableColumn[] = [
   { key: 'index', slot: true, width: '3rem', padding: 0 },
@@ -132,9 +140,20 @@ const handleUnlike = async (music: ListMusic) => {
       <div
         v-if="listVisible"
         class="card fixed bottom-[var(--playbar-height)] right-0 top-[var(--header-height)] z-40 my-4 flex w-80 flex-col bg-background shadow-md shadow-shadow">
-        <div class="mt-4 px-4">
-          <span class="font-bold text-lg">播放队列</span>
-          <span class="ml-2">共 {{ listStore.play.info.count }} 首</span>
+        <div class="mt-4 flex items-center justify-between px-4">
+          <div>
+            <span class="font-bold text-lg">播放队列</span>
+            <span class="ml-2">共 {{ listStore.play.info.count }} 首</span>
+          </div>
+          <ActionButton
+            class="px-1 h-6 text-sm"
+            mode="text"
+            prefix-icon="Target"
+            size="20"
+            title="定位当前播放曲目"
+            @click="handleLocateCurrent">
+            定位
+          </ActionButton>
         </div>
 
         <div class="mt-2 flex items-center justify-between px-4">
@@ -147,7 +166,7 @@ const handleUnlike = async (music: ListMusic) => {
 
           <div>
             <ActionButton
-              class="px-1 h-6"
+              class="px-1 h-6 text-sm"
               theme="error"
               prefix-icon="Bin"
               @click="listStore.resetList(ListType.Play)">

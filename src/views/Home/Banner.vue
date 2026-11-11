@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Carousel from '@/components/Carousel.vue'
+import Image from '@/components/Image.vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import { useListStore } from '@/stores/list'
 import { useMusicStore } from '@/stores/music'
@@ -7,9 +8,11 @@ import { getFullName, getOrigin, getPic } from '@/utils/music'
 import { ApiInvokeStatus, ListType, PicSize } from '@/utils/params'
 import { invoke } from '@/utils/tools'
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const musciStore = useMusicStore()
 const listStore = useListStore()
+const router = useRouter()
 
 const likeMusicList = ref<MusicList>({
   info: { id: '', cover: '', title: '', artist: '', count: 0, tags: [] },
@@ -59,8 +62,7 @@ const bannerList = ref([
     intro: '',
     img: '',
     bgColor: 'var(--color-warning)',
-    disabled: true,
-    onClick: () => 'TODO: 排行榜'
+    onClick: () => router.push('/rank-top-more')
   }
 ])
 
@@ -132,9 +134,21 @@ const getRecommendLisd = async () => {
   }
 }
 
+const getRankCover = async () => {
+  try {
+    const result = await invoke('api_rank_top')
+    if (result.status === ApiInvokeStatus.Success && result.data.list[0]?.imgurl) {
+      bannerList.value[2].img = getPic(result.data.list[0].imgurl, PicSize.Md)
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
 onMounted(() => {
   getLikeList()
   getRecommendLisd()
+  getRankCover()
 })
 </script>
 
@@ -144,8 +158,7 @@ onMounted(() => {
       v-for="(banner, index) in bannerList"
       :key="index"
       class="card flex basis-1/3 overflow-hidden text-neutral-50 bg-gradient-to-br from-[var(--from-bg)]"
-      :style="{ '--from-bg': banner.bgColor }"
-      :data-disabled="banner.disabled">
+      :style="{ '--from-bg': banner.bgColor }">
       <div class="w-0 flex-1 pl-4 pr-8 py-2">
         <div class="truncate font-bold text-base leading-8">{{ banner.title }}</div>
         <Carousel class="truncate leading-8" :content="banner.intro" />

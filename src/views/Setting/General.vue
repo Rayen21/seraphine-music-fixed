@@ -132,6 +132,11 @@ onMounted(() => {
         禁用动画效果
       </label>
 
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" v-model="settingStore.autoCheckUpdate" />
+        启动时自动检查更新（发现新版本后由你确认）
+      </label>
+
       <!-- <label class="flex items-center gap-2 cursor-pointer mt-3" :data-disabled="true">
           <input type="checkbox" />
           禁用系统缩放比例

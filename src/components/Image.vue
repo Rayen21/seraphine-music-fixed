@@ -38,7 +38,8 @@ const isImageBlank = (img: HTMLImageElement): boolean => {
     }
     return whiteCount / (canvas.width * canvas.height) >= 0.95
   } catch {
-    return true
+    // 跨域图片无法读取像素时，按已加载处理
+    return false
   }
 }
 
