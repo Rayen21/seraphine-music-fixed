@@ -3,10 +3,21 @@ import { onMounted, ref } from 'vue'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { hide } from '@tauri-apps/api/app'
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { notify } from '@/components/Notification.vue'
 
 const showAccessibilityPrompt = ref(false)
+const isMacOS = navigator.userAgent.includes('Mac')
+
+const openAccessibilitySettings = async () => {
+  try {
+    await openUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility')
+  } catch (error) {
+    console.error(error)
+    notify.error('无法打开系统设置，请按提示手动前往辅助功能页面')
+  }
+}
 
 async function checkAccessibility(): Promise<boolean> {
   try {
@@ -71,7 +82,13 @@ onMounted(async () => {
         请打开 <code class="rounded bg-zinc-200 px-1 dark:bg-zinc-700">系统设置 → 隐私与安全 → 辅助功能</code>，为 <code class="rounded bg-zinc-200 px-1 dark:bg-zinc-700">Seraphine Music</code> 勾选授权。
       </p>
       <button
+        v-if="isMacOS"
         class="mt-3 rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+        @click="openAccessibilitySettings">
+        打开系统设置
+      </button>
+      <button
+        class="mt-2 rounded bg-zinc-200 px-5 py-2 text-sm text-zinc-700 transition hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600"
         @click="showAccessibilityPrompt = false">
         知道了
       </button>
